@@ -8,13 +8,16 @@ the PDF through the built-in RAG pipeline.
 
 from __future__ import annotations
 
-import os
+import posixpath
 import shutil
 import tempfile
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import unquote, urlparse
+from urllib.request import url2pathname
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -69,22 +72,30 @@ async def _open_storage_stream(storage: Any, key: str) -> AsyncIterator[Any]:
 async def _ingest_stored_pdf(storage: Any, stored: StoredObject, *, doc_id: str) -> None:
     retriever = get_retriever()
     if stored.uri.startswith("file://"):
-        await retriever.ingest_pdf(stored.uri.removeprefix("file://"), doc_id=doc_id)
+        await retriever.ingest_pdf(_path_from_file_uri(stored.uri), doc_id=doc_id)
         return
 
-    temp_path = ""
+    temp_dir = ""
     try:
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
-            temp_path = temp_file.name
+        temp_dir = tempfile.mkdtemp()
+        temp_path = Path(temp_dir) / _filename_from_storage_key(stored.key)
+        with temp_path.open("wb") as temp_file:
             async with _open_storage_stream(storage, stored.key) as source:
                 shutil.copyfileobj(source, temp_file)
-        await retriever.ingest_pdf(temp_path, doc_id=doc_id)
+        await retriever.ingest_pdf(str(temp_path), doc_id=doc_id)
     finally:
-        if temp_path:
-            try:
-                os.unlink(temp_path)
-            except FileNotFoundError:
-                pass
+        if temp_dir:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def _path_from_file_uri(uri: str) -> str:
+    parsed = urlparse(uri)
+    return url2pathname(parsed.path)
+
+
+def _filename_from_storage_key(key: str) -> str:
+    filename = unquote(posixpath.basename(key.strip("/")))
+    return filename or "document.pdf"
 
 
 @router.post("/documents", response_model=DocumentResponse, status_code=201)

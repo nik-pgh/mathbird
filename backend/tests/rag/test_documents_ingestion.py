@@ -60,7 +60,7 @@ async def test_upload_document_ingests_local_file_uri_without_opening_storage(
     tmp_path,
     monkeypatch,
 ) -> None:
-    local_pdf = tmp_path / "stored.pdf"
+    local_pdf = tmp_path / "stored book.pdf"
     local_pdf.write_bytes(b"%PDF-1.7\nlocal")
     storage = FakeStorage(
         stored=StoredObject(
@@ -104,7 +104,7 @@ async def test_upload_document_copies_non_file_storage_to_temp_pdf_for_ingestion
 
     temp_path = Path(retriever.ingested_paths[0])
     assert response.uri == "s3://mathbird/doc-1/book.pdf"
-    assert temp_path.suffix == ".pdf"
+    assert temp_path.name == "book.pdf"
     assert retriever.path_existed_during_ingest
     assert not temp_path.exists()
     assert storage.opened_keys == ["doc-1/book.pdf"]
