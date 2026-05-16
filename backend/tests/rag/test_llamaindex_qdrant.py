@@ -61,6 +61,10 @@ class FakeStore:
                 score=1.0,
             )
         ]
+        self.ensure_payload_indexes_calls = 0
+
+    async def ensure_payload_indexes(self):
+        self.ensure_payload_indexes_calls += 1
 
     async def structured_lookup(self, request):
         self.structured_requests.append(request)
@@ -124,10 +128,15 @@ class FakeQdrantClient:
     def __init__(self, points) -> None:
         self.points = points
         self.scroll_calls = []
+        self.create_payload_index_calls = []
 
     async def scroll(self, **kwargs):
         self.scroll_calls.append(kwargs)
         return self.points, None
+
+    async def create_payload_index(self, **kwargs):
+        self.create_payload_index_calls.append(kwargs)
+        return None
 
 
 class FakeNode:
@@ -231,10 +240,11 @@ async def test_ingest_pdf_parses_and_inserts_nodes(tmp_path) -> None:
     pdf = tmp_path / "book.pdf"
     pdf.write_bytes(b"%PDF-1.7")
     index = FakeIndex()
+    store = FakeStore()
     retriever = LlamaIndexQdrantRetriever(
         parser=FakeParser(),
         index=index,
-        store=FakeStore(),
+        store=store,
         filename_resolver=lambda path: "book.pdf",
     )
 
@@ -242,6 +252,7 @@ async def test_ingest_pdf_parses_and_inserts_nodes(tmp_path) -> None:
 
     assert len(index.inserted) == 1
     assert index.inserted[0].metadata["exercise_number"] == "8"
+    assert store.ensure_payload_indexes_calls == 1
 
 
 @pytest.mark.asyncio
@@ -320,6 +331,35 @@ async def test_structured_lookup_uses_top_level_qdrant_filter_keys() -> None:
 
     filter_conditions = qdrant_client.scroll_calls[0]["scroll_filter"].must
     assert [condition.key for condition in filter_conditions] == ["page_number", "exercise_number"]
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_creates_required_qdrant_payload_indexes() -> None:
+    qdrant_client = FakeQdrantClient(points=[])
+    store = QdrantTextbookStore(
+        qdrant_client=qdrant_client,
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    await store.structured_lookup(
+        request=RetrievalRequest(
+            query="problem 8 page 37",
+            top_k=4,
+            page_number=37,
+            exercise_number="8",
+        )
+    )
+
+    assert [
+        (call["field_name"], call["field_schema"].value)
+        for call in qdrant_client.create_payload_index_calls
+    ] == [
+        ("page_number", "integer"),
+        ("exercise_number", "keyword"),
+        ("example_number", "keyword"),
+        ("textbook_doc_id", "keyword"),
+    ]
 
 
 @pytest.mark.asyncio

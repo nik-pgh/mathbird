@@ -26,6 +26,12 @@ VALID_BLOCK_TYPES: frozenset[str] = frozenset(
         "unknown",
     }
 )
+QDRANT_PAYLOAD_INDEXES: tuple[tuple[str, str], ...] = (
+    ("page_number", "integer"),
+    ("exercise_number", "keyword"),
+    ("example_number", "keyword"),
+    ("textbook_doc_id", "keyword"),
+)
 
 
 def _block_type_from_metadata(value: Any) -> BlockType:
@@ -54,6 +60,9 @@ class LlamaIndexQdrantRetriever:
         document = await self.parser.parse_pdf(path, doc_id=doc_id, filename=filename)
         nodes = parsed_document_to_nodes(document)
         if nodes:
+            ensure_indexes = getattr(self.store, "ensure_payload_indexes", None)
+            if ensure_indexes is not None:
+                await ensure_indexes()
             await self.index.ainsert_nodes(nodes)
 
     async def retrieve(
@@ -88,8 +97,35 @@ class QdrantTextbookStore:
         self.qdrant_client = qdrant_client
         self.collection_name = collection_name
         self.index = index
+        self._payload_indexes_ready = False
+
+    async def ensure_payload_indexes(self) -> None:
+        if self._payload_indexes_ready:
+            return
+
+        from qdrant_client.http import models
+        from qdrant_client.http.exceptions import UnexpectedResponse
+
+        schema_by_name = {
+            "integer": models.PayloadSchemaType.INTEGER,
+            "keyword": models.PayloadSchemaType.KEYWORD,
+        }
+        for field_name, schema_name in QDRANT_PAYLOAD_INDEXES:
+            try:
+                await self.qdrant_client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=field_name,
+                    field_schema=schema_by_name[schema_name],
+                )
+            except UnexpectedResponse as exc:
+                if "already exists" not in str(exc).lower():
+                    raise
+
+        self._payload_indexes_ready = True
 
     async def structured_lookup(self, request: RetrievalRequest) -> list[RetrievedRecord]:
+        await self.ensure_payload_indexes()
+
         from qdrant_client.http import models
 
         must: list[Any] = []
