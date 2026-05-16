@@ -1,5 +1,6 @@
 import pytest
 
+from app.rag.normalizer import normalize_llamaparse_items
 from app.rag.parsing import (
     ParsedBlock,
     ParsedDocument,
@@ -124,3 +125,76 @@ def test_content_for_embedding_uses_text_for_blank_markdown_and_includes_modalit
         "Equation: 2x + 3 = 9\n"
         "Visual references: graph-1.png, diagram-2.png"
     )
+
+
+def test_normalize_llamaparse_items_detects_heading_exercise_and_neighbors() -> None:
+    payload = {
+        "items": {
+            "pages": [
+                {
+                    "page": 37,
+                    "items": [
+                        {
+                            "type": "heading",
+                            "value": "Solving Equations",
+                            "md": "# Solving Equations",
+                        },
+                        {
+                            "type": "text",
+                            "value": "Example 2. Solve x + 4 = 10.",
+                            "md": "Example 2. Solve x + 4 = 10.",
+                        },
+                        {
+                            "type": "text",
+                            "value": "Problem 8. Solve 2x + 3 = 9.",
+                            "md": "Problem 8. Solve 2x + 3 = 9.",
+                        },
+                    ],
+                }
+            ]
+        }
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="Spectrum Math 6.pdf")
+
+    assert doc.pages[0].page_number == 37
+    assert doc.pages[0].blocks[0].block_type == "heading"
+    assert doc.pages[0].blocks[1].block_type == "example"
+    assert doc.pages[0].blocks[2].block_type == "exercise"
+    assert doc.pages[0].blocks[2].exercise_number == "8"
+    assert doc.pages[0].blocks[2].section_title == "Solving Equations"
+    assert doc.pages[0].blocks[2].neighboring_block_ids == ("doc-1:p37:b1",)
+
+
+def test_normalize_llamaparse_items_preserves_image_refs() -> None:
+    payload = {
+        "items": {
+            "pages": [
+                {
+                    "page": 5,
+                    "items": [
+                        {
+                            "type": "image",
+                            "value": "Coordinate graph showing a line.",
+                            "md": "![graph](image_0.png)",
+                            "image_filename": "image_0.png",
+                        }
+                    ],
+                }
+            ]
+        },
+        "images_content_metadata": {
+            "images": [
+                {
+                    "filename": "image_0.png",
+                    "category": "layout",
+                    "presigned_url": "https://example.com/image_0.png",
+                }
+            ]
+        },
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].blocks[0].block_type == "image"
+    assert doc.pages[0].blocks[0].image_refs == ("doc-1:image_0.png",)
