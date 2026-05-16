@@ -11,6 +11,7 @@ Public surface intentionally narrow:
   the LiveKit data channel.
 """
 
+from .listener import UserBoardListenerHandle, install_user_board_listener
 from .messages import (
     AI_BOARD_TOPIC,
     USER_BOARD_TOPIC,
@@ -35,7 +36,9 @@ __all__ = [
     "AiBoardUpdate",
     "BoardReader",
     "BoardState",
+    "UserBoardListenerHandle",
     "UserBoardSnapshot",
     "get_board_reader",
+    "install_user_board_listener",
     "publish_ai_board",
 ]
