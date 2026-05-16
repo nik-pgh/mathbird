@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import BinaryIO, Protocol, runtime_checkable
@@ -13,9 +14,9 @@ from app.config import get_settings
 class StoredObject:
     """Result of a successful upload."""
 
-    key: str         # storage-internal identifier (filename, S3 key, ...)
-    uri: str         # canonical URI for retrieval (file:// or s3://)
-    size: int        # bytes
+    key: str  # storage-internal identifier (filename, S3 key, ...)
+    uri: str  # canonical URI for retrieval (file:// or s3://)
+    size: int  # bytes
     content_type: str
 
 
@@ -31,7 +32,7 @@ class StorageBackend(Protocol):
         content_type: str,
     ) -> StoredObject: ...
 
-    async def open(self, key: str) -> BinaryIO: ...
+    def open(self, key: str) -> AbstractAsyncContextManager[BinaryIO]: ...
 
     async def list(self, prefix: str = "") -> list[StoredObject]: ...
 
