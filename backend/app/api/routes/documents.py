@@ -1,9 +1,9 @@
 """PDF upload + listing endpoints.
 
 Uploaded PDFs are persisted via the active :class:`StorageBackend` and
-forwarded to the active :class:`Retriever` for ingestion. Today the retriever
-is a no-op, so this route just stores the file; once a real RAG framework is
-wired up, the same code path will index the document.
+forwarded to the active :class:`Retriever` for ingestion. The default null
+provider is a no-op, while ``RAG_PROVIDER=llamaindex_qdrant`` parses and indexes
+the PDF through the built-in RAG pipeline.
 """
 
 from __future__ import annotations
@@ -58,8 +58,8 @@ async def upload_document(
     storage = get_storage()
     stored = await storage.put(key, file.file, content_type="application/pdf")
 
-    # Hand off to the retriever for indexing. NullRetriever is a no-op today;
-    # a real implementation will chunk + embed + store vectors here.
+    # Hand off to the retriever for indexing. The default null provider is a
+    # no-op; RAG_PROVIDER=llamaindex_qdrant parses and indexes the PDF.
     retriever = get_retriever()
     # Resolve a filesystem path the retriever can read. For local storage the
     # URI is file://, for S3 the retriever will need to download. Keeping this

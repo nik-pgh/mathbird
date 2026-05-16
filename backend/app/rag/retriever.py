@@ -1,9 +1,11 @@
-"""Retriever protocol + no-op default.
+"""Retriever protocol and provider factory.
 
 A ``Retriever`` is whatever can answer "given this query, what document
-snippets are relevant?". Today nothing is wired up, so :class:`NullRetriever`
-returns an empty list. When you add LlamaIndex/LangChain/etc., implement this
-protocol and return the new instance from :func:`get_retriever`.
+snippets are relevant?". :class:`NullRetriever` is the default
+``RAG_PROVIDER=null`` implementation and returns no results. The
+``llamaindex_qdrant`` provider is available via settings and parses/indexes
+PDFs with LlamaParse, LlamaIndex, and Qdrant. New providers should implement
+this protocol and be added to :func:`get_retriever`.
 """
 
 from __future__ import annotations
