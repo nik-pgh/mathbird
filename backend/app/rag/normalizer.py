@@ -8,7 +8,12 @@ from urllib.parse import unquote, urlparse
 
 from app.rag.parsing import BlockType, ParsedBlock, ParsedDocument, ParsedPage
 
-EXERCISE_RE = re.compile(r"\b(?:problem|exercise|question)\s+([A-Za-z]?\d+[A-Za-z]?)\b", re.I)
+EXERCISE_RE = re.compile(
+    r"\b(?:problem|exercise|question)\s+([A-Za-z]?\d+[A-Za-z]?)\b"
+    r"|(?:^|\n)\s*\(([A-Za-z]?\d+[A-Za-z]?)\)\s+"
+    r"|(?:^|\n)\s*([A-Za-z]?\d+[A-Za-z]?)[.)]\s+",
+    re.I,
+)
 EXAMPLE_RE = re.compile(r"\bexample\s+([A-Za-z]?\d+[A-Za-z]?)\b", re.I)
 EQUATION_RE = re.compile(r"(\$\$.*?\$\$|\$.*?\$|\\\(|\\\[|\\begin\{equation\})", re.S)
 
@@ -71,7 +76,7 @@ def _classify_item(item: Any, text: str, markdown: str) -> BlockType:
 
 def _exercise_number(text: str, markdown: str) -> str:
     match = EXERCISE_RE.search(f"{text}\n{markdown}")
-    return match.group(1) if match else ""
+    return next((group for group in match.groups() if group), "") if match else ""
 
 
 def _example_number(text: str, markdown: str) -> str:

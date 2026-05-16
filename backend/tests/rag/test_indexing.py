@@ -31,6 +31,7 @@ def test_parsed_document_to_nodes_preserves_metadata() -> None:
     assert len(nodes) == 1
     assert nodes[0].text == "Example 8. Solve 2x + 3 = 9."
     assert nodes[0].metadata["doc_id"] == "doc-1"
+    assert nodes[0].metadata["textbook_doc_id"] == "doc-1"
     assert nodes[0].metadata["page_number"] == 37
     assert nodes[0].metadata["block_type"] == "example"
     assert nodes[0].metadata["example_number"] == "8"

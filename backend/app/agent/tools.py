@@ -22,6 +22,7 @@ async def search_documents(
     ctx: RunContext,
     query: str,
     top_k: int = 0,
+    doc_id: str = "",
 ) -> str:
     """Search the user's uploaded PDF documents for information relevant to ``query``.
 
@@ -31,7 +32,8 @@ async def search_documents(
     """
     effective_top_k = top_k if top_k > 0 else get_settings().rag_top_k
     retriever = get_retriever()
-    chunks = await retriever.retrieve(query, top_k=effective_top_k)
+    doc_ids = (doc_id,) if doc_id else ()
+    chunks = await retriever.retrieve(query, top_k=effective_top_k, doc_ids=doc_ids)
 
     if not chunks:
         return "No documents are indexed yet. Tell the user no PDFs have been uploaded."

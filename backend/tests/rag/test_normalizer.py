@@ -398,6 +398,28 @@ def test_normalize_llamaparse_items_detects_heading_exercise_and_neighbors() -> 
     assert doc.pages[0].blocks[2].neighboring_block_ids == ("doc-1:p37:b1",)
 
 
+@pytest.mark.parametrize(
+    "label",
+    ["8. Solve 2x + 3 = 9.", "8) Solve 2x + 3 = 9.", "(8) Solve 2x + 3 = 9."],
+)
+def test_normalize_llamaparse_items_detects_numbered_exercise_labels(label: str) -> None:
+    payload = {
+        "items": {
+            "pages": [
+                {
+                    "page": 37,
+                    "items": [{"type": "text", "value": label, "md": label}],
+                }
+            ]
+        }
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].blocks[0].block_type == "exercise"
+    assert doc.pages[0].blocks[0].exercise_number == "8"
+
+
 def test_normalize_llamaparse_items_preserves_image_refs() -> None:
     payload = {
         "items": {

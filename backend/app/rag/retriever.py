@@ -29,7 +29,13 @@ class RetrievedChunk:
 class Retriever(Protocol):
     """Anything that can fetch document snippets for a query."""
 
-    async def retrieve(self, query: str, *, top_k: int = 4) -> list[RetrievedChunk]: ...
+    async def retrieve(
+        self,
+        query: str,
+        *,
+        top_k: int = 4,
+        doc_ids: tuple[str, ...] = (),
+    ) -> list[RetrievedChunk]: ...
 
     async def ingest_pdf(self, path: str, *, doc_id: str) -> None:
         """Add a PDF to the index. Called when a new PDF is uploaded."""
@@ -38,7 +44,13 @@ class Retriever(Protocol):
 class NullRetriever:
     """Default no-op retriever used when ``RAG_PROVIDER=null``."""
 
-    async def retrieve(self, query: str, *, top_k: int = 4) -> list[RetrievedChunk]:
+    async def retrieve(
+        self,
+        query: str,
+        *,
+        top_k: int = 4,
+        doc_ids: tuple[str, ...] = (),
+    ) -> list[RetrievedChunk]:
         return []
 
     async def ingest_pdf(self, path: str, *, doc_id: str) -> None:

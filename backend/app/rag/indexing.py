@@ -18,6 +18,7 @@ def parsed_document_to_nodes(document: ParsedDocument) -> list[TextNode]:
 
             metadata = {
                 "doc_id": document.doc_id,
+                "textbook_doc_id": document.doc_id,
                 "filename": document.filename,
                 "page_number": block.page_number,
                 "section_title": block.section_title,

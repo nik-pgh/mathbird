@@ -56,11 +56,18 @@ class LlamaIndexQdrantRetriever:
         if nodes:
             await self.index.ainsert_nodes(nodes)
 
-    async def retrieve(self, query: str, *, top_k: int = 4) -> list[RetrievedChunk]:
+    async def retrieve(
+        self,
+        query: str,
+        *,
+        top_k: int = 4,
+        doc_ids: tuple[str, ...] = (),
+    ) -> list[RetrievedChunk]:
         parsed = parse_retrieval_query(query)
         request = RetrievalRequest(
             query=query,
             top_k=top_k,
+            doc_ids=doc_ids,
             page_number=parsed.page_number,
             exercise_number=parsed.exercise_number,
             example_number=parsed.example_number,
@@ -107,6 +114,12 @@ class QdrantTextbookStore:
                     match=models.MatchValue(value=request.example_number),
                 )
             )
+        if request.doc_ids:
+            if len(request.doc_ids) == 1:
+                match = models.MatchValue(value=request.doc_ids[0])
+            else:
+                match = models.MatchAny(any=list(request.doc_ids))
+            must.append(models.FieldCondition(key="textbook_doc_id", match=match))
 
         if not must:
             return []
@@ -122,7 +135,29 @@ class QdrantTextbookStore:
         return [self._record_from_point(point, score=1.0) for point in points]
 
     async def semantic_search(self, request: RetrievalRequest) -> list[RetrievedRecord]:
-        retriever = self.index.as_retriever(similarity_top_k=request.top_k)
+        retriever_kwargs: dict[str, Any] = {"similarity_top_k": request.top_k}
+        if request.doc_ids:
+            from llama_index.core.vector_stores import (
+                FilterOperator,
+                MetadataFilter,
+                MetadataFilters,
+            )
+
+            operator = FilterOperator.EQ if len(request.doc_ids) == 1 else FilterOperator.IN
+            value: str | list[str] = (
+                request.doc_ids[0] if len(request.doc_ids) == 1 else list(request.doc_ids)
+            )
+            retriever_kwargs["filters"] = MetadataFilters(
+                filters=[
+                    MetadataFilter(
+                        key="textbook_doc_id",
+                        value=value,
+                        operator=operator,
+                    )
+                ]
+            )
+
+        retriever = self.index.as_retriever(**retriever_kwargs)
         nodes = await retriever.aretrieve(request.query)
         records: list[RetrievedRecord] = []
         for node_with_score in nodes:
@@ -134,7 +169,7 @@ class QdrantTextbookStore:
                     filename=str(metadata.get("filename", "document.pdf")),
                     page_number=int(metadata.get("page_number", 0) or 0),
                     score=node_with_score.score,
-                    doc_id=str(metadata.get("doc_id", "")),
+                    doc_id=str(metadata.get("textbook_doc_id") or metadata.get("doc_id", "")),
                     block_id=str(metadata.get("block_id", "")),
                     block_type=_block_type_from_metadata(metadata.get("block_type", "unknown")),
                     exercise_number=str(metadata.get("exercise_number", "")),
@@ -159,7 +194,7 @@ class QdrantTextbookStore:
             filename=str(metadata.get("filename", "document.pdf")),
             page_number=int(metadata.get("page_number", 0) or 0),
             score=score,
-            doc_id=str(metadata.get("doc_id", "")),
+            doc_id=str(metadata.get("textbook_doc_id") or metadata.get("doc_id", "")),
             block_id=str(metadata.get("block_id", "")),
             block_type=_block_type_from_metadata(metadata.get("block_type", "unknown")),
             exercise_number=str(metadata.get("exercise_number", "")),

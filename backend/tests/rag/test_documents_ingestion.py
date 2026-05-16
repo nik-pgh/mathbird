@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from io import BytesIO
 from pathlib import Path
 
-from fastapi import UploadFile
+import pytest
+from fastapi import HTTPException, UploadFile
 from starlette.datastructures import Headers
 
 from app.api.routes import documents
@@ -12,13 +13,16 @@ from app.storage import StoredObject
 
 
 class FakeRetriever:
-    def __init__(self, expected_bytes: bytes | None = None) -> None:
+    def __init__(self, expected_bytes: bytes | None = None, fail: bool = False) -> None:
         self.expected_bytes = expected_bytes
+        self.fail = fail
         self.ingested_paths: list[str] = []
         self.ingested_doc_ids: list[str] = []
         self.path_existed_during_ingest = False
 
     async def ingest_pdf(self, path: str, *, doc_id: str) -> None:
+        if self.fail:
+            raise RuntimeError("parse failed")
         self.ingested_paths.append(path)
         self.ingested_doc_ids.append(doc_id)
         candidate = Path(path)
@@ -33,6 +37,7 @@ class FakeStorage:
         self.data = data
         self.put_keys: list[str] = []
         self.opened_keys: list[str] = []
+        self.deleted_keys: list[str] = []
 
     async def put(self, key, data, *, content_type):
         self.put_keys.append(key)
@@ -46,6 +51,9 @@ class FakeStorage:
             yield stream
         finally:
             stream.close()
+
+    async def delete(self, key):
+        self.deleted_keys.append(key)
 
 
 def pdf_upload(data: bytes = b"%PDF-1.7\n") -> UploadFile:
@@ -133,3 +141,24 @@ async def test_upload_document_sanitizes_encoded_separators_in_temp_filename(
     assert temp_path.name == "escape.pdf"
     assert temp_path.parent.name != ".."
     assert not temp_path.exists()
+
+
+async def test_upload_document_deletes_stored_pdf_when_ingestion_fails(monkeypatch) -> None:
+    storage = FakeStorage(
+        stored=StoredObject(
+            key="doc-1/book.pdf",
+            uri="s3://mathbird/doc-1/book.pdf",
+            size=12,
+            content_type="application/pdf",
+        ),
+        data=b"%PDF-1.7\n",
+    )
+    retriever = FakeRetriever(fail=True)
+    monkeypatch.setattr(documents, "get_storage", lambda: storage)
+    monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await documents.upload_document(pdf_upload())
+
+    assert exc_info.value.status_code == 502
+    assert storage.deleted_keys == ["doc-1/book.pdf"]

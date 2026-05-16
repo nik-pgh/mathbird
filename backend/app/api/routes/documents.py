@@ -13,7 +13,7 @@ import shutil
 import tempfile
 import uuid
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Annotated, Any
 from urllib.parse import unquote, urlparse
@@ -116,7 +116,12 @@ async def upload_document(
 
     # Hand off to the retriever for indexing. The default null provider is a
     # no-op; RAG_PROVIDER=llamaindex_qdrant parses and indexes the PDF.
-    await _ingest_stored_pdf(storage, stored, doc_id=doc_id)
+    try:
+        await _ingest_stored_pdf(storage, stored, doc_id=doc_id)
+    except Exception as exc:
+        with suppress(Exception):
+            await storage.delete(stored.key)
+        raise HTTPException(status_code=502, detail="Document ingestion failed.") from exc
 
     return DocumentResponse.from_stored(doc_id, stored)
 

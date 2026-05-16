@@ -75,11 +75,11 @@ The factories import vendor plugins **lazily** inside the branch, so installing 
 
 ### 3. Retriever (`Retriever`)
 
-- **Protocol:** `app/rag/retriever.py::Retriever` (`retrieve(query, top_k)` and `ingest_pdf(path, doc_id)`, both async).
+- **Protocol:** `app/rag/retriever.py::Retriever` (`retrieve(query, top_k, doc_ids=...)` and `ingest_pdf(path, doc_id)`, both async).
 - **Factory:** `app/rag/retriever.py::get_retriever()`, module-level singleton.
 - **Implementations:** `NullRetriever` for the default `RAG_PROVIDER=null` path, and `LlamaIndexQdrantRetriever` via `RAG_PROVIDER=llamaindex_qdrant`.
 
-`ingest_pdf` is called by the upload route after `storage.put`. `retrieve` is called by the `search_documents` function tool during a conversation. With the default null provider both methods are no-ops, so the system runs end-to-end without RAG infrastructure. With `RAG_PROVIDER=llamaindex_qdrant`, PDF uploads are parsed with LlamaParse, normalized and indexed through LlamaIndex into Qdrant, and searches retrieve cited textbook chunks from that collection.
+`ingest_pdf` is called by the upload route after `storage.put`. In v1 this happens synchronously inside the upload request; if ingestion fails, the route attempts to delete the stored PDF and returns an error instead of listing an unindexed document. `retrieve` is called by the `search_documents` function tool during a conversation and can be scoped to a specific document id when the caller has one. With the default null provider both methods are no-ops, so the system runs end-to-end without RAG infrastructure. With `RAG_PROVIDER=llamaindex_qdrant`, PDF uploads are parsed with LlamaParse, normalized and indexed through LlamaIndex into Qdrant, and searches retrieve cited textbook chunks from that collection.
 
 ### 4. Function tools (the LLM's API into our code)
 

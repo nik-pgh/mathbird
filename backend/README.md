@@ -63,5 +63,8 @@ For local Qdrant, run:
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 ```
 
-Then upload a PDF through `POST /api/documents`; the upload route will store the PDF and
-call the active retriever's `ingest_pdf`.
+Then upload a PDF through `POST /api/documents`; the v1 upload route stores the PDF and
+calls the active retriever's `ingest_pdf` synchronously. If ingestion fails, the route
+attempts to delete the stored PDF and returns an upload error rather than listing an
+unindexed document. A background job queue can replace this call site later without
+changing the retriever interface.

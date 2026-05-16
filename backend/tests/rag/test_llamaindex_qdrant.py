@@ -130,6 +130,48 @@ class FakeQdrantClient:
         return self.points, None
 
 
+class FakeNode:
+    def __init__(self, text: str, metadata: dict) -> None:
+        self.metadata = metadata
+        self._text = text
+
+    def get_content(self) -> str:
+        return self._text
+
+
+class FakeLlamaIndexRetriever:
+    def __init__(self, nodes) -> None:
+        self.nodes = nodes
+
+    async def aretrieve(self, query):
+        return self.nodes
+
+
+class SemanticFilterIndex:
+    def __init__(self) -> None:
+        self.as_retriever_calls = []
+
+    def as_retriever(self, **kwargs):
+        self.as_retriever_calls.append(kwargs)
+        return FakeLlamaIndexRetriever(
+            [
+                SimpleNamespace(
+                    node=FakeNode(
+                        "Scoped semantic result.",
+                        {
+                            "filename": "book.pdf",
+                            "page_number": 5,
+                            "textbook_doc_id": "doc-1",
+                            "block_id": "doc-1:p5:b0",
+                            "block_type": "paragraph",
+                        },
+                    ),
+                    score=0.5,
+                )
+            ]
+        )
+
+
 def textbook_payload(*, block_type: str = "exercise") -> dict:
     document = ParsedDocument(
         doc_id="textbook-doc",
@@ -204,15 +246,21 @@ async def test_ingest_pdf_parses_and_inserts_nodes(tmp_path) -> None:
 
 @pytest.mark.asyncio
 async def test_retrieve_uses_structured_lookup_for_page_problem_query() -> None:
+    store = FakeStore()
     retriever = LlamaIndexQdrantRetriever(
         parser=FakeParser(),
         index=FakeIndex(),
-        store=FakeStore(),
+        store=store,
         filename_resolver=lambda path: "book.pdf",
     )
 
-    chunks = await retriever.retrieve("help me with problem 8 on page 37", top_k=4)
+    chunks = await retriever.retrieve(
+        "help me with problem 8 on page 37",
+        top_k=4,
+        doc_ids=("doc-1",),
+    )
 
+    assert store.structured_requests[0].doc_ids == ("doc-1",)
     assert chunks[0].source == "book.pdf, page 37, problem 8"
     assert chunks[0].text == "Problem 8. Solve 2x + 3 = 9."
 
@@ -299,6 +347,35 @@ async def test_structured_lookup_filters_by_example_number() -> None:
 
 
 @pytest.mark.asyncio
+async def test_structured_lookup_filters_by_textbook_doc_id() -> None:
+    point = SimpleNamespace(payload=textbook_payload())
+    qdrant_client = FakeQdrantClient(points=[point])
+    store = QdrantTextbookStore(
+        qdrant_client=qdrant_client,
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    await store.structured_lookup(
+        request=RetrievalRequest(
+            query="problem 8 page 37",
+            top_k=4,
+            doc_ids=("textbook-doc",),
+            page_number=37,
+            exercise_number="8",
+        )
+    )
+
+    filter_conditions = qdrant_client.scroll_calls[0]["scroll_filter"].must
+    assert [condition.key for condition in filter_conditions] == [
+        "page_number",
+        "exercise_number",
+        "textbook_doc_id",
+    ]
+    assert filter_conditions[-1].match.value == "textbook-doc"
+
+
+@pytest.mark.asyncio
 async def test_structured_lookup_decodes_node_content_and_original_metadata() -> None:
     point = SimpleNamespace(payload=textbook_payload(block_type="worked-problem"))
     store = QdrantTextbookStore(
@@ -320,3 +397,23 @@ async def test_structured_lookup_decodes_node_content_and_original_metadata() ->
     assert not records[0].text.startswith("{")
     assert records[0].doc_id == "textbook-doc"
     assert records[0].block_type == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_semantic_search_applies_textbook_doc_id_filter() -> None:
+    index = SemanticFilterIndex()
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=[]),
+        collection_name="textbook_chunks",
+        index=index,
+    )
+
+    records = await store.semantic_search(
+        RetrievalRequest(query="linear equations", top_k=4, doc_ids=("doc-1",))
+    )
+
+    filters = index.as_retriever_calls[0]["filters"].filters
+    assert index.as_retriever_calls[0]["similarity_top_k"] == 4
+    assert filters[0].key == "textbook_doc_id"
+    assert filters[0].value == "doc-1"
+    assert records[0].doc_id == "doc-1"

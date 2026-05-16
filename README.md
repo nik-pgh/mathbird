@@ -159,13 +159,22 @@ The agent code is unchanged.
 
 ```python
 class Retriever(Protocol):
-    async def retrieve(self, query: str, *, top_k: int = 4) -> list[RetrievedChunk]: ...
+    async def retrieve(
+        self,
+        query: str,
+        *,
+        top_k: int = 4,
+        doc_ids: tuple[str, ...] = (),
+    ) -> list[RetrievedChunk]: ...
     async def ingest_pdf(self, path: str, *, doc_id: str) -> None: ...
 ```
 
-The PDF upload route calls `ingest_pdf` after storing the file. The agent's
-`search_documents` function tool calls `retrieve` whenever the LLM decides it
-needs to look something up.
+The PDF upload route calls `ingest_pdf` after storing the file. In v1 ingestion
+runs synchronously during upload; if ingestion fails, the route attempts to
+delete the stored PDF and returns an upload error. The agent's `search_documents`
+function tool calls `retrieve` whenever the LLM decides it needs to look
+something up, and can pass a document id when the active UI/session knows which
+textbook the user is asking about.
 
 By default `RAG_PROVIDER=null` selects `NullRetriever`, so `ingest_pdf` and
 `retrieve` are no-ops and the app runs without RAG infrastructure. To enable
