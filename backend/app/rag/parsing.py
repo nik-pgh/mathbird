@@ -51,6 +51,7 @@ class ParsedBlock:
     bbox: tuple[float, float, float, float] | None = None
     section_title: str = ""
     exercise_number: str = ""
+    example_number: str = ""
     neighboring_block_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -71,6 +72,8 @@ class ParsedBlock:
         label = f"{filename}, page {self.page_number}"
         if self.exercise_number:
             label += f", problem {self.exercise_number}"
+        elif self.example_number:
+            label += f", example {self.example_number}"
         elif self.section_title:
             label += f", {self.section_title}"
         return label
@@ -107,6 +110,7 @@ class RetrievalRequest:
     doc_ids: tuple[str, ...] = ()
     page_number: int | None = None
     exercise_number: str = ""
+    example_number: str = ""
     student_context: Mapping[str, Any] = field(default_factory=_empty_mapping)
     requested_modalities: tuple[str, ...] = ("text",)
 
@@ -126,6 +130,7 @@ class RetrievedRecord:
     block_id: str = ""
     block_type: BlockType = "unknown"
     exercise_number: str = ""
+    example_number: str = ""
     section_title: str = ""
     visual_refs: tuple[str, ...] = ()
 
@@ -137,6 +142,8 @@ class RetrievedRecord:
         label = f"{self.filename}, page {self.page_number}"
         if self.exercise_number:
             label += f", problem {self.exercise_number}"
+        elif self.example_number:
+            label += f", example {self.example_number}"
         elif self.section_title:
             label += f", {self.section_title}"
         return label

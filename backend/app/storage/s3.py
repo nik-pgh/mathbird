@@ -6,6 +6,8 @@ to use it. Requires the ``boto3`` extra (already in pyproject.toml).
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import BinaryIO
 
 from .base import StoredObject
@@ -54,13 +56,14 @@ class S3Storage:
             content_type=head.get("ContentType", content_type),
         )
 
-    async def open(self, key: str) -> BinaryIO:
-        from io import BytesIO
-
-        buf = BytesIO()
-        self.client.download_fileobj(self.bucket, key, buf)
-        buf.seek(0)
-        return buf
+    @asynccontextmanager
+    async def open(self, key: str) -> AsyncIterator[BinaryIO]:
+        response = self.client.get_object(Bucket=self.bucket, Key=key)
+        body = response["Body"]
+        try:
+            yield body
+        finally:
+            body.close()
 
     async def list(self, prefix: str = "") -> list[StoredObject]:
         paginator = self.client.get_paginator("list_objects_v2")

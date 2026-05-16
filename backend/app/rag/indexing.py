@@ -23,6 +23,7 @@ def parsed_document_to_nodes(document: ParsedDocument) -> list[TextNode]:
                 "section_title": block.section_title,
                 "block_type": block.block_type,
                 "exercise_number": block.exercise_number,
+                "example_number": block.example_number,
                 "block_id": block.block_id,
                 "neighboring_block_ids": list(block.neighboring_block_ids),
                 "visual_refs": list(block.image_refs),

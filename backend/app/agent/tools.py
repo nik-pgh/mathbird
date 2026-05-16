@@ -12,6 +12,7 @@ import logging
 
 from livekit.agents import RunContext, function_tool
 
+from app.config import get_settings
 from app.rag import get_retriever
 
 logger = logging.getLogger("mathbird.agent.tools")
@@ -29,8 +30,9 @@ async def search_documents(
     Returns concatenated snippets with source citations, or a brief note if no
     documents are indexed yet.
     """
+    effective_top_k = top_k if top_k > 0 else get_settings().rag_top_k
     retriever = get_retriever()
-    chunks = await retriever.retrieve(query, top_k=top_k)
+    chunks = await retriever.retrieve(query, top_k=effective_top_k)
 
     if not chunks:
         return "No documents are indexed yet. Tell the user no PDFs have been uploaded."

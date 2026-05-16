@@ -252,6 +252,26 @@ def test_parsed_block_source_label_includes_problem_number() -> None:
     )
 
 
+def test_parsed_block_source_label_includes_example_number() -> None:
+    block = ParsedBlock(
+        block_id="doc-1:p20:b0",
+        page_number=20,
+        block_type="example",
+        text="Example 3. Factor x^2 + 5x + 6.",
+        example_number="3",
+    )
+    record = RetrievedRecord(
+        text=block.text,
+        filename="book.pdf",
+        page_number=20,
+        block_type="example",
+        example_number="3",
+    )
+
+    assert block.source_label("book.pdf") == "book.pdf, page 20, example 3"
+    assert record.source == "book.pdf, page 20, example 3"
+
+
 def test_parsed_models_coerce_collections_to_tuples() -> None:
     bbox = [0.1, 0.2, 0.3, 0.4]
     block = ParsedBlock(
@@ -371,6 +391,7 @@ def test_normalize_llamaparse_items_detects_heading_exercise_and_neighbors() -> 
     assert doc.pages[0].page_number == 37
     assert doc.pages[0].blocks[0].block_type == "heading"
     assert doc.pages[0].blocks[1].block_type == "example"
+    assert doc.pages[0].blocks[1].example_number == "2"
     assert doc.pages[0].blocks[2].block_type == "exercise"
     assert doc.pages[0].blocks[2].exercise_number == "8"
     assert doc.pages[0].blocks[2].section_title == "Solving Equations"

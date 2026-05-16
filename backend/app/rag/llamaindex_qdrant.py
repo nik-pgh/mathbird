@@ -63,6 +63,7 @@ class LlamaIndexQdrantRetriever:
             top_k=top_k,
             page_number=parsed.page_number,
             exercise_number=parsed.exercise_number,
+            example_number=parsed.example_number,
         )
 
         if parsed.is_structured_lookup:
@@ -99,6 +100,13 @@ class QdrantTextbookStore:
                     match=models.MatchValue(value=request.exercise_number),
                 )
             )
+        if request.example_number:
+            must.append(
+                models.FieldCondition(
+                    key="example_number",
+                    match=models.MatchValue(value=request.example_number),
+                )
+            )
 
         if not must:
             return []
@@ -130,6 +138,7 @@ class QdrantTextbookStore:
                     block_id=str(metadata.get("block_id", "")),
                     block_type=_block_type_from_metadata(metadata.get("block_type", "unknown")),
                     exercise_number=str(metadata.get("exercise_number", "")),
+                    example_number=str(metadata.get("example_number", "")),
                     section_title=str(metadata.get("section_title", "")),
                     visual_refs=tuple(metadata.get("visual_refs", []) or []),
                 )
@@ -154,6 +163,7 @@ class QdrantTextbookStore:
             block_id=str(metadata.get("block_id", "")),
             block_type=_block_type_from_metadata(metadata.get("block_type", "unknown")),
             exercise_number=str(metadata.get("exercise_number", "")),
+            example_number=str(metadata.get("example_number", "")),
             section_title=str(metadata.get("section_title", "")),
             visual_refs=tuple(metadata.get("visual_refs", []) or []),
         )

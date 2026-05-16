@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import BinaryIO, Protocol, runtime_checkable
@@ -31,7 +32,7 @@ class StorageBackend(Protocol):
         content_type: str,
     ) -> StoredObject: ...
 
-    async def open(self, key: str) -> BinaryIO: ...
+    def open(self, key: str) -> AbstractAsyncContextManager[BinaryIO]: ...
 
     async def list(self, prefix: str = "") -> list[StoredObject]: ...
 

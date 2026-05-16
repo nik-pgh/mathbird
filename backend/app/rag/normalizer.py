@@ -74,6 +74,11 @@ def _exercise_number(text: str, markdown: str) -> str:
     return match.group(1) if match else ""
 
 
+def _example_number(text: str, markdown: str) -> str:
+    match = EXAMPLE_RE.search(f"{text}\n{markdown}")
+    return match.group(1) if match else ""
+
+
 def _stable_ref_name(value: Any) -> str:
     raw = str(value or "").strip()
     if not raw:
@@ -171,6 +176,9 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
                     bbox=_bbox(item),
                     section_title=current_section,
                     exercise_number=_exercise_number(text, markdown),
+                    example_number=(
+                        _example_number(text, markdown) if block_type == "example" else ""
+                    ),
                     neighboring_block_ids=neighboring_block_ids,
                 )
             )

@@ -8,8 +8,13 @@ the PDF through the built-in RAG pipeline.
 
 from __future__ import annotations
 
+import os
+import shutil
+import tempfile
 import uuid
-from typing import Annotated
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Annotated, Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -42,6 +47,46 @@ class DocumentListResponse(BaseModel):
     documents: list[DocumentResponse]
 
 
+@asynccontextmanager
+async def _open_storage_stream(storage: Any, key: str) -> AsyncIterator[Any]:
+    opened = storage.open(key)
+    if hasattr(opened, "__await__"):
+        opened = await opened
+
+    if hasattr(opened, "__aenter__"):
+        async with opened as stream:
+            yield stream
+        return
+
+    try:
+        yield opened
+    finally:
+        close = getattr(opened, "close", None)
+        if close is not None:
+            close()
+
+
+async def _ingest_stored_pdf(storage: Any, stored: StoredObject, *, doc_id: str) -> None:
+    retriever = get_retriever()
+    if stored.uri.startswith("file://"):
+        await retriever.ingest_pdf(stored.uri.removeprefix("file://"), doc_id=doc_id)
+        return
+
+    temp_path = ""
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+            temp_path = temp_file.name
+            async with _open_storage_stream(storage, stored.key) as source:
+                shutil.copyfileobj(source, temp_file)
+        await retriever.ingest_pdf(temp_path, doc_id=doc_id)
+    finally:
+        if temp_path:
+            try:
+                os.unlink(temp_path)
+            except FileNotFoundError:
+                pass
+
+
 @router.post("/documents", response_model=DocumentResponse, status_code=201)
 async def upload_document(
     file: Annotated[UploadFile, File(description="PDF document to ingest")],
@@ -60,12 +105,7 @@ async def upload_document(
 
     # Hand off to the retriever for indexing. The default null provider is a
     # no-op; RAG_PROVIDER=llamaindex_qdrant parses and indexes the PDF.
-    retriever = get_retriever()
-    # Resolve a filesystem path the retriever can read. For local storage the
-    # URI is file://, for S3 the retriever will need to download. Keeping this
-    # simple for now — production RAG backends will likely want the raw stream.
-    path = stored.uri.removeprefix("file://") if stored.uri.startswith("file://") else stored.uri
-    await retriever.ingest_pdf(path, doc_id=doc_id)
+    await _ingest_stored_pdf(storage, stored, doc_id=doc_id)
 
     return DocumentResponse.from_stored(doc_id, stored)
 

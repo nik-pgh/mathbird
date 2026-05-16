@@ -49,6 +49,7 @@ class FakeIndex:
 
 class FakeStore:
     def __init__(self) -> None:
+        self.structured_requests = []
         self.records = [
             RetrievedRecord(
                 text="Problem 8. Solve 2x + 3 = 9.",
@@ -62,10 +63,34 @@ class FakeStore:
         ]
 
     async def structured_lookup(self, request):
+        self.structured_requests.append(request)
         return self.records
 
     async def semantic_search(self, request):
         return self.records
+
+
+class ExampleStore:
+    def __init__(self) -> None:
+        self.structured_requests = []
+        self.records = [
+            RetrievedRecord(
+                text="Example 3. Factor x^2 + 5x + 6.",
+                filename="book.pdf",
+                page_number=20,
+                block_type="example",
+                example_number="3",
+                block_id="doc-1:p20:b0",
+                score=1.0,
+            )
+        ]
+
+    async def structured_lookup(self, request):
+        self.structured_requests.append(request)
+        return self.records
+
+    async def semantic_search(self, request):
+        return []
 
 
 class EmptyStructuredStore:
@@ -134,6 +159,31 @@ def textbook_payload(*, block_type: str = "exercise") -> dict:
     return payload
 
 
+def example_payload() -> dict:
+    document = ParsedDocument(
+        doc_id="textbook-doc",
+        filename="book.pdf",
+        pages=[
+            ParsedPage(
+                page_number=20,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="textbook-doc:p20:b0",
+                        page_number=20,
+                        block_type="example",
+                        text="Example 3. Factor x^2 + 5x + 6.",
+                        markdown="Example 3. Factor x^2 + 5x + 6.",
+                        example_number="3",
+                    )
+                ],
+            )
+        ],
+    )
+    node = parsed_document_to_nodes(document)[0]
+    return node_to_metadata_dict(node, remove_text=False, flat_metadata=False)
+
+
 @pytest.mark.asyncio
 async def test_ingest_pdf_parses_and_inserts_nodes(tmp_path) -> None:
     pdf = tmp_path / "book.pdf"
@@ -165,6 +215,24 @@ async def test_retrieve_uses_structured_lookup_for_page_problem_query() -> None:
 
     assert chunks[0].source == "book.pdf, page 37, problem 8"
     assert chunks[0].text == "Problem 8. Solve 2x + 3 = 9."
+
+
+@pytest.mark.asyncio
+async def test_retrieve_passes_example_number_to_structured_lookup_and_formats_source() -> None:
+    store = ExampleStore()
+    retriever = LlamaIndexQdrantRetriever(
+        parser=FakeParser(),
+        index=FakeIndex(),
+        store=store,
+        filename_resolver=lambda path: "book.pdf",
+    )
+
+    chunks = await retriever.retrieve("explain example 3 on page 20", top_k=4)
+
+    assert store.structured_requests[0].page_number == 20
+    assert store.structured_requests[0].example_number == "3"
+    assert chunks[0].source == "book.pdf, page 20, example 3"
+    assert chunks[0].text == "Example 3. Factor x^2 + 5x + 6."
 
 
 @pytest.mark.asyncio
@@ -204,6 +272,30 @@ async def test_structured_lookup_uses_top_level_qdrant_filter_keys() -> None:
 
     filter_conditions = qdrant_client.scroll_calls[0]["scroll_filter"].must
     assert [condition.key for condition in filter_conditions] == ["page_number", "exercise_number"]
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_filters_by_example_number() -> None:
+    point = SimpleNamespace(payload=example_payload())
+    qdrant_client = FakeQdrantClient(points=[point])
+    store = QdrantTextbookStore(
+        qdrant_client=qdrant_client,
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        request=RetrievalRequest(
+            query="example 3 page 20",
+            top_k=4,
+            page_number=20,
+            example_number="3",
+        )
+    )
+
+    filter_conditions = qdrant_client.scroll_calls[0]["scroll_filter"].must
+    assert [condition.key for condition in filter_conditions] == ["page_number", "example_number"]
+    assert records[0].source == "book.pdf, page 20, example 3"
 
 
 @pytest.mark.asyncio
