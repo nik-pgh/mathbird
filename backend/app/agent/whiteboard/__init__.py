@@ -21,6 +21,7 @@ from .messages import (
     AiBoardUpdate,
     UserBoardSnapshot,
 )
+from .publisher import publish_ai_board
 from .reader import BoardReader, get_board_reader
 from .state import BoardState
 
@@ -36,4 +37,5 @@ __all__ = [
     "BoardState",
     "UserBoardSnapshot",
     "get_board_reader",
+    "publish_ai_board",
 ]
