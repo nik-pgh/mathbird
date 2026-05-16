@@ -13,7 +13,6 @@ from __future__ import annotations
 import logging
 
 from livekit.agents import (
-    Agent,
     AgentSession,
     JobContext,
     RoomInputOptions,
@@ -23,6 +22,8 @@ from livekit.agents import (
 
 from app.agent.providers import build_llm, build_stt, build_tts, build_vad
 from app.agent.tools import build_function_tools
+from app.agent.whiteboard import BoardState, get_board_reader, install_user_board_listener
+from app.agent.whiteboard_agent import WhiteboardAgent
 from app.config import get_settings
 
 logger = logging.getLogger("mathbird.agent")
@@ -32,39 +33,56 @@ async def entrypoint(ctx: JobContext) -> None:
     """Called by the LiveKit worker once per room."""
     settings = get_settings()
     logger.info(
-        "agent joining room=%s providers=stt:%s llm:%s tts:%s vad:%s",
+        "agent joining room=%s providers=stt:%s llm:%s tts:%s vad:%s board_reader=%s",
         ctx.room.name,
         settings.stt_provider,
         settings.llm_provider,
         settings.tts_provider,
         settings.vad_provider,
+        settings.board_reader,
     )
 
-    # Wait until a human participant is in the room before doing setup work.
     await ctx.connect()
+
+    # Whiteboard wiring — must come before the session starts so the listener
+    # is in place by the time the user's first stroke arrives. ``BoardState``
+    # rides on ``AgentSession.userdata`` so the function tools can reach it
+    # via ``ctx.session.userdata``.
+    board_state = BoardState()
+    board_reader = get_board_reader()
+    listener = install_user_board_listener(
+        room=ctx.room,
+        state=board_state,
+        reader=board_reader,
+        interval=settings.board_reader_interval_seconds,
+    )
 
     session = AgentSession(
         stt=build_stt(settings),
         llm=build_llm(settings),
         tts=build_tts(settings),
         vad=build_vad(settings),
+        userdata=board_state,
     )
 
-    agent = Agent(
+    agent = WhiteboardAgent(
         instructions=settings.agent_instructions,
         tools=build_function_tools(),
+        board_state=board_state,
     )
 
-    await session.start(
-        agent=agent,
-        room=ctx.room,
-        room_input_options=RoomInputOptions(),
-    )
+    try:
+        await session.start(
+            agent=agent,
+            room=ctx.room,
+            room_input_options=RoomInputOptions(),
+        )
 
-    # Optional opening greeting — comment out to stay silent until spoken to.
-    await session.generate_reply(
-        instructions="Greet the user briefly and ask how you can help."
-    )
+        await session.generate_reply(
+            instructions="Greet the user briefly and ask how you can help."
+        )
+    finally:
+        await listener.aclose()
 
 
 def main() -> None:
