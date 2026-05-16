@@ -55,3 +55,5 @@ docs/superpowers/
 # coding agents
 .claude/
 .claude-flow/
+.worktrees/
+ruvector.db
