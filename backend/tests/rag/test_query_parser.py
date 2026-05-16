@@ -23,3 +23,45 @@ def test_parse_concept_query_as_semantic() -> None:
     assert parsed.page_number is None
     assert parsed.exercise_number == ""
     assert parsed.is_structured_lookup is False
+
+
+def test_parse_pg_page_wording() -> None:
+    parsed = parse_retrieval_query("show me pg 10")
+
+    assert parsed.page_number == 10
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_question_wording() -> None:
+    parsed = parse_retrieval_query("question 4 is confusing")
+
+    assert parsed.exercise_number == "4"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_hash_exercise() -> None:
+    parsed = parse_retrieval_query("#8")
+
+    assert parsed.exercise_number == "8"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_question_hash_exercise() -> None:
+    parsed = parse_retrieval_query("question #8")
+
+    assert parsed.exercise_number == "8"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_example_wording() -> None:
+    parsed = parse_retrieval_query("example 3")
+
+    assert parsed.example_number == "3"
+    assert parsed.is_structured_lookup is True
+
+
+def test_ignore_hash_after_word_character() -> None:
+    parsed = parse_retrieval_query("x#8")
+
+    assert parsed.exercise_number == ""
+    assert parsed.is_structured_lookup is False

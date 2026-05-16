@@ -17,7 +17,10 @@ class ParsedRetrievalQuery:
     @property
     def is_structured_lookup(self) -> bool:
         return bool(
-            self.page_number or self.exercise_number or self.example_number or self.section_title
+            self.page_number is not None
+            or self.exercise_number
+            or self.example_number
+            or self.section_title
         )
 
 
@@ -31,7 +34,7 @@ EXERCISE_PATTERNS = [
     re.compile(r"\bproblem\s+([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE),
     re.compile(r"\bexercise\s+([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE),
     re.compile(r"\bquestion\s+([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE),
-    re.compile(r"\b#\s*([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE),
+    re.compile(r"(?<!\w)#\s*([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE),
 ]
 
 EXAMPLE_PATTERN = re.compile(r"\bexample\s+([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE)
