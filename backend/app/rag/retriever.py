@@ -36,7 +36,7 @@ class Retriever(Protocol):
 
 
 class NullRetriever:
-    """Placeholder retriever. Replace when wiring up a real RAG framework."""
+    """Default no-op retriever used when ``RAG_PROVIDER=null``."""
 
     async def retrieve(self, query: str, *, top_k: int = 4) -> list[RetrievedChunk]:
         return []

@@ -77,7 +77,7 @@ You do **not** run a LiveKit server locally. The worker is a client that joins c
 
 These come from the README's "Project conventions" and the actual code shape. Violating them defeats the whole swappable-vendor design:
 
-1. **No vendor SDKs in business code.** The agent never imports `deepgram` / `openai` / `cartesia` / `chroma` directly. Vendor imports live only in `backend/app/agent/providers/*.py` (STT/LLM/TTS/VAD) and `backend/app/storage/*.py` (local/s3). Anything else uses the LiveKit base types or our own Protocols.
+1. **No vendor SDKs in business code.** The agent never imports `deepgram` / `openai` / `cartesia` / `chroma` directly. Vendor imports live only in `backend/app/agent/providers/*.py` (STT/LLM/TTS/VAD), `backend/app/storage/*.py` (local/s3), and RAG provider modules or factory branches under `backend/app/rag/`. Anything else uses the LiveKit base types or our own Protocols.
 2. **One env var per knob, all defined on `Settings`.** Don't read `os.environ` outside `app/config.py`. Add the field to `Settings`, then read it via `get_settings()`.
 3. **Adding a provider = add a branch + extend the `Literal` type.** Never edit call sites. For example, to add ElevenLabs TTS:
    - Add the dep to `backend/pyproject.toml`.
