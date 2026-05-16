@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-LiveKit voice agent with a configurable STT/LLM/TTS/VAD pipeline plus a React frontend for uploading PDFs the agent can reason over. Deployed to **LiveKit Cloud** — no self-hosted SFU. RAG is intentionally left as a plug-in seam: the project ships with `NullRetriever`, so everything runs end-to-end before a vector store is wired up.
+LiveKit voice agent with a configurable STT/LLM/TTS/VAD pipeline plus a React frontend for uploading PDFs the agent can reason over. Deployed to **LiveKit Cloud** — no self-hosted SFU. RAG is a configurable seam: the default `RAG_PROVIDER=null` uses `NullRetriever` so local no-RAG operation still runs end-to-end, and `RAG_PROVIDER=llamaindex_qdrant` enables the built-in LlamaParse + LlamaIndex + Qdrant implementation.
 
 ## Repo layout (two apps in one repo)
 
@@ -93,7 +93,7 @@ These come from the README's "Project conventions" and the actual code shape. Vi
 | --- | --- |
 | Swap STT/LLM/TTS/VAD vendor | `.env` only |
 | Add a new vendor for an existing modality | `app/agent/providers/<modality>.py` + `Literal` in `config.py` + dep in `pyproject.toml` |
-| Plug in real RAG | New module under `app/rag/` implementing `Retriever`, then return it from `get_retriever()` |
+| Plug in real RAG | Set `RAG_PROVIDER=llamaindex_qdrant` for the built-in LlamaParse + Qdrant retriever; add a new module under `app/rag/` only for another provider. |
 | Add a new agent capability (callable mid-conversation) | New `@function_tool` in `app/agent/tools.py`, add to `build_function_tools()` |
 | Change agent persona / system prompt | `AGENT_INSTRUCTIONS` env var, or default in `Settings.agent_instructions` |
 | Add a new HTTP endpoint | New router in `app/api/routes/`, mount in `app/api/main.py` |

@@ -3,9 +3,9 @@
 A LiveKit voice agent with a configurable STT/LLM/TTS/VAD pipeline and a React
 frontend for uploading PDFs that the agent can reason over.
 
-Deployed to **LiveKit Cloud**. RAG framework is intentionally left as a
-plug-in seam — the project ships with a no-op retriever so everything runs
-end-to-end before a vector store is wired up.
+Deployed to **LiveKit Cloud**. RAG is provider-driven: the default no-op
+retriever keeps local setup simple, and the built-in LlamaParse + LlamaIndex +
+Qdrant provider can parse, index, and retrieve from uploaded textbooks.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ mathbird/
 │       │       ├── token.py       # POST /api/token       → LiveKit access token
 │       │       └── documents.py   # POST /api/documents   → PDF upload
 │       ├── storage/               # local-disk + S3 backends behind a Protocol
-│       └── rag/                   # Retriever Protocol + NullRetriever stub
+│       └── rag/                   # Retriever Protocol + null and Qdrant providers
 └── frontend/                      # Vite + React + TypeScript
     └── src/
         ├── pages/
@@ -55,8 +55,8 @@ mathbird/
   │ (Python, app/agent)     │                           │
   │  STT → LLM → TTS        │  ── audio frames ──────▶  │
   │  ↑ function_tool:       │                           │
-  │    search_documents() ──┼─► NullRetriever today,    │
-  │                         │    real RAG tomorrow      │
+  │    search_documents() ──┼─► NullRetriever by default│
+  │                         │    or Qdrant RAG provider │
   └─────────────────────────┘                           ▼
 ```
 
@@ -153,7 +153,7 @@ To add a new vendor (e.g., ElevenLabs TTS):
 
 The agent code is unchanged.
 
-## Plugging in RAG
+## RAG with LlamaParse + Qdrant
 
 `backend/app/rag/retriever.py` defines a `Retriever` protocol:
 
@@ -167,18 +167,27 @@ The PDF upload route calls `ingest_pdf` after storing the file. The agent's
 `search_documents` function tool calls `retrieve` whenever the LLM decides it
 needs to look something up.
 
-Today both are no-ops (`NullRetriever`). To wire up real RAG:
+By default `RAG_PROVIDER=null` selects `NullRetriever`, so `ingest_pdf` and
+`retrieve` are no-ops and the app runs without RAG infrastructure. To enable
+the built-in textbook RAG provider, set:
 
-1. Add a new module under `backend/app/rag/` (e.g., `llamaindex_chroma.py`)
-   that implements the protocol.
-2. Update `get_retriever()` in `backend/app/rag/retriever.py` to return your
-   new instance (optionally driven by a new `RAG_BACKEND` env var).
+```bash
+RAG_PROVIDER=llamaindex_qdrant
+LLAMAPARSE_API_KEY=...
+OPENAI_API_KEY=...
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION=mathbird_documents
+```
 
-Nothing else changes. The upload route stays the same, the function tool
-stays the same, and the agent starts grounding answers in the documents.
+With `RAG_PROVIDER=llamaindex_qdrant`, uploads are parsed with LlamaParse,
+normalized and indexed through LlamaIndex into Qdrant, and
+`search_documents` returns cited chunks from that collection.
 
-Recommended starter (when you're ready): **LlamaIndex + Chroma**. RAG-first
-framework, embedded vector store, zero infra to set up.
+For local Qdrant:
+
+```bash
+docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+```
 
 ## Switching PDF storage to S3
 
