@@ -334,9 +334,7 @@ def test_content_for_embedding_uses_text_for_blank_markdown_and_includes_modalit
     )
 
     assert block.content_for_embedding() == (
-        "Solve 2x + 3 = 9.\n"
-        "Equation: 2x + 3 = 9\n"
-        "Visual references: graph-1.png, diagram-2.png"
+        "Solve 2x + 3 = 9.\nEquation: 2x + 3 = 9\nVisual references: graph-1.png, diagram-2.png"
     )
 
 

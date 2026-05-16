@@ -74,8 +74,5 @@ async def upload_document(
 async def list_documents() -> DocumentListResponse:
     storage = get_storage()
     objects = await storage.list()
-    docs = [
-        DocumentResponse.from_stored(obj.key.split("/", 1)[0], obj)
-        for obj in objects
-    ]
+    docs = [DocumentResponse.from_stored(obj.key.split("/", 1)[0], obj) for obj in objects]
     return DocumentListResponse(documents=docs)

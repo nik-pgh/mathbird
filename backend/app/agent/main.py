@@ -62,9 +62,7 @@ async def entrypoint(ctx: JobContext) -> None:
     )
 
     # Optional opening greeting — comment out to stay silent until spoken to.
-    await session.generate_reply(
-        instructions="Greet the user briefly and ask how you can help."
-    )
+    await session.generate_reply(instructions="Greet the user briefly and ask how you can help.")
 
 
 def main() -> None:

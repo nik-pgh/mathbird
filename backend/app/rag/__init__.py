@@ -9,6 +9,6 @@ add a new ``Retriever`` implementation in this package and swap it in
 ``get_retriever()``. Nothing else needs to change.
 """
 
-from .retriever import NullRetriever, Retriever, RetrievedChunk, get_retriever
+from .retriever import NullRetriever, RetrievedChunk, Retriever, get_retriever
 
 __all__ = ["NullRetriever", "Retriever", "RetrievedChunk", "get_retriever"]

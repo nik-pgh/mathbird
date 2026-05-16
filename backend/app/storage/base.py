@@ -13,9 +13,9 @@ from app.config import get_settings
 class StoredObject:
     """Result of a successful upload."""
 
-    key: str         # storage-internal identifier (filename, S3 key, ...)
-    uri: str         # canonical URI for retrieval (file:// or s3://)
-    size: int        # bytes
+    key: str  # storage-internal identifier (filename, S3 key, ...)
+    uri: str  # canonical URI for retrieval (file:// or s3://)
+    size: int  # bytes
     content_type: str
 
 

@@ -20,10 +20,14 @@ def _get(obj: Any, key: str, default: Any = None) -> Any:
 
 
 def _page_number(page: Any, fallback: int) -> int:
-    value = _get(page, "page", None) or _get(page, "page_number", None) or _get(
-        page,
-        "page_index",
-        None,
+    value = (
+        _get(page, "page", None)
+        or _get(page, "page_number", None)
+        or _get(
+            page,
+            "page_index",
+            None,
+        )
     )
     if value is None:
         return fallback
