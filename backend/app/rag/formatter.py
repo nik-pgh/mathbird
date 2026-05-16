@@ -11,14 +11,14 @@ def format_records_as_chunks(records: list[RetrievedRecord]) -> list[RetrievedCh
     chunks: list[RetrievedChunk] = []
 
     for record in records:
-        dedupe_key = record.block_id or f"{record.source}:{record.text}"
-        if dedupe_key in seen:
-            continue
-        seen.add(dedupe_key)
-
         text = record.text.strip()
         if not text:
             continue
+
+        dedupe_key = record.block_id or f"{record.source}:{text}"
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
 
         chunks.append(
             RetrievedChunk(

@@ -41,3 +41,59 @@ def test_format_records_deduplicates_by_block_id() -> None:
 
     assert len(chunks) == 1
     assert chunks[0].text == "same"
+
+
+def test_format_records_skips_whitespace_only_text() -> None:
+    records = [
+        RetrievedRecord(
+            text="  \n\t  ",
+            filename="book.pdf",
+            page_number=1,
+        )
+    ]
+
+    chunks = format_records_as_chunks(records)
+
+    assert chunks == []
+
+
+def test_format_records_blank_duplicate_does_not_hide_nonblank_block() -> None:
+    records = [
+        RetrievedRecord(
+            text="   ",
+            filename="book.pdf",
+            page_number=1,
+            block_id="b1",
+        ),
+        RetrievedRecord(
+            text="kept",
+            filename="book.pdf",
+            page_number=1,
+            block_id="b1",
+        ),
+    ]
+
+    chunks = format_records_as_chunks(records)
+
+    assert len(chunks) == 1
+    assert chunks[0].text == "kept"
+
+
+def test_format_records_deduplicates_fallback_by_source_and_stripped_text() -> None:
+    records = [
+        RetrievedRecord(
+            text="same",
+            filename="book.pdf",
+            page_number=1,
+        ),
+        RetrievedRecord(
+            text=" same ",
+            filename="book.pdf",
+            page_number=1,
+        ),
+    ]
+
+    chunks = format_records_as_chunks(records)
+
+    assert len(chunks) == 1
+    assert chunks[0].text == "same"
