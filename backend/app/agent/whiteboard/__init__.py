@@ -21,6 +21,7 @@ from .messages import (
     AiBoardUpdate,
     UserBoardSnapshot,
 )
+from .state import BoardState
 
 __all__ = [
     "AI_BOARD_TOPIC",
@@ -30,5 +31,6 @@ __all__ = [
     "AiBoardShape",
     "AiBoardText",
     "AiBoardUpdate",
+    "BoardState",
     "UserBoardSnapshot",
 ]
