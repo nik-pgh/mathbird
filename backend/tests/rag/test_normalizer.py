@@ -420,6 +420,31 @@ def test_normalize_llamaparse_items_detects_numbered_exercise_labels(label: str)
     assert doc.pages[0].blocks[0].exercise_number == "8"
 
 
+def test_normalize_llamaparse_items_keeps_example_with_numbered_steps() -> None:
+    payload = {
+        "items": {
+            "pages": [
+                {
+                    "page": 20,
+                    "items": [
+                        {
+                            "type": "text",
+                            "value": "Example 3. Solve x + 4 = 10.\n1. Subtract 4.",
+                            "md": "Example 3. Solve x + 4 = 10.\n1. Subtract 4.",
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].blocks[0].block_type == "example"
+    assert doc.pages[0].blocks[0].example_number == "3"
+    assert doc.pages[0].blocks[0].exercise_number == ""
+
+
 def test_normalize_llamaparse_items_preserves_image_refs() -> None:
     payload = {
         "items": {

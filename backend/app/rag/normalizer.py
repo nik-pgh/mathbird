@@ -63,10 +63,10 @@ def _classify_item(item: Any, text: str, markdown: str) -> BlockType:
         return "image"
     if item_type == "table":
         return "table"
-    if EXERCISE_RE.search(haystack):
-        return "exercise"
     if EXAMPLE_RE.search(haystack):
         return "example"
+    if EXERCISE_RE.search(haystack):
+        return "exercise"
     if EQUATION_RE.search(haystack):
         return "equation"
     if item_type == "text":
@@ -180,7 +180,9 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
                     image_refs=_image_refs(item, doc_id, page_image_name),
                     bbox=_bbox(item),
                     section_title=current_section,
-                    exercise_number=_exercise_number(text, markdown),
+                    exercise_number=(
+                        _exercise_number(text, markdown) if block_type == "exercise" else ""
+                    ),
                     example_number=(
                         _example_number(text, markdown) if block_type == "example" else ""
                     ),
