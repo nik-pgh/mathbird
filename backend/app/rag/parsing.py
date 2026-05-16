@@ -43,6 +43,10 @@ class ParsedBlock:
     exercise_number: str = ""
     neighboring_block_ids: tuple[str, ...] = ()
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "image_refs", tuple(self.image_refs))
+        object.__setattr__(self, "neighboring_block_ids", tuple(self.neighboring_block_ids))
+
     def content_for_embedding(self) -> str:
         parts = [self.markdown if self.markdown.strip() else self.text]
         if self.latex:
@@ -95,7 +99,9 @@ class RetrievalRequest:
     requested_modalities: tuple[str, ...] = ("text",)
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "doc_ids", tuple(self.doc_ids))
         object.__setattr__(self, "student_context", _immutable_mapping(self.student_context))
+        object.__setattr__(self, "requested_modalities", tuple(self.requested_modalities))
 
 
 @dataclass(frozen=True)
@@ -110,6 +116,9 @@ class RetrievedRecord:
     exercise_number: str = ""
     section_title: str = ""
     visual_refs: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "visual_refs", tuple(self.visual_refs))
 
     @property
     def source(self) -> str:
@@ -130,6 +139,8 @@ class RetrievedContext:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "records", tuple(self.records))
+        object.__setattr__(self, "citations", tuple(self.citations))
+        object.__setattr__(self, "visual_refs", tuple(self.visual_refs))
 
 
 @runtime_checkable

@@ -44,15 +44,38 @@ def test_parsed_models_coerce_collections_to_tuples() -> None:
         page_number=37,
         block_type="exercise",
         text="Problem 8. Solve 2x + 3 = 9.",
+        image_refs=["graph-1.png"],
+        neighboring_block_ids=["doc-1:p37:b1"],
     )
     page = ParsedPage(page_number=37, text=block.text, blocks=[block])
     doc = ParsedDocument(doc_id="doc-1", filename="Spectrum Math 6.pdf", pages=[page])
-    record = RetrievedRecord(text=block.text, filename=doc.filename, page_number=37)
-    context = RetrievedContext(records=[record])
+    request = RetrievalRequest(
+        query="solve",
+        doc_ids=["doc-1"],
+        requested_modalities=["text", "image"],
+    )
+    record = RetrievedRecord(
+        text=block.text,
+        filename=doc.filename,
+        page_number=37,
+        visual_refs=["graph-1.png"],
+    )
+    context = RetrievedContext(
+        records=[record],
+        citations=["Spectrum Math 6.pdf, page 37"],
+        visual_refs=["graph-1.png"],
+    )
 
+    assert block.image_refs == ("graph-1.png",)
+    assert block.neighboring_block_ids == ("doc-1:p37:b1",)
     assert page.blocks == (block,)
     assert doc.pages == (page,)
+    assert request.doc_ids == ("doc-1",)
+    assert request.requested_modalities == ("text", "image")
+    assert record.visual_refs == ("graph-1.png",)
     assert context.records == (record,)
+    assert context.citations == ("Spectrum Math 6.pdf, page 37",)
+    assert context.visual_refs == ("graph-1.png",)
 
 
 def test_retrieval_request_student_context_is_copied_read_only_mapping() -> None:
