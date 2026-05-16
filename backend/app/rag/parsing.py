@@ -25,8 +25,18 @@ def _empty_mapping() -> Mapping[str, Any]:
     return MappingProxyType({})
 
 
+def _freeze_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({key: _freeze_value(item) for key, item in value.items()})
+    if isinstance(value, list | tuple):
+        return tuple(_freeze_value(item) for item in value)
+    if isinstance(value, set | frozenset):
+        return frozenset(_freeze_value(item) for item in value)
+    return value
+
+
 def _immutable_mapping(value: Mapping[str, Any]) -> Mapping[str, Any]:
-    return MappingProxyType(dict(value))
+    return MappingProxyType({key: _freeze_value(item) for key, item in value.items()})
 
 
 @dataclass(frozen=True)
@@ -45,6 +55,8 @@ class ParsedBlock:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "image_refs", tuple(self.image_refs))
+        if self.bbox is not None:
+            object.__setattr__(self, "bbox", tuple(self.bbox))
         object.__setattr__(self, "neighboring_block_ids", tuple(self.neighboring_block_ids))
 
     def content_for_embedding(self) -> str:

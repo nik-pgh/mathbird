@@ -39,12 +39,14 @@ def test_parsed_block_source_label_includes_problem_number() -> None:
 
 
 def test_parsed_models_coerce_collections_to_tuples() -> None:
+    bbox = [0.1, 0.2, 0.3, 0.4]
     block = ParsedBlock(
         block_id="doc-1:p37:b0",
         page_number=37,
         block_type="exercise",
         text="Problem 8. Solve 2x + 3 = 9.",
         image_refs=["graph-1.png"],
+        bbox=bbox,
         neighboring_block_ids=["doc-1:p37:b1"],
     )
     page = ParsedPage(page_number=37, text=block.text, blocks=[block])
@@ -65,8 +67,10 @@ def test_parsed_models_coerce_collections_to_tuples() -> None:
         citations=["Spectrum Math 6.pdf, page 37"],
         visual_refs=["graph-1.png"],
     )
+    bbox[0] = 9.9
 
     assert block.image_refs == ("graph-1.png",)
+    assert block.bbox == (0.1, 0.2, 0.3, 0.4)
     assert block.neighboring_block_ids == ("doc-1:p37:b1",)
     assert page.blocks == (block,)
     assert doc.pages == (page,)
@@ -79,14 +83,29 @@ def test_parsed_models_coerce_collections_to_tuples() -> None:
 
 
 def test_retrieval_request_student_context_is_copied_read_only_mapping() -> None:
-    student_context = {"grade": 6}
+    student_context = {
+        "grade": 6,
+        "progress": {
+            "completed": ["lesson-1"],
+            "scores": [{"lesson": "lesson-1", "score": 90}],
+        },
+        "standards": {"6.EE.A.2"},
+    }
     request = RetrievalRequest(query="solve", student_context=student_context)
 
     student_context["grade"] = 7
+    student_context["progress"]["completed"].append("lesson-2")
+    student_context["progress"]["scores"][0]["score"] = 50
+    student_context["standards"].add("6.EE.B.5")
 
     assert request.student_context["grade"] == 6
+    assert request.student_context["progress"]["completed"] == ("lesson-1",)
+    assert request.student_context["progress"]["scores"][0]["score"] == 90
+    assert request.student_context["standards"] == frozenset({"6.EE.A.2"})
     with pytest.raises(TypeError):
         request.student_context["grade"] = 8
+    with pytest.raises(TypeError):
+        request.student_context["progress"]["scores"][0]["score"] = 75
 
 
 def test_content_for_embedding_uses_text_for_blank_markdown_and_includes_modalities() -> None:
