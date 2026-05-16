@@ -94,7 +94,7 @@ def _path_from_file_uri(uri: str) -> str:
 
 
 def _filename_from_storage_key(key: str) -> str:
-    filename = unquote(posixpath.basename(key.strip("/")))
+    filename = posixpath.basename(unquote(key.strip("/")).replace("\\", "/"))
     return filename or "document.pdf"
 
 

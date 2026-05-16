@@ -108,3 +108,28 @@ async def test_upload_document_copies_non_file_storage_to_temp_pdf_for_ingestion
     assert retriever.path_existed_during_ingest
     assert not temp_path.exists()
     assert storage.opened_keys == ["doc-1/book.pdf"]
+
+
+async def test_upload_document_sanitizes_encoded_separators_in_temp_filename(
+    monkeypatch,
+) -> None:
+    pdf_bytes = b"%PDF-1.7\nencoded"
+    storage = FakeStorage(
+        stored=StoredObject(
+            key="doc-1/%2e%2e%2fescape.pdf",
+            uri="s3://mathbird/doc-1/%2e%2e%2fescape.pdf",
+            size=len(pdf_bytes),
+            content_type="application/pdf",
+        ),
+        data=pdf_bytes,
+    )
+    retriever = FakeRetriever(expected_bytes=pdf_bytes)
+    monkeypatch.setattr(documents, "get_storage", lambda: storage)
+    monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
+
+    await documents.upload_document(pdf_upload(pdf_bytes))
+
+    temp_path = Path(retriever.ingested_paths[0])
+    assert temp_path.name == "escape.pdf"
+    assert temp_path.parent.name != ".."
+    assert not temp_path.exists()
