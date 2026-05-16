@@ -1,0 +1,57 @@
+# Environments
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pdm-python
+uv.lock
+
+# Node
+node_modules/
+.pnp/
+.pnp.js
+coverage/
+.cache/
+.parcel-cache/
+.next/
+.turbo/
+
+# Vite
+frontend/dist/
+frontend/.vite/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project-specific
+backend/uploads/
+backend/.chroma/
+backend/data/
+*.log
+
+# docs
+docs/superpowers/
+
+# coding agents
+.claude/
+.claude-flow/

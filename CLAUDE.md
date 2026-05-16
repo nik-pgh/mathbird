@@ -1,0 +1,124 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this project is
+
+LiveKit voice agent with a configurable STT/LLM/TTS/VAD pipeline plus a React frontend for uploading PDFs the agent can reason over. Deployed to **LiveKit Cloud** — no self-hosted SFU. RAG is intentionally left as a plug-in seam: the project ships with `NullRetriever`, so everything runs end-to-end before a vector store is wired up.
+
+## Repo layout (two apps in one repo)
+
+```
+mathbird/
+├── .env                  # root env, read by backend (Settings looks at .env AND ../.env)
+├── backend/              # Python 3.11+, two processes share one package
+│   └── app/
+│       ├── config.py     # pydantic-settings Settings — single env source of truth
+│       ├── agent/        # LiveKit worker
+│       │   ├── main.py   # entrypoint — joined per room
+│       │   ├── tools.py  # @function_tool functions exposed to the LLM
+│       │   └── providers/  # stt.py / llm.py / tts.py / vad.py — factories
+│       ├── api/          # FastAPI app (token issuance + uploads)
+│       │   └── routes/   # token.py, documents.py
+│       ├── storage/      # base.py (Protocol) + local.py / s3.py
+│       └── rag/          # retriever.py (Protocol + NullRetriever + get_retriever)
+└── frontend/             # Vite + React + TS
+    └── src/
+        ├── App.tsx       # react-router: "/" UploadPage, "/voice" VoiceAgentPage
+        ├── lib/api.ts    # typed client — only place that calls fetch()
+        ├── pages/        # UploadPage.tsx, VoiceAgentPage.tsx
+        └── components/   # PdfDropZone.tsx, Transcript.tsx
+```
+
+## Commands
+
+All backend commands run from `backend/` and use `uv` (preferred) — fall back to `pip install -e ".[dev]"` if `uv` is unavailable.
+
+```bash
+# Backend — install
+cd backend && uv sync
+
+# Backend — HTTP API (PDF upload + LiveKit token), reload on change
+uv run uvicorn app.api.main:app --reload --port 8000
+
+# Backend — LiveKit agent worker (connects to LiveKit Cloud, joins rooms)
+uv run python -m app.agent.main dev
+
+# Backend — lint / format
+uv run ruff check .
+uv run ruff format .
+
+# Backend — tests (pytest-asyncio is in auto mode)
+uv run pytest
+uv run pytest path/to/test_file.py::test_name   # single test
+
+# Frontend — install + run dev server (Vite on :5173)
+cd frontend && npm install && npm run dev
+
+# Frontend — typecheck (the "lint" script is `tsc -b --noEmit`)
+npm run lint
+
+# Frontend — production build
+npm run build
+```
+
+The agent worker **needs LiveKit Cloud credentials in `.env`** to start in `dev` mode (it registers as a worker against the cloud SFU). The HTTP API will start without them but `/api/token` returns 500.
+
+## How a conversation flows (mental model for changes)
+
+1. Frontend `POST /api/token` → FastAPI signs a JWT with the LiveKit API key/secret, returns `{token, url, room, identity}`.
+2. Frontend connects to LiveKit Cloud with that JWT and joins the room.
+3. The agent worker is registered with LiveKit Cloud — when a participant joins, LiveKit dispatches `app.agent.main.entrypoint` into the room.
+4. Worker streams audio → STT → LLM → TTS → audio back into the room. The LLM can call `search_documents` (a `@function_tool`) which goes through `get_retriever()`.
+
+You do **not** run a LiveKit server locally. The worker is a client that joins cloud rooms on demand.
+
+## Architectural rules (these are load-bearing — don't break them)
+
+These come from the README's "Project conventions" and the actual code shape. Violating them defeats the whole swappable-vendor design:
+
+1. **No vendor SDKs in business code.** The agent never imports `deepgram` / `openai` / `cartesia` / `chroma` directly. Vendor imports live only in `backend/app/agent/providers/*.py` (STT/LLM/TTS/VAD) and `backend/app/storage/*.py` (local/s3). Anything else uses the LiveKit base types or our own Protocols.
+2. **One env var per knob, all defined on `Settings`.** Don't read `os.environ` outside `app/config.py`. Add the field to `Settings`, then read it via `get_settings()`.
+3. **Adding a provider = add a branch + extend the `Literal` type.** Never edit call sites. For example, to add ElevenLabs TTS:
+   - Add the dep to `backend/pyproject.toml`.
+   - Add an `elif name == "elevenlabs":` branch in `app/agent/providers/tts.py`.
+   - Add `"elevenlabs"` to the `TtsProvider` Literal in `app/config.py`.
+   - That's it — `app/agent/main.py` is untouched.
+4. **Storage and retrieval are Protocols, not base classes.** `StorageBackend` and `Retriever` are `typing.Protocol` types. Implementations are duck-typed; they don't subclass anything.
+5. **Function tools are the LLM's window into the codebase.** New agent capabilities are usually new `@function_tool` functions added to `backend/app/agent/tools.py` and returned from `build_function_tools()`. The agent picks them up automatically.
+
+## Where to add things
+
+| You want to… | Touch this |
+| --- | --- |
+| Swap STT/LLM/TTS/VAD vendor | `.env` only |
+| Add a new vendor for an existing modality | `app/agent/providers/<modality>.py` + `Literal` in `config.py` + dep in `pyproject.toml` |
+| Plug in real RAG | New module under `app/rag/` implementing `Retriever`, then return it from `get_retriever()` |
+| Add a new agent capability (callable mid-conversation) | New `@function_tool` in `app/agent/tools.py`, add to `build_function_tools()` |
+| Change agent persona / system prompt | `AGENT_INSTRUCTIONS` env var, or default in `Settings.agent_instructions` |
+| Add a new HTTP endpoint | New router in `app/api/routes/`, mount in `app/api/main.py` |
+| Switch PDF storage to S3 | `STORAGE_BACKEND=s3` + `S3_*` / `AWS_*` env vars — no code changes |
+| Change the API base URL the frontend hits | `VITE_API_BASE_URL` in `frontend/.env.local` |
+
+## Frontend ↔ backend contract
+
+`frontend/src/lib/api.ts` is the **only** place the frontend calls `fetch()`. Three calls today:
+- `uploadPdf(file)` → `POST /api/documents` (multipart) → `UploadedDocument`
+- `listDocuments()` → `GET /api/documents` → `UploadedDocument[]`
+- `requestToken({identity?, room?, name?})` → `POST /api/token` → `TokenResponse`
+
+When changing a request/response shape, update `lib/api.ts` and the corresponding `pydantic.BaseModel` in `app/api/routes/` in the same change. There's no shared schema generator.
+
+## Tests
+
+Pytest config lives in `backend/pyproject.toml` with `asyncio_mode = "auto"` — async test functions don't need `@pytest.mark.asyncio`. `httpx` is in dev deps for FastAPI testing. There is no test suite checked in yet; new tests go under `backend/` (no fixed directory chosen).
+
+## Gotchas
+
+- **`Settings` reads `.env` and `../.env`.** Run the backend from `backend/` and keep secrets in the repo-root `.env` — the `.env.example` at the root is the canonical template, and `backend/README.md` says `cp ../.env.example ../.env`.
+- **`get_settings()`, `get_storage()`, and `get_retriever()` are `lru_cache`d / module-level singletons.** Changing env vars at runtime won't take effect; restart the process. In tests, clear the caches.
+- **`uv.lock` is gitignored.** Don't be surprised if it's missing on a fresh clone; `uv sync` regenerates it.
+- **`backend/uploads/` is gitignored** and is the default local storage dir (`STORAGE_LOCAL_DIR=./uploads`). Don't commit uploaded PDFs.
+- **Frontend "lint" is typecheck-only** (`tsc -b --noEmit`). There's no ESLint config in the repo.
+- **TTS defaults are Cartesia-shaped.** `TTS_VOICE` is a Cartesia voice UUID. If you switch `TTS_PROVIDER`, also replace `TTS_MODEL` and `TTS_VOICE` — the comment block in `.env.example` lists per-provider formats.
+- **LLM provider Literal only has `"openai"` today.** The pipeline supports more, but adding one means following rule 3 above before changing `.env`.

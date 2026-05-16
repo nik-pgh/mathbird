@@ -1,0 +1,88 @@
+# File / module index
+
+Hand-maintained map of every important file. Update this when adding or renaming files. See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the *why* and [`../CLAUDE.md`](../CLAUDE.md) for the rules.
+
+## Root
+
+| Path | What it is |
+| --- | --- |
+| `CLAUDE.md` | Agent guidance — commands, architecture rules, where to add things. |
+| `AGENTS.md` | Pointer file for non-Claude agents. |
+| `README.md` | Human-facing project README. |
+| `.env.example` | Canonical env template. Copy to `.env` at repo root. |
+| `.env` | (gitignored) — actual secrets. Read by `backend/app/config.py`. |
+
+## `backend/` — Python (LiveKit worker + FastAPI)
+
+| Path | What it is |
+| --- | --- |
+| `backend/pyproject.toml` | Deps + ruff + pytest config. Add new vendor plugins here. |
+| `backend/.python-version` | Python 3.11+ pin for `uv`. |
+| `backend/README.md` | Backend-specific run instructions. |
+| `backend/uploads/` | (gitignored) — default `STORAGE_LOCAL_DIR`. |
+
+### `backend/app/` — shared package
+
+| Path | What it is |
+| --- | --- |
+| `app/config.py` | `Settings` (pydantic-settings) + provider `Literal` types + `get_settings()`. **All env-driven config lives here.** |
+
+### `backend/app/agent/` — LiveKit worker
+
+| Path | What it is |
+| --- | --- |
+| `agent/main.py` | Worker `entrypoint(ctx)` — joins a room, builds `AgentSession`, starts greeting. CLI: `python -m app.agent.main dev`. |
+| `agent/tools.py` | `@function_tool` functions the LLM can call. `search_documents` is the RAG seam. `build_function_tools()` returns the list. |
+| `agent/providers/__init__.py` | Re-exports `build_stt/llm/tts/vad`. |
+| `agent/providers/stt.py` | STT factory. Branches on `settings.stt_provider`. Lazy vendor imports. |
+| `agent/providers/llm.py` | LLM factory. |
+| `agent/providers/tts.py` | TTS factory. Cartesia / ElevenLabs / OpenAI. |
+| `agent/providers/vad.py` | VAD factory. Silero only today. |
+
+### `backend/app/api/` — FastAPI HTTP API
+
+| Path | What it is |
+| --- | --- |
+| `api/main.py` | FastAPI app, CORS, mounts routers, `/health`. |
+| `api/routes/token.py` | `POST /api/token` — signs LiveKit JWT, returns `{token, url, room, identity}`. |
+| `api/routes/documents.py` | `POST /api/documents` (multipart PDF), `GET /api/documents` (list). Calls `storage.put` then `retriever.ingest_pdf`. |
+
+### `backend/app/storage/` — pluggable storage
+
+| Path | What it is |
+| --- | --- |
+| `storage/base.py` | `StorageBackend` Protocol, `StoredObject` dataclass, `get_storage()` factory. |
+| `storage/local.py` | `LocalStorage` — filesystem with path-traversal defense. |
+| `storage/s3.py` | `S3Storage` — boto3 wrapper. Activated via `STORAGE_BACKEND=s3`. |
+
+### `backend/app/rag/` — pluggable retrieval
+
+| Path | What it is |
+| --- | --- |
+| `rag/retriever.py` | `Retriever` Protocol, `RetrievedChunk` dataclass, `NullRetriever` (default), `get_retriever()` singleton. |
+| `rag/__init__.py` | Re-exports the above for `from app.rag import get_retriever`. |
+
+## `frontend/` — Vite + React + TypeScript
+
+| Path | What it is |
+| --- | --- |
+| `frontend/package.json` | `dev` / `build` / `lint` (tsc-only) / `preview` scripts. |
+| `frontend/vite.config.ts` | Vite config (React plugin). |
+| `frontend/tsconfig*.json` | TypeScript project refs. |
+| `frontend/.env.local` | (gitignored) — `VITE_API_BASE_URL`, `VITE_LIVEKIT_URL`. |
+| `frontend/.env.example` | Template for above. |
+
+### `frontend/src/`
+
+| Path | What it is |
+| --- | --- |
+| `src/main.tsx` | React entry — mounts `<App />` into the root. |
+| `src/App.tsx` | `react-router-dom` shell — `/` → Upload, `/voice` → VoiceAgent. |
+| `src/vite-env.d.ts` | Vite/TS environment types. |
+| `src/lib/api.ts` | **Only place that calls `fetch()`.** `uploadPdf`, `listDocuments`, `requestToken`. |
+| `src/lib/useTypewriter.ts` | Hook used by the transcript bubbles. |
+| `src/pages/UploadPage.tsx` | Landing page — `<PdfDropZone>` + uploaded-doc list. |
+| `src/pages/VoiceAgentPage.tsx` | Wraps `<LiveKitRoom>` + `useVoiceAssistant` + visualizer + transcript. |
+| `src/components/PdfDropZone.tsx` | File-picker / drag-drop component for PDFs. |
+| `src/components/Transcript.tsx` | Streamed user + agent transcription, typewriter animation. |
+| `src/styles/` | Stylesheets. |
