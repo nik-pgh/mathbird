@@ -13,6 +13,7 @@ LlmProvider = Literal["openai"]
 TtsProvider = Literal["cartesia", "elevenlabs", "openai"]
 VadProvider = Literal["silero"]
 StorageBackendName = Literal["local", "s3"]
+BoardReaderName = Literal["null", "openai_vision"]
 
 
 class Settings(BaseSettings):
@@ -67,6 +68,12 @@ class Settings(BaseSettings):
             "retrieval tool to ground your answer."
         ),
     )
+
+    # Whiteboards
+    board_reader: BoardReaderName = "null"
+    board_reader_model: str = "gpt-4o-mini"
+    board_reader_interval_seconds: float = 2.0
+    board_reader_max_image_dim: int = 512
 
     @property
     def cors_origins_list(self) -> list[str]:
