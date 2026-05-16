@@ -67,8 +67,9 @@ class LlamaIndexQdrantRetriever:
 
         if parsed.is_structured_lookup:
             records = await self.store.structured_lookup(request)
-            if records:
-                return format_records_as_chunks(records)
+            chunks = format_records_as_chunks(records)
+            if chunks:
+                return chunks
 
         records = await self.store.semantic_search(request)
         return format_records_as_chunks(records)
@@ -87,14 +88,14 @@ class QdrantTextbookStore:
         if request.page_number is not None:
             must.append(
                 models.FieldCondition(
-                    key="metadata.page_number",
+                    key="page_number",
                     match=models.MatchValue(value=request.page_number),
                 )
             )
         if request.exercise_number:
             must.append(
                 models.FieldCondition(
-                    key="metadata.exercise_number",
+                    key="exercise_number",
                     match=models.MatchValue(value=request.exercise_number),
                 )
             )
@@ -137,8 +138,13 @@ class QdrantTextbookStore:
 
     def _record_from_point(self, point: Any, *, score: float | None) -> RetrievedRecord:
         payload = getattr(point, "payload", None) or {}
-        metadata = payload.get("metadata", payload)
-        text = payload.get("_node_content") or payload.get("text") or payload.get("document", "")
+        node = self._node_from_payload(payload)
+        if node is not None:
+            metadata = dict(node.metadata or {})
+            text = node.get_content()
+        else:
+            metadata = payload.get("metadata", payload)
+            text = payload.get("text") or payload.get("document", "")
         return RetrievedRecord(
             text=str(text),
             filename=str(metadata.get("filename", "document.pdf")),
@@ -151,3 +157,14 @@ class QdrantTextbookStore:
             section_title=str(metadata.get("section_title", "")),
             visual_refs=tuple(metadata.get("visual_refs", []) or []),
         )
+
+    def _node_from_payload(self, payload: dict[str, Any]) -> Any | None:
+        if not payload.get("_node_content"):
+            return None
+
+        from llama_index.core.vector_stores.utils import metadata_dict_to_node
+
+        try:
+            return metadata_dict_to_node(payload)
+        except Exception:
+            return None
