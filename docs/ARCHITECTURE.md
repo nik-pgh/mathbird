@@ -40,7 +40,8 @@ Both processes call `get_settings()`, `get_storage()`, and `get_retriever()` —
         │                                                              │                            │  ↓             │
         │                                                              │                            │ TTS            ▼
         │                                                              │                            │       Retriever.retrieve(...)
-        │ ◀── audio frames ───────────────────────────────────────── ╳ ◀──────── audio frames ─────│       (NullRetriever today)
+        │ ◀── audio frames ───────────────────────────────────────── ╳ ◀──────── audio frames ─────│       (NullRetriever by default;
+        │                                                                                          │        llamaindex_qdrant for real RAG)
 ```
 
 Key points:
@@ -74,11 +75,11 @@ The factories import vendor plugins **lazily** inside the branch, so installing 
 
 ### 3. Retriever (`Retriever`)
 
-- **Protocol:** `app/rag/retriever.py::Retriever` (`retrieve(query, top_k)` and `ingest_pdf(path, doc_id)`, both async).
+- **Protocol:** `app/rag/retriever.py::Retriever` (`retrieve(query, top_k, doc_ids=...)` and `ingest_pdf(path, doc_id)`, both async).
 - **Factory:** `app/rag/retriever.py::get_retriever()`, module-level singleton.
-- **Implementations:** `NullRetriever` only. To add LlamaIndex/LangChain/etc., add a module under `app/rag/` and return it from `get_retriever()`.
+- **Implementations:** `NullRetriever` for the default `RAG_PROVIDER=null` path, and `LlamaIndexQdrantRetriever` via `RAG_PROVIDER=llamaindex_qdrant`.
 
-`ingest_pdf` is called by the upload route after `storage.put`. `retrieve` is called by the `search_documents` function tool during a conversation. Both are no-ops today, so the system runs end-to-end without a vector store.
+`ingest_pdf` is called by the upload route after `storage.put`. In v1 this happens synchronously inside the upload request; if ingestion fails, the route attempts to delete the stored PDF and returns an error instead of listing an unindexed document. `retrieve` is called by the `search_documents` function tool during a conversation and can be scoped to a specific document id when the caller has one. With the default null provider both methods are no-ops, so the system runs end-to-end without RAG infrastructure. With `RAG_PROVIDER=llamaindex_qdrant`, PDF uploads are parsed with LlamaParse, normalized and indexed through LlamaIndex into Qdrant, and searches retrieve cited textbook chunks from that collection.
 
 ### 4. Function tools (the LLM's API into our code)
 
@@ -111,4 +112,3 @@ When introducing a new knob:
 1. Add a field on `Settings` with a sensible default.
 2. Document it in `.env.example` with an inline comment about valid values.
 3. Read it via `get_settings()`.
-

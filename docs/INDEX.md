@@ -73,8 +73,15 @@ Hand-maintained map of every important file. Update this when adding or renaming
 
 | Path | What it is |
 | --- | --- |
-| `rag/retriever.py` | `Retriever` Protocol, `RetrievedChunk` dataclass, `NullRetriever` (default), `get_retriever()` singleton. |
-| `rag/__init__.py` | Re-exports the above for `from app.rag import get_retriever`. |
+| `rag/retriever.py` | `Retriever` Protocol, `RetrievedChunk`, `NullRetriever`, and `get_retriever()` provider factory. |
+| `rag/parsing.py` | Normalized textbook parse models, retrieval request/result models, and parser protocol. |
+| `rag/llamaparse_parser.py` | Llama Cloud/LlamaParse adapter that parses PDF textbooks into normalized documents. |
+| `rag/normalizer.py` | Converts LlamaParse structured items into page-aware textbook blocks. |
+| `rag/indexing.py` | Converts normalized blocks into LlamaIndex nodes with Qdrant metadata. |
+| `rag/query_parser.py` | Detects page/problem/example references in student queries. |
+| `rag/formatter.py` | Converts internal retrieved records into cited `RetrievedChunk` results. |
+| `rag/llamaindex_qdrant.py` | Concrete LlamaIndex + Qdrant retriever implementation. |
+| `rag/__init__.py` | Re-exports the public RAG seam. |
 
 ## `frontend/` — Vite + React + TypeScript
 

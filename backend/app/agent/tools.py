@@ -1,16 +1,15 @@
 """Function tools exposed to the LLM during a voice session.
 
-Tools are how the agent calls into our code mid-conversation. We register two
-families today:
+Tools are how the agent calls into our code mid-conversation. Two families today:
 
-* ``search_documents`` — the existing RAG seam (no-op until a real
-  ``Retriever`` is wired in).
+* ``search_documents`` — delegates to ``app.rag.get_retriever()`` so voice
+  answers can be grounded in uploaded textbook chunks when RAG is enabled.
 * ``update_ai_board`` / ``clear_ai_board`` / ``read_user_board`` — the
   whiteboard surface. The agent uses these to write typeset math + plots /
   shapes onto its board and to re-read the student's board mid tool-chain.
 
-Per-room state is reached through the framework: ``BoardState`` rides on
-``ctx.session.userdata`` (set by the entrypoint when constructing
+Per-room whiteboard state is reached through the framework: ``BoardState``
+rides on ``ctx.session.userdata`` (set by the entrypoint when constructing
 ``AgentSession``), and the LiveKit ``Room`` is available at
 ``ctx.session.room_io.room``.
 """
@@ -27,6 +26,7 @@ from app.agent.whiteboard import (
     BoardState,
     publish_ai_board,
 )
+from app.config import get_settings
 from app.rag import get_retriever
 
 logger = logging.getLogger("mathbird.agent.tools")
@@ -39,7 +39,8 @@ logger = logging.getLogger("mathbird.agent.tools")
 async def search_documents(
     ctx: RunContext,
     query: str,
-    top_k: int = 4,
+    top_k: int = 0,
+    doc_id: str = "",
 ) -> str:
     """Search the user's uploaded PDF documents for information relevant to ``query``.
 
@@ -47,8 +48,10 @@ async def search_documents(
     Returns concatenated snippets with source citations, or a brief note if no
     documents are indexed yet.
     """
+    effective_top_k = top_k if top_k > 0 else get_settings().rag_top_k
     retriever = get_retriever()
-    chunks = await retriever.retrieve(query, top_k=top_k)
+    doc_ids = (doc_id,) if doc_id else ()
+    chunks = await retriever.retrieve(query, top_k=effective_top_k, doc_ids=doc_ids)
 
     if not chunks:
         return "No documents are indexed yet. Tell the user no PDFs have been uploaded."

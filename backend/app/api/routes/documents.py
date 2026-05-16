@@ -1,15 +1,24 @@
 """PDF upload + listing endpoints.
 
 Uploaded PDFs are persisted via the active :class:`StorageBackend` and
-forwarded to the active :class:`Retriever` for ingestion. Today the retriever
-is a no-op, so this route just stores the file; once a real RAG framework is
-wired up, the same code path will index the document.
+forwarded to the active :class:`Retriever` for ingestion. The default null
+provider is a no-op, while ``RAG_PROVIDER=llamaindex_qdrant`` parses and indexes
+the PDF through the built-in RAG pipeline.
 """
 
 from __future__ import annotations
 
+import logging
+import posixpath
+import shutil
+import tempfile
 import uuid
-from typing import Annotated
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager, suppress
+from pathlib import Path
+from typing import Annotated, Any
+from urllib.parse import unquote, urlparse
+from urllib.request import url2pathname
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -18,6 +27,7 @@ from app.rag import get_retriever
 from app.storage import StoredObject, get_storage
 
 router = APIRouter()
+logger = logging.getLogger("mathbird.api.documents")
 
 
 class DocumentResponse(BaseModel):
@@ -42,6 +52,54 @@ class DocumentListResponse(BaseModel):
     documents: list[DocumentResponse]
 
 
+@asynccontextmanager
+async def _open_storage_stream(storage: Any, key: str) -> AsyncIterator[Any]:
+    opened = storage.open(key)
+    if hasattr(opened, "__await__"):
+        opened = await opened
+
+    if hasattr(opened, "__aenter__"):
+        async with opened as stream:
+            yield stream
+        return
+
+    try:
+        yield opened
+    finally:
+        close = getattr(opened, "close", None)
+        if close is not None:
+            close()
+
+
+async def _ingest_stored_pdf(storage: Any, stored: StoredObject, *, doc_id: str) -> None:
+    retriever = get_retriever()
+    if stored.uri.startswith("file://"):
+        await retriever.ingest_pdf(_path_from_file_uri(stored.uri), doc_id=doc_id)
+        return
+
+    temp_dir = ""
+    try:
+        temp_dir = tempfile.mkdtemp()
+        temp_path = Path(temp_dir) / _filename_from_storage_key(stored.key)
+        with temp_path.open("wb") as temp_file:
+            async with _open_storage_stream(storage, stored.key) as source:
+                shutil.copyfileobj(source, temp_file)
+        await retriever.ingest_pdf(str(temp_path), doc_id=doc_id)
+    finally:
+        if temp_dir:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def _path_from_file_uri(uri: str) -> str:
+    parsed = urlparse(uri)
+    return url2pathname(parsed.path)
+
+
+def _filename_from_storage_key(key: str) -> str:
+    filename = posixpath.basename(unquote(key.strip("/")).replace("\\", "/"))
+    return filename or "document.pdf"
+
+
 @router.post("/documents", response_model=DocumentResponse, status_code=201)
 async def upload_document(
     file: Annotated[UploadFile, File(description="PDF document to ingest")],
@@ -58,14 +116,15 @@ async def upload_document(
     storage = get_storage()
     stored = await storage.put(key, file.file, content_type="application/pdf")
 
-    # Hand off to the retriever for indexing. NullRetriever is a no-op today;
-    # a real implementation will chunk + embed + store vectors here.
-    retriever = get_retriever()
-    # Resolve a filesystem path the retriever can read. For local storage the
-    # URI is file://, for S3 the retriever will need to download. Keeping this
-    # simple for now — production RAG backends will likely want the raw stream.
-    path = stored.uri.removeprefix("file://") if stored.uri.startswith("file://") else stored.uri
-    await retriever.ingest_pdf(path, doc_id=doc_id)
+    # Hand off to the retriever for indexing. The default null provider is a
+    # no-op; RAG_PROVIDER=llamaindex_qdrant parses and indexes the PDF.
+    try:
+        await _ingest_stored_pdf(storage, stored, doc_id=doc_id)
+    except Exception as exc:
+        logger.exception("Document ingestion failed for doc_id=%s key=%s", doc_id, stored.key)
+        with suppress(Exception):
+            await storage.delete(stored.key)
+        raise HTTPException(status_code=502, detail="Document ingestion failed.") from exc
 
     return DocumentResponse.from_stored(doc_id, stored)
 
@@ -74,8 +133,5 @@ async def upload_document(
 async def list_documents() -> DocumentListResponse:
     storage = get_storage()
     objects = await storage.list()
-    docs = [
-        DocumentResponse.from_stored(obj.key.split("/", 1)[0], obj)
-        for obj in objects
-    ]
+    docs = [DocumentResponse.from_stored(obj.key.split("/", 1)[0], obj) for obj in objects]
     return DocumentListResponse(documents=docs)

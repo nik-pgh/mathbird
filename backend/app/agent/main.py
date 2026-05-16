@@ -78,6 +78,7 @@ async def entrypoint(ctx: JobContext) -> None:
             room_input_options=RoomInputOptions(),
         )
 
+        # Optional opening greeting — comment out to stay silent until spoken to.
         await session.generate_reply(
             instructions="Greet the user briefly and ask how you can help."
         )

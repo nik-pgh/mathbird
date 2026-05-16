@@ -21,6 +21,7 @@ dist/
 .ruff_cache/
 .pdm-python
 uv.lock
+.uv-cache/
 
 # Node
 node_modules/
@@ -35,6 +36,7 @@ coverage/
 # Vite
 frontend/dist/
 frontend/.vite/
+frontend/*.tsbuildinfo
 
 # Editors
 .idea/
@@ -55,3 +57,9 @@ docs/superpowers/
 # coding agents
 .claude/
 .claude-flow/
+.swarm/
+.worktrees/
+agentdb.rvf
+agentdb.rvf.lock
+ruvector.db
+.superpowers/
