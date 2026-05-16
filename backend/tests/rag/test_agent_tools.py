@@ -26,3 +26,15 @@ async def test_search_documents_uses_settings_top_k_when_tool_arg_is_not_positiv
 
     assert retriever.calls == [("explain example 3", 7)]
     assert "[book.pdf, page 20]\nA useful chunk." in result
+
+
+async def test_search_documents_uses_settings_top_k_when_tool_arg_is_omitted(
+    monkeypatch,
+) -> None:
+    retriever = FakeRetriever()
+    monkeypatch.setattr(tools, "get_retriever", lambda: retriever)
+    monkeypatch.setattr(tools, "get_settings", lambda: SimpleNamespace(rag_top_k=6))
+
+    await tools.search_documents.__wrapped__(None, "explain example 4")
+
+    assert retriever.calls == [("explain example 4", 6)]

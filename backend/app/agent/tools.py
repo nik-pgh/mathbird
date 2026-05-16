@@ -1,9 +1,8 @@
 """Function tools exposed to the LLM during a voice session.
 
 Tools are how the agent calls into our code mid-conversation. The retrieval
-tool is the seam where the future RAG framework plugs in — when
-``app.rag.get_retriever()`` returns something non-null, this tool starts
-returning real chunks and the LLM will start grounding answers on them.
+tool delegates to ``app.rag.get_retriever()`` so voice answers can be grounded
+in uploaded textbook chunks when RAG is enabled.
 """
 
 from __future__ import annotations
@@ -22,7 +21,7 @@ logger = logging.getLogger("mathbird.agent.tools")
 async def search_documents(
     ctx: RunContext,
     query: str,
-    top_k: int = 4,
+    top_k: int = 0,
 ) -> str:
     """Search the user's uploaded PDF documents for information relevant to ``query``.
 
