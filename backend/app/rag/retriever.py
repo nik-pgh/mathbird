@@ -84,7 +84,6 @@ def _build_llamaindex_qdrant_retriever(settings: Settings) -> Retriever:
     vector_store = QdrantVectorStore(
         aclient=qdrant_client,
         collection_name=settings.qdrant_collection,
-        enable_hybrid=True,
     )
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     embed_model = OpenAIEmbedding(
