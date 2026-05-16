@@ -1,5 +1,6 @@
 import pytest
 
+from app.rag.llamaparse_parser import LlamaParseParser
 from app.rag.normalizer import normalize_llamaparse_items
 from app.rag.parsing import (
     ParsedBlock,
@@ -14,6 +15,68 @@ from app.rag.parsing import (
 class _Object:
     def __init__(self, **kwargs: object) -> None:
         self.__dict__.update(kwargs)
+
+
+class FakeFiles:
+    async def create(self, *, file, purpose):
+        assert purpose == "parse"
+        return type("FileResult", (), {"id": "file-123"})()
+
+
+class FakeParsing:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def create(self, **kwargs):
+        assert kwargs["file_id"] == "file-123"
+        assert kwargs["tier"] == "agentic"
+        assert kwargs["version"] == "latest"
+        return type("Job", (), {"id": "job-123"})()
+
+    async def get(self, job_id, *, expand):
+        self.calls += 1
+        assert job_id == "job-123"
+        assert "items" in expand
+        status = "COMPLETED" if self.calls > 1 else "RUNNING"
+        return {
+            "job": {"status": status},
+            "items": {
+                "pages": [
+                    {
+                        "page": 1,
+                        "items": [
+                            {
+                                "type": "text",
+                                "value": "Problem 1. Add 2 + 2.",
+                                "md": "Problem 1. Add 2 + 2.",
+                            }
+                        ],
+                    }
+                ]
+            },
+        }
+
+
+class FakeLlamaCloudClient:
+    def __init__(self) -> None:
+        self.files = FakeFiles()
+        self.parsing = FakeParsing()
+
+
+@pytest.mark.asyncio
+async def test_llamaparse_parser_polls_and_normalizes(tmp_path) -> None:
+    pdf = tmp_path / "book.pdf"
+    pdf.write_bytes(b"%PDF-1.7")
+    parser = LlamaParseParser(
+        api_key="llx-test",
+        client=FakeLlamaCloudClient(),
+        poll_interval_seconds=0,
+    )
+
+    doc = await parser.parse_pdf(str(pdf), doc_id="doc-1", filename="book.pdf")
+
+    assert doc.doc_id == "doc-1"
+    assert doc.pages[0].blocks[0].block_type == "exercise"
 
 
 def test_parsed_block_source_label_includes_problem_number() -> None:
