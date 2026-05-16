@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, Literal, Protocol, runtime_checkable
 
 BlockType = Literal[
@@ -17,6 +19,14 @@ BlockType = Literal[
     "instruction",
     "unknown",
 ]
+
+
+def _empty_mapping() -> Mapping[str, Any]:
+    return MappingProxyType({})
+
+
+def _immutable_mapping(value: Mapping[str, Any]) -> Mapping[str, Any]:
+    return MappingProxyType(dict(value))
 
 
 @dataclass(frozen=True)
@@ -34,7 +44,7 @@ class ParsedBlock:
     neighboring_block_ids: tuple[str, ...] = ()
 
     def content_for_embedding(self) -> str:
-        parts = [self.markdown or self.text]
+        parts = [self.markdown if self.markdown.strip() else self.text]
         if self.latex:
             parts.append(f"Equation: {self.latex}")
         if self.image_refs:
@@ -54,14 +64,20 @@ class ParsedBlock:
 class ParsedPage:
     page_number: int
     text: str
-    blocks: list[ParsedBlock] = field(default_factory=list)
+    blocks: tuple[ParsedBlock, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "blocks", tuple(self.blocks))
 
 
 @dataclass(frozen=True)
 class ParsedDocument:
     doc_id: str
     filename: str
-    pages: list[ParsedPage] = field(default_factory=list)
+    pages: tuple[ParsedPage, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "pages", tuple(self.pages))
 
     @property
     def page_count(self) -> int:
@@ -75,8 +91,11 @@ class RetrievalRequest:
     doc_ids: tuple[str, ...] = ()
     page_number: int | None = None
     exercise_number: str = ""
-    student_context: dict[str, Any] = field(default_factory=dict)
+    student_context: Mapping[str, Any] = field(default_factory=_empty_mapping)
     requested_modalities: tuple[str, ...] = ("text",)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "student_context", _immutable_mapping(self.student_context))
 
 
 @dataclass(frozen=True)
@@ -87,7 +106,7 @@ class RetrievedRecord:
     score: float | None = None
     doc_id: str = ""
     block_id: str = ""
-    block_type: str = "unknown"
+    block_type: BlockType = "unknown"
     exercise_number: str = ""
     section_title: str = ""
     visual_refs: tuple[str, ...] = ()
@@ -104,10 +123,13 @@ class RetrievedRecord:
 
 @dataclass(frozen=True)
 class RetrievedContext:
-    records: list[RetrievedRecord]
+    records: tuple[RetrievedRecord, ...]
     citations: tuple[str, ...] = ()
     visual_refs: tuple[str, ...] = ()
     confidence: float | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "records", tuple(self.records))
 
 
 @runtime_checkable
