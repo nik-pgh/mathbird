@@ -7,6 +7,8 @@ import {
 } from "@livekit/components-react";
 import { requestToken } from "../lib/api";
 import Transcript from "../components/Transcript";
+import AiBoard from "../components/whiteboard/AiBoard";
+import UserBoard from "../components/whiteboard/UserBoard";
 
 interface Connection {
   url: string;
@@ -40,13 +42,14 @@ export default function VoiceAgentPage() {
         <header className="page-header">
           <h1>Voice agent</h1>
           <p>
-            Connect to start a voice conversation. The agent will join the room
-            automatically.
+            Connect to start a math tutoring session. The agent will join the
+            room and you'll get two whiteboards — one for the tutor, one for
+            you.
           </p>
         </header>
 
         <button className="primary-button" onClick={connect} disabled={connecting}>
-          {connecting ? "Connecting…" : "Start conversation"}
+          {connecting ? "Connecting…" : "Start session"}
         </button>
 
         {error && <div className="error">{error}</div>}
@@ -64,39 +67,28 @@ export default function VoiceAgentPage() {
       onDisconnected={disconnect}
       className="voice-room"
     >
-      <VoiceAgentInner roomName={conn.room} onLeave={disconnect} />
+      <VoiceAgentInner onLeave={disconnect} />
       <RoomAudioRenderer />
     </LiveKitRoom>
   );
 }
 
-function VoiceAgentInner({
-  roomName,
-  onLeave,
-}: {
-  roomName: string;
-  onLeave: () => void;
-}) {
+function VoiceAgentInner({ onLeave }: { onLeave: () => void }) {
   const { state, audioTrack } = useVoiceAssistant();
 
   return (
-    <section className="page voice-page">
-      <header className="page-header">
-        <h1>Voice agent</h1>
-        <p className="room-meta">
-          Room: <code>{roomName}</code> · Agent: <code>{state}</code>
-        </p>
-      </header>
-
-      <div className="visualizer">
-        <BarVisualizer state={state} barCount={24} trackRef={audioTrack} />
+    <section className="page voice-page with-boards">
+      <AiBoard />
+      <UserBoard />
+      <div className="voice-strip">
+        <div className="visualizer">
+          <BarVisualizer state={state} barCount={24} trackRef={audioTrack} />
+        </div>
+        <Transcript />
+        <button className="secondary-button" onClick={onLeave}>
+          End
+        </button>
       </div>
-
-      <Transcript />
-
-      <button className="secondary-button" onClick={onLeave}>
-        End conversation
-      </button>
     </section>
   );
 }

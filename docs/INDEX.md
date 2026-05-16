@@ -38,6 +38,20 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `agent/providers/llm.py` | LLM factory. |
 | `agent/providers/tts.py` | TTS factory. Cartesia / ElevenLabs / OpenAI. |
 | `agent/providers/vad.py` | VAD factory. Silero only today. |
+| `agent/whiteboard_agent.py` | `Agent` subclass that injects the latest user-board reading into the chat context each turn. |
+
+### `backend/app/agent/whiteboard/` — pluggable handwriting reader + state
+
+| Path | What it is |
+| --- | --- |
+| `whiteboard/__init__.py` | Re-exports `BoardState`, `get_board_reader`, `publish_ai_board`, `install_user_board_listener`, and the wire-format schemas. |
+| `whiteboard/messages.py` | pydantic schemas for `ai_board` (server→clients) and `user_board` (clients→server) data-channel topics. |
+| `whiteboard/state.py` | `BoardState` — per-room cache of the latest user-board reading. |
+| `whiteboard/publisher.py` | `publish_ai_board(room, update)` — encodes + sends an `AiBoardUpdate`. |
+| `whiteboard/listener.py` | `install_user_board_listener(...)` — debounced data-received pipeline that feeds the `BoardReader`. |
+| `whiteboard/reader/__init__.py` | `BoardReader` Protocol + `get_board_reader()` factory. |
+| `whiteboard/reader/null.py` | `NullBoardReader` — no-op default. |
+| `whiteboard/reader/openai_vision.py` | `OpenAIVisionBoardReader` — vision-LLM handwriting recognition. |
 
 ### `backend/app/api/` — FastAPI HTTP API
 
@@ -93,3 +107,9 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `src/components/PdfDropZone.tsx` | File-picker / drag-drop component for PDFs. |
 | `src/components/Transcript.tsx` | Streamed user + agent transcription, typewriter animation. |
 | `src/styles/` | Stylesheets. |
+| `src/lib/whiteboard.ts` | TS mirror of `backend/app/agent/whiteboard/messages.py` + encode/decode helpers. |
+| `src/styles/whiteboard.css` | Layout + bubble styling for both boards. |
+| `src/components/whiteboard/AiBoard.tsx` | Subscribes to `ai_board` topic, renders items via `BoardItem`. |
+| `src/components/whiteboard/UserBoard.tsx` | Freehand canvas + tool palette + debounced snapshot loop. |
+| `src/components/whiteboard/BoardItem.tsx` | Switch on `item.kind` → KaTeX / inline SVG plot / sanitized SVG. |
+| `src/components/whiteboard/useBoardChannel.ts` | Typed `useDataChannel` wrapper for one board topic. |
