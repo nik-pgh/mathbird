@@ -13,6 +13,10 @@ LlmProvider = Literal["openai"]
 TtsProvider = Literal["cartesia", "elevenlabs", "openai"]
 VadProvider = Literal["silero"]
 StorageBackendName = Literal["local", "s3"]
+RagProvider = Literal["null", "llamaindex_qdrant"]
+ParserProvider = Literal["llamaparse"]
+RerankerProvider = Literal["none"]
+RagIngestionMode = Literal["sync"]
 
 
 class Settings(BaseSettings):
@@ -58,6 +62,26 @@ class Settings(BaseSettings):
     s3_region: str = "us-east-1"
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
+
+    # RAG
+    rag_provider: RagProvider = "null"
+    parser_provider: ParserProvider = "llamaparse"
+    reranker_provider: RerankerProvider = "none"
+    rag_ingestion_mode: RagIngestionMode = "sync"
+    rag_top_k: int = 4
+
+    # LlamaParse / LlamaCloud
+    llamaparse_api_key: str = ""
+    llamaparse_tier: str = "agentic"
+    llamaparse_version: str = "latest"
+
+    # Qdrant
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: str = ""
+    qdrant_collection: str = "mathbird_documents"
+
+    # Embeddings
+    embedding_model: str = "text-embedding-3-small"
 
     # Agent persona / system prompt — kept here so it's swappable per deployment.
     agent_instructions: str = Field(
