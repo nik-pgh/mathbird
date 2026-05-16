@@ -8,6 +8,7 @@ the PDF through the built-in RAG pipeline.
 
 from __future__ import annotations
 
+import logging
 import posixpath
 import shutil
 import tempfile
@@ -26,6 +27,7 @@ from app.rag import get_retriever
 from app.storage import StoredObject, get_storage
 
 router = APIRouter()
+logger = logging.getLogger("mathbird.api.documents")
 
 
 class DocumentResponse(BaseModel):
@@ -119,6 +121,7 @@ async def upload_document(
     try:
         await _ingest_stored_pdf(storage, stored, doc_id=doc_id)
     except Exception as exc:
+        logger.exception("Document ingestion failed for doc_id=%s key=%s", doc_id, stored.key)
         with suppress(Exception):
             await storage.delete(stored.key)
         raise HTTPException(status_code=502, detail="Document ingestion failed.") from exc

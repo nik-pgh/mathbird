@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 from llama_index.core.schema import TextNode
 
 from app.rag.parsing import ParsedDocument
@@ -32,7 +34,7 @@ def parsed_document_to_nodes(document: ParsedDocument) -> list[TextNode]:
 
             nodes.append(
                 TextNode(
-                    id_=block.block_id,
+                    id_=str(uuid.uuid5(uuid.NAMESPACE_URL, block.block_id)),
                     text=content,
                     metadata=metadata,
                     excluded_embed_metadata_keys=["filename"],

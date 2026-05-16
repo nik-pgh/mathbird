@@ -36,3 +36,29 @@ def test_parsed_document_to_nodes_preserves_metadata() -> None:
     assert nodes[0].metadata["block_type"] == "example"
     assert nodes[0].metadata["example_number"] == "8"
     assert nodes[0].metadata["neighboring_block_ids"] == ["doc-1:p37:b-1"]
+
+
+def test_parsed_document_to_nodes_uses_qdrant_valid_node_id() -> None:
+    doc = ParsedDocument(
+        doc_id="doc-1",
+        filename="book.pdf",
+        pages=[
+            ParsedPage(
+                page_number=1,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="doc-1:p1:b0",
+                        page_number=1,
+                        block_type="paragraph",
+                        text="Intro text.",
+                    )
+                ],
+            )
+        ],
+    )
+
+    node = parsed_document_to_nodes(doc)[0]
+
+    assert node.node_id == "ab6b0520-4e57-5a81-9021-9267cca20c20"
+    assert node.metadata["block_id"] == "doc-1:p1:b0"

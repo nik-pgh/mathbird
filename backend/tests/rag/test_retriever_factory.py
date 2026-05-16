@@ -21,7 +21,7 @@ def clear_retriever_state() -> None:
 
 
 def test_rag_settings_defaults_keep_null_retriever() -> None:
-    settings = Settings()
+    settings = Settings(_env_file=None)
 
     assert settings.rag_provider == "null"
     assert settings.qdrant_collection == "mathbird_documents"
@@ -36,7 +36,10 @@ def test_rag_settings_accept_llamaindex_qdrant() -> None:
 
 
 def test_get_retriever_defaults_to_null() -> None:
-    retriever = get_retriever()
+    settings = Settings(_env_file=None)
+
+    with patch("app.rag.retriever.get_settings", return_value=settings):
+        retriever = get_retriever()
 
     assert isinstance(retriever, NullRetriever)
 
