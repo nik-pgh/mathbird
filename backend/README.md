@@ -42,15 +42,26 @@ To add a new vendor (e.g., ElevenLabs TTS), add a branch in
 `app/agent/providers/tts.py` and a new option in `app.config.TtsProvider`.
 Nothing else changes.
 
-## Plugging in RAG later
+## RAG with LlamaParse + Qdrant
 
-`app/rag/retriever.py` defines a `Retriever` protocol with two methods:
-`retrieve(query)` and `ingest_pdf(path, doc_id)`. Today `NullRetriever`
-returns nothing. When you pick a framework (LlamaIndex, LangChain, OpenAI File
-Search, …):
+`app/rag/retriever.py` defines the `Retriever` protocol with `retrieve(...)` and
+`ingest_pdf(...)`. The default `RAG_PROVIDER=null` keeps the no-op retriever.
 
-1. Add a new module under `app/rag/` implementing the protocol.
-2. Return it from `app/rag/retriever.py::get_retriever()`.
+To enable math textbook RAG, set:
 
-The upload route and the agent's `search_documents` tool will start working
-immediately — neither needs to change.
+```bash
+RAG_PROVIDER=llamaindex_qdrant
+LLAMAPARSE_API_KEY=...
+OPENAI_API_KEY=...
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION=mathbird_documents
+```
+
+For local Qdrant, run:
+
+```bash
+docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+```
+
+Then upload a PDF through `POST /api/documents`; the upload route will store the PDF and
+call the active retriever's `ingest_pdf`.
