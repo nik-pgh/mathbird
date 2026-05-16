@@ -11,6 +11,11 @@ from app.rag.parsing import (
 )
 
 
+class _Object:
+    def __init__(self, **kwargs: object) -> None:
+        self.__dict__.update(kwargs)
+
+
 def test_parsed_block_source_label_includes_problem_number() -> None:
     doc = ParsedDocument(
         doc_id="doc-1",
@@ -198,3 +203,165 @@ def test_normalize_llamaparse_items_preserves_image_refs() -> None:
 
     assert doc.pages[0].blocks[0].block_type == "image"
     assert doc.pages[0].blocks[0].image_refs == ("doc-1:image_0.png",)
+
+
+def test_normalize_llamaparse_items_accepts_top_level_pages_payload() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 9,
+                "items": [
+                    {
+                        "type": "text",
+                        "value": "Read the directions carefully.",
+                        "md": "Read the directions carefully.",
+                    }
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].page_number == 9
+    assert doc.pages[0].blocks[0].text == "Read the directions carefully."
+
+
+def test_normalize_llamaparse_items_accepts_object_payload_and_camel_case_bbox() -> None:
+    payload = _Object(
+        pages=[
+            _Object(
+                page=4,
+                items=[
+                    _Object(
+                        type="text",
+                        value="Problem 3. Solve y - 2 = 5.",
+                        md="Problem 3. Solve y - 2 = 5.",
+                        bBox=_Object(x=1, y=2, w=3, h=4),
+                    )
+                ],
+            )
+        ]
+    )
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].blocks[0].block_type == "exercise"
+    assert doc.pages[0].blocks[0].bbox == (1.0, 2.0, 3.0, 4.0)
+
+
+def test_normalize_llamaparse_items_ignores_incomplete_bbox() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 4,
+                "items": [
+                    {
+                        "type": "text",
+                        "value": "Problem 3. Solve y - 2 = 5.",
+                        "bBox": {"x": 1, "y": None, "w": 3},
+                    }
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].blocks[0].bbox is None
+
+
+def test_normalize_llamaparse_items_uses_page_level_image_names() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 5,
+                "items": [
+                    {
+                        "type": "image",
+                        "value": "Coordinate graph showing a line.",
+                    }
+                ],
+                "images": [
+                    {
+                        "name": "figures/image_1.png",
+                        "presigned_url": "https://example.com/private/image_1.png?sig=abc",
+                    }
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].blocks[0].image_refs == ("doc-1:image_1.png",)
+
+
+def test_normalize_llamaparse_items_extracts_stable_markdown_image_refs() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 5,
+                "items": [
+                    {
+                        "type": "image",
+                        "value": "Coordinate graph showing a line.",
+                        "md": "![graph](https://cdn.example.com/books/figures/image_2.png?token=secret)",
+                    }
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].blocks[0].image_refs == ("doc-1:image_2.png",)
+
+
+def test_normalize_llamaparse_items_carries_section_title_across_pages() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 1,
+                "items": [
+                    {"type": "heading", "value": "Ratios", "md": "# Ratios"},
+                    {"type": "text", "value": "A ratio compares two quantities."},
+                ],
+            },
+            {
+                "page": 2,
+                "items": [
+                    {"type": "text", "value": "Problem 4. Write the ratio of 3 to 5."},
+                    {"type": "heading", "value": "Rates", "md": "# Rates"},
+                    {"type": "text", "value": "Problem 5. Find the unit rate."},
+                ],
+            },
+        ]
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[1].blocks[0].section_title == "Ratios"
+    assert doc.pages[1].blocks[2].section_title == "Rates"
+
+
+def test_normalize_llamaparse_items_classifies_equations() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 6,
+                "items": [
+                    {
+                        "type": "text",
+                        "value": "",
+                        "md": "$$2x + 3 = 9$$",
+                    }
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="doc-1", filename="book.pdf")
+
+    assert doc.pages[0].blocks[0].block_type == "equation"
+    assert doc.pages[0].blocks[0].latex == "$$2x + 3 = 9$$"
