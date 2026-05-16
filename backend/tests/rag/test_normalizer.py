@@ -1,6 +1,8 @@
+import builtins
+
 import pytest
 
-from app.rag.llamaparse_parser import LlamaParseParser
+from app.rag.llamaparse_parser import LlamaParseError, LlamaParseParser
 from app.rag.normalizer import normalize_llamaparse_items
 from app.rag.parsing import (
     ParsedBlock,
@@ -18,28 +20,45 @@ class _Object:
 
 
 class FakeFiles:
+    def __init__(self, file_id: str | None = "file-123") -> None:
+        self.file_id = file_id
+
     async def create(self, *, file, purpose):
         assert purpose == "parse"
-        return type("FileResult", (), {"id": "file-123"})()
+        return type("FileResult", (), {"id": self.file_id})()
 
 
 class FakeParsing:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        job_id: str | None = "job-123",
+        statuses: tuple[str, ...] = ("RUNNING", "COMPLETED"),
+        error_message: str = "",
+    ) -> None:
         self.calls = 0
+        self.job_id = job_id
+        self.statuses = statuses
+        self.error_message = error_message
+        self.create_kwargs = {}
 
     async def create(self, **kwargs):
+        self.create_kwargs = kwargs
         assert kwargs["file_id"] == "file-123"
         assert kwargs["tier"] == "agentic"
         assert kwargs["version"] == "latest"
-        return type("Job", (), {"id": "job-123"})()
+        return type("Job", (), {"id": self.job_id})()
 
     async def get(self, job_id, *, expand):
         self.calls += 1
         assert job_id == "job-123"
         assert "items" in expand
-        status = "COMPLETED" if self.calls > 1 else "RUNNING"
+        status_index = min(self.calls - 1, len(self.statuses) - 1)
+        job = {"status": self.statuses[status_index]}
+        if self.error_message:
+            job["error_message"] = self.error_message
         return {
-            "job": {"status": status},
+            "job": job,
             "items": {
                 "pages": [
                     {
@@ -58,9 +77,20 @@ class FakeParsing:
 
 
 class FakeLlamaCloudClient:
-    def __init__(self) -> None:
-        self.files = FakeFiles()
-        self.parsing = FakeParsing()
+    def __init__(
+        self,
+        *,
+        file_id: str | None = "file-123",
+        job_id: str | None = "job-123",
+        statuses: tuple[str, ...] = ("RUNNING", "COMPLETED"),
+        error_message: str = "",
+    ) -> None:
+        self.files = FakeFiles(file_id)
+        self.parsing = FakeParsing(
+            job_id=job_id,
+            statuses=statuses,
+            error_message=error_message,
+        )
 
 
 @pytest.mark.asyncio
@@ -77,6 +107,121 @@ async def test_llamaparse_parser_polls_and_normalizes(tmp_path) -> None:
 
     assert doc.doc_id == "doc-1"
     assert doc.pages[0].blocks[0].block_type == "exercise"
+    assert parser.client.parsing.create_kwargs["output_options"] == {
+        "images_to_save": ["embedded", "layout"],
+        "extract_printed_page_number": True,
+        "markdown": {
+            "inline_images": False,
+            "tables": {"output_tables_as_markdown": True},
+        },
+    }
+    assert parser.client.parsing.create_kwargs["processing_options"] == {
+        "aggressive_table_extraction": True,
+        "specialized_chart_parsing": "agentic",
+    }
+
+
+@pytest.mark.asyncio
+async def test_llamaparse_parser_failed_status_raises_error(tmp_path) -> None:
+    pdf = tmp_path / "book.pdf"
+    pdf.write_bytes(b"%PDF-1.7")
+    parser = LlamaParseParser(
+        api_key="llx-test",
+        client=FakeLlamaCloudClient(statuses=("FAILED",), error_message="parse failed"),
+        poll_interval_seconds=0,
+    )
+
+    with pytest.raises(LlamaParseError, match="parse failed"):
+        await parser.parse_pdf(str(pdf), doc_id="doc-1", filename="book.pdf")
+
+
+@pytest.mark.asyncio
+async def test_llamaparse_parser_cancelled_status_raises_error(tmp_path) -> None:
+    pdf = tmp_path / "book.pdf"
+    pdf.write_bytes(b"%PDF-1.7")
+    parser = LlamaParseParser(
+        api_key="llx-test",
+        client=FakeLlamaCloudClient(statuses=("CANCELLED",)),
+        poll_interval_seconds=0,
+    )
+
+    with pytest.raises(LlamaParseError, match="cancelled"):
+        await parser.parse_pdf(str(pdf), doc_id="doc-1", filename="book.pdf")
+
+
+@pytest.mark.asyncio
+async def test_llamaparse_parser_missing_file_id_raises_error(tmp_path) -> None:
+    pdf = tmp_path / "book.pdf"
+    pdf.write_bytes(b"%PDF-1.7")
+    parser = LlamaParseParser(
+        api_key="llx-test",
+        client=FakeLlamaCloudClient(file_id=None),
+        poll_interval_seconds=0,
+    )
+
+    with pytest.raises(LlamaParseError, match="file upload did not return a file id"):
+        await parser.parse_pdf(str(pdf), doc_id="doc-1", filename="book.pdf")
+
+
+@pytest.mark.asyncio
+async def test_llamaparse_parser_missing_job_id_raises_error(tmp_path) -> None:
+    pdf = tmp_path / "book.pdf"
+    pdf.write_bytes(b"%PDF-1.7")
+    parser = LlamaParseParser(
+        api_key="llx-test",
+        client=FakeLlamaCloudClient(job_id=None),
+        poll_interval_seconds=0,
+    )
+
+    with pytest.raises(LlamaParseError, match="parse request did not return a job id"):
+        await parser.parse_pdf(str(pdf), doc_id="doc-1", filename="book.pdf")
+
+
+@pytest.mark.asyncio
+async def test_llamaparse_parser_timeout_raises_without_final_sleep(tmp_path, monkeypatch) -> None:
+    pdf = tmp_path / "book.pdf"
+    pdf.write_bytes(b"%PDF-1.7")
+    sleeps = []
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+
+    monkeypatch.setattr("app.rag.llamaparse_parser.asyncio.sleep", fake_sleep)
+    parser = LlamaParseParser(
+        api_key="llx-test",
+        client=FakeLlamaCloudClient(statuses=("RUNNING",)),
+        poll_interval_seconds=0.25,
+        max_polls=1,
+    )
+
+    with pytest.raises(LlamaParseError, match="Timed out"):
+        await parser.parse_pdf(str(pdf), doc_id="doc-1", filename="book.pdf")
+
+    assert sleeps == []
+
+
+@pytest.mark.asyncio
+async def test_llamaparse_parser_uses_injected_client_without_importing_llama_cloud(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    pdf = tmp_path / "book.pdf"
+    pdf.write_bytes(b"%PDF-1.7")
+    client = FakeLlamaCloudClient(statuses=("COMPLETED",))
+    real_import = builtins.__import__
+
+    def reject_llama_cloud_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "llama_cloud":
+            raise AssertionError("llama_cloud should not be imported when client is injected")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", reject_llama_cloud_import)
+    parser = LlamaParseParser(api_key="llx-test", client=client, poll_interval_seconds=0)
+
+    doc = await parser.parse_pdf(str(pdf), doc_id="doc-1", filename="book.pdf")
+
+    assert parser.client is client
+    assert doc.doc_id == "doc-1"
 
 
 def test_parsed_block_source_label_includes_problem_number() -> None:

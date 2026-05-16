@@ -60,11 +60,13 @@ class LlamaParseParser:
             output_options={
                 "images_to_save": ["embedded", "layout"],
                 "extract_printed_page_number": True,
-                "markdown": {"inline_images": False, "output_tables_as_markdown": True},
+                "markdown": {
+                    "inline_images": False,
+                    "tables": {"output_tables_as_markdown": True},
+                },
             },
             processing_options={
                 "aggressive_table_extraction": True,
-                "extract_layout": True,
                 "specialized_chart_parsing": "agentic",
             },
             agentic_options={
@@ -83,7 +85,7 @@ class LlamaParseParser:
 
     async def _poll_parse_result(self, client: Any, job_id: str) -> Any:
         expand = ["items", "markdown", "images_content_metadata", "job_metadata"]
-        for _ in range(self.max_polls):
+        for poll_index in range(self.max_polls):
             result = await client.parsing.get(job_id, expand=expand)
             job = _get(result, "job", {}) or {}
             status = str(_get(job, "status", "")).upper()
@@ -94,6 +96,7 @@ class LlamaParseParser:
                 message = _get(job, "error_message", "") or f"LlamaParse job {status.lower()}."
                 raise LlamaParseError(str(message))
 
-            await asyncio.sleep(self.poll_interval_seconds)
+            if poll_index < self.max_polls - 1:
+                await asyncio.sleep(self.poll_interval_seconds)
 
         raise LlamaParseError("Timed out waiting for LlamaParse parse job.")
