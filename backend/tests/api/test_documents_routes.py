@@ -61,3 +61,38 @@ def test_uploaded_doc_status_uploaded_then_indexed(isolated_storage: Path) -> No
     listing = client.get("/api/documents").json()
     statuses = {d["doc_id"]: d["status"] for d in listing["documents"]}
     assert statuses[doc_id] == "indexed"
+
+
+def test_ingest_failure_preserves_file_and_502(
+    isolated_storage: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """If the retriever raises, ingest returns 502 but leaves the PDF in place
+    so the user can retry via the Re-index path."""
+
+    class _RaisingRetriever:
+        async def retrieve(self, query, *, top_k=4, doc_ids=()):  # noqa: ARG002
+            return []
+
+        async def ingest_pdf(self, path, *, doc_id):  # noqa: ARG002
+            raise RuntimeError("simulated ingest failure")
+
+    monkeypatch.setattr(retriever_mod, "_singleton", _RaisingRetriever())
+
+    client = TestClient(app)
+    created = _upload_pdf(client)
+    doc_id = created["doc_id"]
+    pdf_path = isolated_storage / created["key"]
+    assert pdf_path.exists()
+
+    res = client.post(f"/api/documents/{doc_id}/ingest")
+    assert res.status_code == 502
+
+    # PDF remains for retry; sidecar never written.
+    assert pdf_path.exists()
+    assert not (isolated_storage / doc_id / "meta.json").exists()
+
+    # Listing still surfaces the doc with status="uploaded".
+    listing = client.get("/api/documents").json()
+    statuses = {d["doc_id"]: d["status"] for d in listing["documents"]}
+    assert statuses[doc_id] == "uploaded"
