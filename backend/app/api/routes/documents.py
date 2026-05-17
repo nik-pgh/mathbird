@@ -18,7 +18,7 @@ import shutil
 import tempfile
 import uuid
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -134,22 +134,6 @@ async def _write_sidecar(storage: Any, doc_id: str, payload: dict) -> None:
     )
 
 
-async def _read_sidecar(storage: Any, doc_id: str) -> dict | None:
-    try:
-        async with _open_storage_stream(storage, _sidecar_key(doc_id)) as stream:
-            data = stream.read()
-    except FileNotFoundError:
-        return None
-    except Exception:
-        return None
-    if not data:
-        return None
-    try:
-        return json.loads(data)
-    except json.JSONDecodeError:
-        return None
-
-
 def _find_stored_pdf(objects: list[StoredObject], doc_id: str) -> StoredObject | None:
     prefix = f"{doc_id}/"
     for obj in objects:
@@ -189,8 +173,6 @@ async def ingest_document(doc_id: str) -> DocumentResponse:
         await _ingest_stored_pdf(storage, stored, doc_id=doc_id)
     except Exception as exc:
         logger.exception("Document ingestion failed for doc_id=%s key=%s", doc_id, stored.key)
-        with suppress(Exception):
-            await storage.delete(stored.key)
         raise HTTPException(status_code=502, detail="Document ingestion failed.") from exc
 
     await _write_sidecar(
