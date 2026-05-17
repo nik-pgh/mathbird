@@ -41,7 +41,18 @@ from app.rag import get_retriever
 logger = logging.getLogger("mathbird.agent.tools")
 
 
-# ── RAG tool (unchanged) ────────────────────────────────────────────────────
+# ── RAG tool ────────────────────────────────────────────────────────────────
+
+
+def _active_doc_id(ctx: RunContext) -> str | None:
+    """Read ``active_doc_id`` off the per-session ``SessionData``, if any."""
+    try:
+        data = ctx.session.userdata
+    except Exception:
+        return None
+    if isinstance(data, SessionData):
+        return data.active_doc_id
+    return None
 
 
 @function_tool
@@ -73,7 +84,9 @@ async def search_documents(ctx: RunContext, query: str) -> str:
     """
     settings = get_settings()
     retriever = get_retriever()
-    chunks = await retriever.retrieve(query, top_k=settings.rag_top_k)
+    active = _active_doc_id(ctx)
+    doc_ids: tuple[str, ...] = (active,) if active else ()
+    chunks = await retriever.retrieve(query, top_k=settings.rag_top_k, doc_ids=doc_ids)
 
     if not chunks:
         return "No documents are indexed yet. Tell the user no PDFs have been uploaded."
