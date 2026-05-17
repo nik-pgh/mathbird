@@ -25,12 +25,25 @@ interface Geom {
   h: number;
 }
 
-const DEFAULT_GEOM: Geom = { x: 16, y: 64, w: 520, h: 720 };
+const DEFAULT_W = 520;
+const DEFAULT_H = 720;
+
+function defaultGeom(): Geom {
+  // Right-aligned with a 16px margin; falls back to a sensible value if
+  // window isn't available (SSR/tests).
+  const viewportW = typeof window !== "undefined" ? window.innerWidth : 1280;
+  return {
+    x: Math.max(16, viewportW - DEFAULT_W - 16),
+    y: 64,
+    w: DEFAULT_W,
+    h: DEFAULT_H,
+  };
+}
 
 function loadGeom(): Geom {
   try {
     const raw = window.localStorage.getItem(GEOM_KEY);
-    if (!raw) return DEFAULT_GEOM;
+    if (!raw) return defaultGeom();
     const parsed = JSON.parse(raw);
     if (
       typeof parsed?.x === "number" &&
@@ -43,7 +56,7 @@ function loadGeom(): Geom {
   } catch {
     /* fall through */
   }
-  return DEFAULT_GEOM;
+  return defaultGeom();
 }
 
 function saveGeom(g: Geom): void {

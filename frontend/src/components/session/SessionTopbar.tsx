@@ -8,7 +8,7 @@ interface Props {
     label?: string; // e.g. "Quadratics · 04:12"; defaults to "Session"
     onEnd: () => void;
   };
-  /** When supplied, renders a PDF toggle button on the left side of the topbar. */
+  /** When supplied, renders a PDF toggle button on the right side of the topbar. */
   pdf?: {
     filename: string;
     isOpen: boolean;
@@ -26,6 +26,8 @@ export default function SessionTopbar({ session, pdf }: Props) {
       <Link to="/" className="brand">
         mathbird
       </Link>
+      <div className="spacer" />
+
       {pdf && (
         <button
           className={`topbar-pdf-toggle ${pdf.isOpen ? "active" : ""}`}
@@ -37,7 +39,6 @@ export default function SessionTopbar({ session, pdf }: Props) {
           PDF
         </button>
       )}
-      <div className="spacer" />
 
       {session ? (
         <>
