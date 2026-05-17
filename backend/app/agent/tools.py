@@ -36,22 +36,35 @@ logger = logging.getLogger("mathbird.agent.tools")
 
 
 @function_tool
-async def search_documents(
-    ctx: RunContext,
-    query: str,
-    top_k: int = 0,
-    doc_id: str = "",
-) -> str:
-    """Search the user's uploaded PDF documents for information relevant to ``query``.
+async def search_documents(ctx: RunContext, query: str) -> str:
+    """Search the student's uploaded PDF (assignment / textbook) and return excerpts.
 
-    Use this whenever the user asks about content from their documents.
-    Returns concatenated snippets with source citations, or a brief note if no
-    documents are indexed yet.
+    Call this BEFORE answering ANY question that could plausibly be about
+    the uploaded PDF — a problem, exercise, example, page, section,
+    instruction, suggestion, formatting rule, or any concrete content the
+    student might be referring to. When in doubt, call it. Do not say "I
+    don't know" without calling this first.
+
+    Writing a good ``query``:
+    - Use digits, not words: ``"problem 3"`` not ``"problem three"``,
+      ``"page 7"`` not ``"page seven"``. The index has fast exact-match
+      lookups keyed on numeric problem / page / example IDs; words bypass
+      them and fall back to weaker semantic search.
+    - Use the PDF's own vocabulary (``problem``, ``exercise``, ``example``,
+      ``page``) instead of conversational paraphrases like "the second
+      one" or "question number three".
+    - For open-ended topics, pass the student's question close to verbatim
+      so semantic similarity has full context (e.g.
+      ``"how to make solutions legible"`` rather than just
+      ``"legibility"``).
+
+    Returns concatenated snippets with source citations. Treat the
+    returned snippets as authoritative ground truth; if any come back,
+    synthesise the answer from them rather than from prior knowledge.
     """
-    effective_top_k = top_k if top_k > 0 else get_settings().rag_top_k
+    settings = get_settings()
     retriever = get_retriever()
-    doc_ids = (doc_id,) if doc_id else ()
-    chunks = await retriever.retrieve(query, top_k=effective_top_k, doc_ids=doc_ids)
+    chunks = await retriever.retrieve(query, top_k=settings.rag_top_k)
 
     if not chunks:
         return "No documents are indexed yet. Tell the user no PDFs have been uploaded."

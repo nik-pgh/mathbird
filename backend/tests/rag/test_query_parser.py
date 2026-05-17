@@ -65,3 +65,48 @@ def test_ignore_hash_after_word_character() -> None:
 
     assert parsed.exercise_number == ""
     assert parsed.is_structured_lookup is False
+
+
+def test_parse_spelled_out_problem_number() -> None:
+    parsed = parse_retrieval_query("Tell me about problem three")
+
+    assert parsed.exercise_number == "3"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_spelled_out_question_number() -> None:
+    parsed = parse_retrieval_query("what's question number two?")
+
+    assert parsed.exercise_number == "2"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_spelled_out_page() -> None:
+    parsed = parse_retrieval_query("look at page seven")
+
+    assert parsed.page_number == 7
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_spelled_out_example() -> None:
+    parsed = parse_retrieval_query("explain example five")
+
+    assert parsed.example_number == "5"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_question_number_with_digit() -> None:
+    # The "number" between "question" and the digit is a common voice pattern;
+    # it should still resolve to the exercise number.
+    parsed = parse_retrieval_query("question number 4")
+
+    assert parsed.exercise_number == "4"
+    assert parsed.is_structured_lookup is True
+
+
+def test_query_field_preserves_original_phrasing() -> None:
+    # Normalisation is for matching only — the original query string is
+    # what gets passed to the semantic-search fallback.
+    parsed = parse_retrieval_query("problem three")
+
+    assert parsed.query == "problem three"
