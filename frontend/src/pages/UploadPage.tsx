@@ -41,7 +41,7 @@ export default function UploadPage() {
       <section className="doc-list">
         <div className="doc-list-header">
           <h2>Indexed documents ({docs.length})</h2>
-          <Link to="/voice" className="primary-link">
+          <Link to="/session" className="primary-link">
             Talk to the agent →
           </Link>
         </div>
