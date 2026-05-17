@@ -31,7 +31,9 @@ class _FakeRoom:
 
 async def test_publish_ai_board_sends_json_on_ai_board_topic() -> None:
     room = _FakeRoom()
-    update = AiBoardUpdate(op="upsert", items=[AiBoardText(id="t1", markdown="hi")])
+    update = AiBoardUpdate(
+        op="upsert", items=[AiBoardText(kind="text", id="t1", markdown="hi")]
+    )
 
     await publish_ai_board(room, update)
 

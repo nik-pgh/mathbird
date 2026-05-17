@@ -65,7 +65,9 @@ def test_build_function_tools_includes_whiteboard_tools() -> None:
 
 async def test_update_ai_board_publishes_upsert() -> None:
     ctx = _ctx()
-    result = await update_ai_board(ctx, items=[AiBoardText(id="t1", markdown="hi")])
+    result = await update_ai_board(
+        ctx, items=[AiBoardText(kind="text", id="t1", markdown="hi")]
+    )
     assert "1" in result  # ack mentions the item count
 
     calls = ctx.session.room_io.room.local_participant.calls
@@ -74,6 +76,29 @@ async def test_update_ai_board_publishes_upsert() -> None:
     decoded = json.loads(calls[0].payload.decode("utf-8"))
     assert decoded["op"] == "upsert"
     assert decoded["items"][0]["id"] == "t1"
+
+
+async def test_update_ai_board_returns_corrective_error_when_publish_fails(
+    monkeypatch,
+) -> None:
+    # Regression: livekit's function-tool layer turns uncaught exceptions
+    # into the literal string "An internal error occurred", which gives the
+    # LLM no actionable signal to retry. The tool must catch and return the
+    # concrete error so the LLM can self-correct.
+    import app.agent.tools as tools
+
+    async def boom(*_args, **_kwargs):
+        raise RuntimeError("publish blew up")
+
+    monkeypatch.setattr(tools, "publish_ai_board", boom)
+
+    ctx = _ctx()
+    result = await update_ai_board(
+        ctx, items=[AiBoardText(kind="text", id="t1", markdown="hi")]
+    )
+    assert "update_ai_board failed" in result
+    assert "RuntimeError" in result
+    assert "publish blew up" in result
 
 
 async def test_clear_ai_board_publishes_clear() -> None:
