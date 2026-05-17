@@ -193,3 +193,24 @@ def test_extractor_response_schema_uses_AiBoardItem_discriminator() -> None:
 
     with pytest.raises(ValidationError):
         ExtractorResponse.model_validate({"items": [{"kind": "bogus", "id": "x", "data": "x"}]})
+
+
+def test_extractor_response_schema_uses_anyOf_not_oneOf() -> None:
+    # Regression: OpenAI Structured Outputs rejects oneOf. Pydantic emits
+    # oneOf for the discriminated AiBoardItem union (because of
+    # Field(discriminator="kind") in messages.py) but anyOf for a plain
+    # union. The ExtractorResponse schema must use anyOf so it passes
+    # OpenAI's validation.
+    schema = ExtractorResponse.model_json_schema()
+    schema_str = str(schema)
+    assert "oneOf" not in schema_str, (
+        "ExtractorResponse schema must not contain 'oneOf' — OpenAI rejects it. "
+        f"Full schema: {schema}"
+    )
+    # And it should still describe an items array with multiple variants:
+    items_field = schema["properties"]["items"]
+    inner = items_field["items"]
+    # Either anyOf at the top level, or a $ref that ultimately resolves to anyOf.
+    assert "anyOf" in str(inner) or "$ref" in inner or "anyOf" in str(schema), (
+        f"items field schema looks wrong: {inner}"
+    )

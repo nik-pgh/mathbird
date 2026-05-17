@@ -15,13 +15,28 @@ from typing import Any
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
-from app.agent.whiteboard.messages import AiBoardItem
+from app.agent.whiteboard.messages import (
+    AiBoardItem,
+    AiBoardPlot,
+    AiBoardShape,
+    AiBoardText,
+)
 
 logger = logging.getLogger("mathbird.agent.extractor")
 
 
+# OpenAI's Structured Outputs API rejects ``oneOf`` JSON Schema, which is
+# what pydantic emits for the ``AiBoardItem`` discriminated union
+# (``Annotated[... , Field(discriminator="kind")]``). For the response
+# schema only, use a plain Union of the concrete classes — pydantic emits
+# ``anyOf`` for plain unions, which OpenAI accepts. Runtime validation
+# behaves the same because the ``Literal[...]`` constraints on ``kind``
+# uniquely identify each variant.
+_ExtractorItem = AiBoardText | AiBoardPlot | AiBoardShape
+
+
 class ExtractorResponse(BaseModel):
-    items: list[AiBoardItem]
+    items: list[_ExtractorItem]
 
 
 _SYSTEM_PROMPT = """\
