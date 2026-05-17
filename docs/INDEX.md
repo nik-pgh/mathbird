@@ -9,6 +9,8 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `CLAUDE.md` | Agent guidance — commands, architecture rules, where to add things. |
 | `AGENTS.md` | Pointer file for non-Claude agents. |
 | `README.md` | Human-facing project README. |
+| `docs/ARCHITECTURE.md` | "Why" / "how" companion to `CLAUDE.md`. |
+| `docs/INDEX.md` | This file — hand-maintained file/module map. |
 | `.env.example` | Canonical env template. Copy to `.env` at repo root. |
 | `.env` | (gitignored) — actual secrets. Read by `backend/app/config.py`. |
 
@@ -19,7 +21,9 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/pyproject.toml` | Deps + ruff + pytest config. Add new vendor plugins here. |
 | `backend/.python-version` | Python 3.11+ pin for `uv`. |
 | `backend/README.md` | Backend-specific run instructions. |
+| `backend/CLAUDE.md` | Backend-scoped agent guidance (rules, gotchas, where-to-add map). |
 | `backend/uploads/` | (gitignored) — default `STORAGE_LOCAL_DIR`. |
+| `backend/tests/` | Pytest suite, grouped by seam (`tests/rag/`, `tests/whiteboard/`). |
 
 ### `backend/app/` — shared package
 

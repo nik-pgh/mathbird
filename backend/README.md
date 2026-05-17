@@ -34,7 +34,7 @@ Edit `.env` — no code changes required:
 ```bash
 STT_PROVIDER=deepgram    # deepgram | openai
 LLM_PROVIDER=openai      # openai
-TTS_PROVIDER=cartesia    # cartesia | openai
+TTS_PROVIDER=cartesia    # cartesia | elevenlabs | openai
 VAD_PROVIDER=silero      # silero
 ```
 
@@ -68,3 +68,27 @@ calls the active retriever's `ingest_pdf` synchronously. If ingestion fails, the
 attempts to delete the stored PDF and returns an upload error rather than listing an
 unindexed document. A background job queue can replace this call site later without
 changing the retriever interface.
+
+## Whiteboards
+
+`app/agent/whiteboard/` is a pluggable handwriting-recognition + per-room state
+surface that runs alongside the voice pipeline. On every room join, the
+entrypoint installs a `user_board` data-channel listener and attaches a
+`BoardState` to `AgentSession.userdata`; a `WhiteboardAgent` subclass then
+injects the latest student-board reading into the LLM's chat context per turn.
+The LLM publishes back via the `update_ai_board` / `clear_ai_board` /
+`read_user_board` function tools.
+
+Default `BOARD_READER=null` keeps the reader a no-op; enable real OCR with:
+
+```bash
+BOARD_READER=openai_vision         # null | openai_vision
+BOARD_READER_MODEL=gpt-4o-mini
+BOARD_READER_INTERVAL_SECONDS=2.0  # debounce window
+BOARD_READER_MAX_IMAGE_DIM=512     # client-side resize hint
+OPENAI_API_KEY=...
+```
+
+Wire schemas live in `app/agent/whiteboard/messages.py` and are mirrored in
+`frontend/src/lib/whiteboard.ts`. There is no schema generator; change both
+sides together.
