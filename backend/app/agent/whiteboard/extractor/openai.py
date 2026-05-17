@@ -53,14 +53,34 @@ Emit zero or more AiBoardItem entries that should appear on the board
 based on the sentence. Be selective — only emit items for content that
 genuinely benefits from being visual:
 
-- text: any equation, expression, or numeric value the tutor verbalized.
-  Wrap math in $...$ LaTeX.
+- text: a standalone equation, an expression being algebraically manipulated,
+  or a named concept the student should remember. Wrap math in $...$ LaTeX.
     Example sentence: "let's set up 2x + 5 = 10"
     → {"kind": "text", "id": "eq1", "markdown": "$2x + 5 = 10$"}
+    Example sentence: "subtract 5 from both sides to get 2x = 5"
+    → {"kind": "text", "id": "eq1", "markdown": "$2x + 5 = 10$ \\\\ $2x = 5$"}
+       (id reused, prior content extended — see ID policy below)
 
-- plot: a function/curve the tutor is describing.
+- plot: a single-variable function being defined or discussed visually. ANY
+  time the agent says a function in y = f(x) form (or "the parabola y = …",
+  "f of x equals …", "the curve y = …"), emit a PLOT item with the Python
+  expression for f(x). Plot is the DEFAULT for function definitions — even
+  if the sentence sounds definitional rather than visual. Do NOT emit a
+  text item for a function definition; that's a misclassification.
+    Example sentence: "let me show you, y = x squared"
+    → {"kind": "plot", "id": "p1", "expression": "x**2"}
     Example sentence: "the parabola y = x squared opens upward"
     → {"kind": "plot", "id": "p1", "expression": "x**2"}
+    Example sentence: "let's plot y = sin(x) from -π to π"
+    → {"kind": "plot", "id": "p2", "expression": "sin(x)", "x_min": -3.14, "x_max": 3.14}
+
+  Use text (NOT plot) when:
+  - The equation is being algebraically manipulated as a step in a
+    derivation (e.g., "2x + 5 = 10" being solved).
+  - The function is multi-variable (z = x*y) or not easily plottable in
+    one variable.
+  - The agent mentions a function name in passing without defining it
+    (e.g., "do you remember the quadratic formula?").
 
 Do NOT emit ANY items for:
 
@@ -87,15 +107,31 @@ Do NOT emit ANY items for:
     Sentence: "So we have 2x + 5 = 10."     → []
     (Don't re-emit; the item is already on the board.)
 
-ID policy:
-- If the sentence refines an item already on the board (e.g. updates an
-  equation step), REUSE that item's existing id so the board updates in
-  place rather than appending.
-- For new items, pick the next id in a stable sequence:
-    text items: eq1, eq2, eq3, ...
-    plot items: p1, p2, p3, ...
-  Inspect the current items list to determine which ids are taken.
-- Never produce two items with the same id in one response.
+ID policy — ACCUMULATE BY DEFAULT:
+
+If the current sentence continues work on the SAME problem or concept that
+already has an item on the board (a derivation step, an explanation of
+parts of one equation, a revision of a prior step, OR adding context to a
+curve already plotted), REUSE that item's existing id and EXTEND its
+content rather than appending a new item:
+
+  - For text items: append the new content to the existing markdown,
+    separated by `\\\\` (LaTeX line break for stacked equations) or by
+    `\\n\\n` for separate paragraphs of explanation.
+  - For plot items: update the expression / bounds / label as needed,
+    keeping the same id.
+
+Mint a FRESH id only when the topic CLEARLY changes — the agent has
+moved from one problem to a different one, or pivoted from algebra to
+geometry, or started a separate worked example.
+
+For new items, pick the next id in a stable sequence:
+  text items: eq1, eq2, eq3, ...
+  plot items: p1, p2, p3, ...
+Inspect the current items list (passed in the user message) to determine
+which ids are already taken.
+
+Never produce two items with the same id in one response.
 
 DEFAULT TO EMPTY. If you are not confident the sentence introduces new
 visual math content that the student will benefit from seeing, return
