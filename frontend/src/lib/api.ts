@@ -8,12 +8,15 @@
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
+export type DocStatus = "uploaded" | "indexed" | "failed";
+
 export interface UploadedDocument {
   doc_id: string;
   key: string;
   uri: string;
   size: number;
   content_type: string;
+  status: DocStatus;
 }
 
 export interface TokenResponse {
@@ -41,16 +44,29 @@ export async function uploadPdf(file: File): Promise<UploadedDocument> {
   return jsonOrThrow<UploadedDocument>(res);
 }
 
+export async function ingestDocument(docId: string): Promise<UploadedDocument> {
+  const res = await fetch(
+    `${API_BASE}/api/documents/${encodeURIComponent(docId)}/ingest`,
+    { method: "POST" },
+  );
+  return jsonOrThrow<UploadedDocument>(res);
+}
+
 export async function listDocuments(): Promise<UploadedDocument[]> {
   const res = await fetch(`${API_BASE}/api/documents`);
   const data = await jsonOrThrow<{ documents: UploadedDocument[] }>(res);
   return data.documents;
 }
 
+export function documentFileUrl(docId: string): string {
+  return `${API_BASE}/api/documents/${encodeURIComponent(docId)}/file`;
+}
+
 export async function requestToken(opts?: {
   identity?: string;
   room?: string;
   name?: string;
+  doc_id?: string;
 }): Promise<TokenResponse> {
   const res = await fetch(`${API_BASE}/api/token`, {
     method: "POST",
