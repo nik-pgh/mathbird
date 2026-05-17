@@ -77,18 +77,11 @@ async def entrypoint(ctx: JobContext) -> None:
 
     await ctx.connect()
 
-    # Read active_doc_id from the joining participant's metadata. The token
-    # route writes ``{"active_doc_id": "..."}`` into it when the frontend
-    # supplies one. If no participant arrives or the metadata is missing,
-    # we proceed without a doc filter (search_documents falls back to all
-    # docs).
-    active_doc_id: str | None = None
-    try:
-        participant = await ctx.wait_for_participant()
-        active_doc_id = _parse_active_doc_id(participant.metadata)
-    except Exception:
-        logger.exception("Failed to read participant metadata; proceeding without doc filter.")
-
+    # Install the user-board data-channel listener BEFORE awaiting the
+    # participant. ``wait_for_participant`` can return after the user has
+    # already started publishing snapshots, so registering ``data_received``
+    # any later would drop early packets and the AiBoard would never see
+    # the student's first strokes.
     board_state = BoardState()
     board_cache = BoardCache()
     board_reader = get_board_reader()
@@ -100,6 +93,18 @@ async def entrypoint(ctx: JobContext) -> None:
         interval=settings.board_reader_interval_seconds,
     )
     ctx.add_shutdown_callback(listener.aclose)
+
+    # Now read active_doc_id from the joining participant's metadata. The
+    # token route writes ``{"active_doc_id": "..."}`` into it when the
+    # frontend supplies one. If no participant arrives or the metadata is
+    # missing, we proceed without a doc filter (search_documents falls back
+    # to all docs).
+    active_doc_id: str | None = None
+    try:
+        participant = await ctx.wait_for_participant()
+        active_doc_id = _parse_active_doc_id(participant.metadata)
+    except Exception:
+        logger.exception("Failed to read participant metadata; proceeding without doc filter.")
 
     session_data = SessionData(
         board_state=board_state,
