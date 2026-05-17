@@ -1,12 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
-import { requestToken } from "../lib/api";
+import {
+  UploadedDocument,
+  listDocuments,
+  requestToken,
+} from "../lib/api";
+import { getActiveDocId } from "../lib/activeDoc";
 import SessionTopbar from "../components/session/SessionTopbar";
 import VoiceComposer from "../components/session/VoiceComposer";
 import Transcript from "../components/Transcript";
 import AiBoard from "../components/whiteboard/AiBoard";
 import UserBoard from "../components/whiteboard/UserBoard";
+import PdfPopover from "../components/session/PdfPopover";
 import "../styles/session.css";
 
 interface Connection {
@@ -22,18 +28,37 @@ export default function SessionPage() {
   const [conn, setConn] = useState<Connection | null>(null);
   const [status, setStatus] = useState<Status>("connecting");
   const [error, setError] = useState<string | null>(null);
+  const [activeDoc, setActiveDoc] = useState<UploadedDocument | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
+
+  const activeDocId = useMemo(() => getActiveDocId(), []);
+
+  // Resolve filename for the popover button tooltip.
+  useEffect(() => {
+    if (!activeDocId) return;
+    listDocuments()
+      .then((list) => {
+        const found = list.find((d) => d.doc_id === activeDocId) ?? null;
+        setActiveDoc(found);
+      })
+      .catch(() => {
+        /* non-fatal — popover still works without a filename */
+      });
+  }, [activeDocId]);
 
   const connect = useCallback(async () => {
     setError(null);
     setStatus("connecting");
     try {
-      const t = await requestToken();
+      const t = await requestToken(
+        activeDocId ? { doc_id: activeDocId } : undefined,
+      );
       setConn({ url: t.url, token: t.token, room: t.room });
     } catch (e) {
       setError(String(e));
       setStatus("disconnected");
     }
-  }, []);
+  }, [activeDocId]);
 
   useEffect(() => {
     connect();
@@ -45,17 +70,31 @@ export default function SessionPage() {
   }, [navigate]);
 
   const handleUnexpectedDisconnect = useCallback(() => {
-    // Triggered when LiveKit closes without user action.
-    // Stay on the page and surface the disconnected status; user can Retry or End.
     setStatus("disconnected");
     setError("Lost connection to the tutor.");
     setConn(null);
   }, []);
 
+  const filename = useMemo(() => {
+    if (!activeDoc) return null;
+    const parts = activeDoc.key.split("/");
+    return parts[parts.length - 1] || activeDoc.doc_id;
+  }, [activeDoc]);
+
+  const pdfProp =
+    activeDocId && filename
+      ? {
+          filename,
+          isOpen: pdfOpen,
+          onToggle: () => setPdfOpen((v) => !v),
+        }
+      : undefined;
+
   return (
     <>
       <SessionTopbar
         session={{ status, label: "Session", onEnd: handleEnd }}
+        pdf={pdfProp}
       />
       {conn ? (
         <LiveKitRoom
@@ -90,6 +129,13 @@ export default function SessionPage() {
             </div>
           </section>
           <RoomAudioRenderer />
+          {pdfOpen && activeDocId && (
+            <PdfPopover
+              docId={activeDocId}
+              title={filename ?? "PDF"}
+              onClose={() => setPdfOpen(false)}
+            />
+          )}
         </LiveKitRoom>
       ) : (
         <SessionSkeleton error={error} onRetry={connect} />
