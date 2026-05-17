@@ -20,8 +20,9 @@ interface Line {
 export default function Transcript() {
   const { agentTranscriptions } = useVoiceAssistant();
   const { localParticipant } = useLocalParticipant();
-
-  const micPublication = localParticipant.getTrackPublication(Track.Source.Microphone);
+  const micPublication = localParticipant.getTrackPublication(
+    Track.Source.Microphone,
+  );
 
   const { segments: userSegments } = useTrackTranscription({
     publication: micPublication,
@@ -47,7 +48,6 @@ export default function Transcript() {
     return [...u, ...a].sort((x, y) => x.startedAt - y.startedAt);
   }, [userSegments, agentTranscriptions]);
 
-  // Auto-scroll to bottom whenever a new line appears or grows.
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = scrollRef.current;
@@ -57,7 +57,11 @@ export default function Transcript() {
   if (lines.length === 0) {
     return (
       <div className="transcript empty">
-        <p>대화를 시작하세요. 자막이 여기에 표시됩니다.</p>
+        <p>
+          Speak naturally — your conversation appears here.
+          <br />
+          대화를 시작하세요. 자막이 여기에 표시됩니다.
+        </p>
       </div>
     );
   }
@@ -72,18 +76,27 @@ export default function Transcript() {
 }
 
 function TranscriptLine({ line }: { line: Line }) {
-  // User speech is typically already streamed via STT interim results, so the
-  // raw text already grows naturally. We still pipe it through the typewriter
-  // for visual consistency with the agent side; corrections snap.
-  const animated = useTypewriter(line.text, line.role === "user" ? 80 : 45);
+  const animated = useTypewriter(
+    line.text,
+    line.role === "user" ? 80 : 45,
+  );
   const isCaughtUp = animated.length >= line.text.length;
+  const isInterim = !line.final || !isCaughtUp;
+  const isUser = line.role === "user";
 
   return (
-    <div className={`bubble ${line.role} ${line.final ? "final" : "interim"}`}>
-      <div className="role-label">{line.role === "user" ? "You" : "Agent"}</div>
-      <div className="bubble-text">
-        {animated}
-        {(!line.final || !isCaughtUp) && <span className="caret">▍</span>}
+    <div className="msg">
+      <div className="row">
+        <div className={`avatar ${isUser ? "you" : "tutor"}`}>
+          {isUser ? "Y" : "M"}
+        </div>
+        <div className="body">
+          <div className="who">{isUser ? "You" : "Tutor"}</div>
+          <div className={isInterim ? "interim" : ""}>
+            {animated}
+            {isInterim && <span className="caret" />}
+          </div>
+        </div>
       </div>
     </div>
   );
