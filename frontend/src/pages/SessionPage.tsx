@@ -44,6 +44,14 @@ export default function SessionPage() {
     navigate("/");
   }, [navigate]);
 
+  const handleUnexpectedDisconnect = useCallback(() => {
+    // Triggered when LiveKit closes without user action.
+    // Stay on the page and surface the disconnected status; user can Retry or End.
+    setStatus("disconnected");
+    setError("Lost connection to the tutor.");
+    setConn(null);
+  }, []);
+
   return (
     <>
       <SessionTopbar
@@ -57,7 +65,7 @@ export default function SessionPage() {
           audio
           video={false}
           onConnected={() => setStatus("connected")}
-          onDisconnected={handleEnd}
+          onDisconnected={handleUnexpectedDisconnect}
           onError={(e) => {
             setError(e.message);
             setStatus("disconnected");
@@ -84,12 +92,7 @@ export default function SessionPage() {
           <RoomAudioRenderer />
         </LiveKitRoom>
       ) : (
-        <SessionSkeleton
-          error={error}
-          status={status}
-          onRetry={connect}
-          onEnd={handleEnd}
-        />
+        <SessionSkeleton error={error} onRetry={connect} />
       )}
     </>
   );
@@ -97,63 +100,24 @@ export default function SessionPage() {
 
 function SessionSkeleton({
   error,
-  status,
   onRetry,
-  onEnd,
 }: {
   error: string | null;
-  status: Status;
   onRetry: () => void;
-  onEnd: () => void;
 }) {
   return (
-    <section className="session-room">
-      <div className="session-conv">
-        <div className="transcript empty">
-          <p>
-            {error
-              ? "Couldn't connect to your tutor."
-              : "Connecting to your tutor…"}
-          </p>
+    <main className="session-loading">
+      <p className="connecting-msg">
+        {error ? "Couldn't connect to your tutor." : "Connecting to your tutor…"}
+      </p>
+      {error && (
+        <div className="session-error">
+          <span>{error}</span>
+          <button className="retry" onClick={onRetry}>
+            Retry
+          </button>
         </div>
-        {error && (
-          <div className="session-error">
-            <span>{error}</span>
-            <button className="retry" onClick={onRetry}>
-              Retry
-            </button>
-          </div>
-        )}
-        <VoiceComposer status={status} onEnd={onEnd} />
-      </div>
-      <div className="session-boards">
-        <div className="board tutor-board">
-          <div className="head">
-            <span className="label">Tutor board</span>
-            <span className="spacer" />
-          </div>
-          <div className="surface">
-            <div
-              className="empty"
-              style={{
-                margin: "auto",
-                textAlign: "center",
-                color: "var(--text-3)",
-                fontSize: 13,
-              }}
-            >
-              {error ? "Retry to reconnect." : "Connecting…"}
-            </div>
-          </div>
-        </div>
-        <div className="board user-board">
-          <div className="head">
-            <span className="label">Your pad</span>
-            <span className="spacer" />
-          </div>
-          <div className="surface" />
-        </div>
-      </div>
-    </section>
+      )}
+    </main>
   );
 }

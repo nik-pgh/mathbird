@@ -1,6 +1,5 @@
-import { useCallback, useState } from "react";
 import {
-  useLocalParticipant,
+  useTrackToggle,
   useVoiceAssistant,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
@@ -22,16 +21,9 @@ export default function VoiceComposer({ status, onEnd }: Props) {
 
 function ConnectedComposer({ onEnd }: { onEnd: () => void }) {
   const { state } = useVoiceAssistant();
-  const { localParticipant } = useLocalParticipant();
-  const micEnabled =
-    localParticipant.getTrackPublication(Track.Source.Microphone)?.isMuted ===
-    false;
-  const [, force] = useState(0);
-
-  const toggleMute = useCallback(async () => {
-    await localParticipant.setMicrophoneEnabled(!micEnabled);
-    force((n) => n + 1); // mic publication state is imperative; nudge a re-render
-  }, [localParticipant, micEnabled]);
+  const { enabled: micEnabled, toggle: toggleMic } = useTrackToggle({
+    source: Track.Source.Microphone,
+  });
 
   const label =
     state === "speaking"
@@ -51,7 +43,7 @@ function ConnectedComposer({ onEnd }: { onEnd: () => void }) {
         </div>
         <button
           className="icon-btn"
-          onClick={toggleMute}
+          onClick={() => toggleMic()}
           title={micEnabled ? "Mute" : "Unmute"}
           aria-label={micEnabled ? "Mute microphone" : "Unmute microphone"}
         >

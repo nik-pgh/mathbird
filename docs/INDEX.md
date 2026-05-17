@@ -98,12 +98,12 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | Path | What it is |
 | --- | --- |
 | `src/main.tsx` | React entry — mounts `<App />` into the root. |
-| `src/App.tsx` | `react-router-dom` shell — `/` → Upload, `/voice` → VoiceAgent. |
+| `src/App.tsx` | `react-router-dom` shell — `/` → Upload, `/session` → Session. |
 | `src/vite-env.d.ts` | Vite/TS environment types. |
 | `src/lib/api.ts` | **Only place that calls `fetch()`.** `uploadPdf`, `listDocuments`, `requestToken`. |
 | `src/lib/useTypewriter.ts` | Hook used by the transcript bubbles. |
 | `src/pages/UploadPage.tsx` | Landing page — `<PdfDropZone>` + uploaded-doc list. |
-| `src/pages/VoiceAgentPage.tsx` | Wraps `<LiveKitRoom>` + `useVoiceAssistant` + visualizer + transcript. |
+| `src/pages/SessionPage.tsx` | Wraps `<LiveKitRoom>` + `useVoiceAssistant` + visualizer + transcript. |
 | `src/components/PdfDropZone.tsx` | File-picker / drag-drop component for PDFs. |
 | `src/components/Transcript.tsx` | Streamed user + agent transcription, typewriter animation. |
 | `src/styles/` | Stylesheets. |

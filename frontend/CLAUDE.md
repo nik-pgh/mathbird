@@ -24,7 +24,7 @@ There is no test suite for the frontend yet.
 | Path | Component | Purpose |
 | --- | --- | --- |
 | `/` | `pages/UploadPage.tsx` | PDF dropzone + list of uploaded docs. |
-| `/voice` | `pages/VoiceAgentPage.tsx` | Connects to a LiveKit room and renders the voice UI. |
+| `/session` | `pages/SessionPage.tsx` | Connects to a LiveKit room and renders the voice UI. |
 
 ## Rules specific to this package
 

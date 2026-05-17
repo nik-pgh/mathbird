@@ -1,11 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-/**
- * Single top bar shared by both routes. Right-side action is contextual:
- * - on `/` (library): "Start session →" navigates to /session
- * - on `/session`: status pill + "End session" button (which calls onEnd if
- *   provided, otherwise navigates back to /)
- */
+/** Top bar shared by both routes. Pass `session` to render session-mode controls. */
 interface Props {
   /** Optional session-side props. When present, render the End button. */
   session?: {

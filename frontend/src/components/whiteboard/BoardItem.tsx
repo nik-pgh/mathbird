@@ -169,18 +169,24 @@ function buildPlotPath(item: AiBoardPlot): string {
 }
 
 function compileExpression(expr: string): (x: number) => number {
+  // Allow only digits, x, basic operators, parentheses, and identifier chars
+  // (so callers can write `sin(x)`, `pow(x,2)`, etc. — `with(Math)` resolves
+  // them). Anything else is rejected outright.
   if (!/^[\sxX0-9+\-*/().,\^a-zA-Z_]+$/.test(expr)) {
     return () => NaN;
   }
+  // Disallow obvious escape hatches.
   if (/(=>|=|`|\bnew\b|\bwindow\b|\bdocument\b|\bglobal\b)/.test(expr)) {
     return () => NaN;
   }
+  // Convert "^" to "**" so users can write x^2.
   const safe = expr.replace(/\^/g, "**");
   try {
     const f = new Function(
       "x",
       `with (Math) { return (${safe}); }`,
     ) as (x: number) => number;
+    // Smoke-test once; if it throws on a benign value, we treat as invalid.
     f(0);
     return f;
   } catch {

@@ -29,7 +29,7 @@ mathbird/
     └── src/
         ├── pages/
         │   ├── UploadPage.tsx     # landing page: PDF dropzone
-        │   └── VoiceAgentPage.tsx # LiveKit room + voice assistant UI
+        │   └── SessionPage.tsx    # LiveKit room + voice assistant UI
         ├── components/
         │   └── PdfDropZone.tsx
         └── lib/api.ts             # typed client for the backend

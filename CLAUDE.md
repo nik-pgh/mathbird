@@ -24,9 +24,9 @@ mathbird/
 │       └── rag/          # retriever.py (Protocol + NullRetriever + get_retriever)
 └── frontend/             # Vite + React + TS
     └── src/
-        ├── App.tsx       # react-router: "/" UploadPage, "/voice" VoiceAgentPage
+        ├── App.tsx       # react-router: "/" UploadPage, "/session" SessionPage
         ├── lib/api.ts    # typed client — only place that calls fetch()
-        ├── pages/        # UploadPage.tsx, VoiceAgentPage.tsx
+        ├── pages/        # UploadPage.tsx, SessionPage.tsx
         └── components/   # PdfDropZone.tsx, Transcript.tsx
 ```
 
