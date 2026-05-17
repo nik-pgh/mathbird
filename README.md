@@ -34,7 +34,7 @@ mathbird/
     └── src/
         ├── pages/
         │   ├── UploadPage.tsx          # landing page: PDF dropzone + uploaded-doc list
-        │   └── VoiceAgentPage.tsx      # LiveKit room + voice assistant + twin whiteboards
+        │   └── SessionPage.tsx         # LiveKit room + voice assistant + twin whiteboards
         ├── components/
         │   ├── PdfDropZone.tsx
         │   ├── Transcript.tsx

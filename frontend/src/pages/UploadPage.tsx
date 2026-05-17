@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import PdfDropZone from "../components/PdfDropZone";
+import SessionTopbar from "../components/session/SessionTopbar";
 import { UploadedDocument, listDocuments, uploadPdf } from "../lib/api";
 
 export default function UploadPage() {
@@ -28,37 +28,37 @@ export default function UploadPage() {
   }
 
   return (
-    <section className="page upload-page">
-      <header className="page-header">
-        <h1>Upload documents</h1>
-        <p>Drop PDFs to make them available to the voice agent.</p>
-      </header>
+    <>
+      <SessionTopbar />
+      <main>
+        <section className="library-page">
+          <header className="page-header">
+            <h1>Library</h1>
+            <p>Drop PDFs to give the tutor context.</p>
+          </header>
 
-      <PdfDropZone onFiles={handleFiles} disabled={uploading} />
+          <PdfDropZone onFiles={handleFiles} disabled={uploading} />
 
-      {error && <div className="error">{error}</div>}
+          {error && <div className="error">{error}</div>}
 
-      <section className="doc-list">
-        <div className="doc-list-header">
-          <h2>Indexed documents ({docs.length})</h2>
-          <Link to="/voice" className="primary-link">
-            Talk to the agent →
-          </Link>
-        </div>
-        {docs.length === 0 ? (
-          <p className="empty">No documents yet.</p>
-        ) : (
-          <ul>
-            {docs.map((d) => (
-              <li key={d.key}>
-                <span className="doc-name">{d.key.split("/").pop()}</span>
-                <span className="doc-meta">{formatBytes(d.size)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </section>
+          <section className="doc-list">
+            <h2>Indexed ({docs.length})</h2>
+            {docs.length === 0 ? (
+              <p className="empty">No documents yet.</p>
+            ) : (
+              <ul>
+                {docs.map((d) => (
+                  <li key={d.key}>
+                    <span className="doc-name">{d.key.split("/").pop()}</span>
+                    <span className="doc-meta">{formatBytes(d.size)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </section>
+      </main>
+    </>
   );
 }
 

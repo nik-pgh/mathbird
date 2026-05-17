@@ -26,15 +26,17 @@ mathbird/
 │       └── rag/               # retriever.py (Protocol + Null/LlamaIndex+Qdrant) + parsing pipeline
 └── frontend/                  # Vite + React + TS
     └── src/
-        ├── App.tsx            # react-router: "/" UploadPage, "/voice" VoiceAgentPage
+        ├── App.tsx            # react-router: "/" UploadPage, "/session" SessionPage
         ├── lib/
         │   ├── api.ts         # typed REST client — only place that calls fetch()
         │   ├── whiteboard.ts  # TS mirror of whiteboard pydantic schemas (encode/decode)
         │   └── useTypewriter.ts
-        ├── pages/             # UploadPage.tsx, VoiceAgentPage.tsx
-        ├── components/        # PdfDropZone.tsx, Transcript.tsx
+        ├── pages/             # UploadPage.tsx, SessionPage.tsx
+        ├── components/
+        │   ├── PdfDropZone.tsx, Transcript.tsx
+        │   ├── session/       # SessionTopbar.tsx, VoiceComposer.tsx
         │   └── whiteboard/    # AiBoard.tsx, UserBoard.tsx, BoardItem.tsx, useBoardChannel.ts
-        └── styles/            # global.css, whiteboard.css
+        └── styles/            # global.css, session.css
 ```
 
 ## Commands
