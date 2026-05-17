@@ -99,6 +99,13 @@ class Settings(BaseSettings):
     board_reader_interval_seconds: float = 2.0
     board_reader_max_image_dim: int = 512
 
+    # Observability (Arize Phoenix LLM/RAG tracing). Off by default. To enable:
+    # install with ``uv sync --extra observability``, run ``phoenix serve`` in
+    # another shell, then set ``PHOENIX_ENABLED=true``.
+    phoenix_enabled: bool = False
+    phoenix_project: str = "mathbird"
+    phoenix_endpoint: str = ""  # empty = phoenix auto-detect (gRPC :4317 or HTTP :6006)
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.api_cors_origins.split(",") if o.strip()]

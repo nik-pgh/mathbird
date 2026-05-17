@@ -12,7 +12,16 @@ from __future__ import annotations
 
 import logging
 
-from livekit.agents import (
+# Phoenix instrumentation must patch the OpenAI/LlamaIndex client classes
+# BEFORE livekit.plugins.openai imports them, otherwise livekit captures
+# unpatched method references and the LLM/RAG calls bypass tracing. Keep
+# this import + call at the very top of the module, ahead of any livekit
+# or providers imports.
+from app.observability import setup_phoenix
+
+setup_phoenix()
+
+from livekit.agents import (  # noqa: E402
     AgentSession,
     JobContext,
     RoomInputOptions,
@@ -20,11 +29,15 @@ from livekit.agents import (
     cli,
 )
 
-from app.agent.providers import build_llm, build_stt, build_tts, build_vad
-from app.agent.tools import build_function_tools
-from app.agent.whiteboard import BoardState, get_board_reader, install_user_board_listener
-from app.agent.whiteboard_agent import WhiteboardAgent
-from app.config import get_settings
+from app.agent.providers import build_llm, build_stt, build_tts, build_vad  # noqa: E402
+from app.agent.tools import build_function_tools  # noqa: E402
+from app.agent.whiteboard import (  # noqa: E402
+    BoardState,
+    get_board_reader,
+    install_user_board_listener,
+)
+from app.agent.whiteboard_agent import WhiteboardAgent  # noqa: E402
+from app.config import get_settings  # noqa: E402
 
 logger = logging.getLogger("mathbird.agent")
 

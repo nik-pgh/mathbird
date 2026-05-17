@@ -6,12 +6,20 @@ Run locally:
 
 from __future__ import annotations
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+# Phoenix instrumentation must patch OpenAI / LlamaIndex client classes
+# before any module that uses them is imported. ``.routes.documents``
+# pulls in ``app.rag`` which imports LlamaIndex at module load, so the
+# patch has to happen first.
+from app.observability import setup_phoenix
 
-from app.config import get_settings
+setup_phoenix()
 
-from .routes import documents, token
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+
+from app.config import get_settings  # noqa: E402
+
+from .routes import documents, token  # noqa: E402
 
 settings = get_settings()
 
