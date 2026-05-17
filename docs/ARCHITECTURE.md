@@ -48,10 +48,11 @@ Key points:
 
 - **No self-hosted SFU.** LiveKit Cloud terminates the WebRTC connection. We never see raw RTP — we use the LiveKit Agents SDK.
 - **The worker is a long-lived client**, not an HTTP server. It "registers" against the cloud using API key/secret and waits for room-join events.
-- **Function tools are mid-conversation callbacks.** When the LLM emits a tool call, the LiveKit Agents framework dispatches it to the matching `@function_tool`-decorated function in `app.agent.tools` and inserts the result back into the LLM's context.
+- **Function tools are mid-conversation callbacks.** When the LLM emits a tool call, the LiveKit Agents framework dispatches it to the matching `@function_tool`-decorated function in `app.agent.tools` and inserts the result back into the LLM's context. Today's tools are `search_documents` (RAG) plus three whiteboard tools (`update_ai_board`, `clear_ai_board`, `read_user_board`).
 - **The HTTP API and the worker don't talk to each other directly.** Their only shared state is `Settings` (env-driven) and whatever the active `Retriever`/`StorageBackend` implementations happen to persist (filesystem, S3, vector store, ...).
+- **Whiteboard traffic rides on the same LiveKit room as the audio**, but on two named data-channel topics (`ai_board` server→clients, `user_board` clients→server). The HTTP API is never in this path either.
 
-## The four swappable seams
+## The five swappable seams
 
 Each seam is a Protocol (or LiveKit base type) + a factory + a `Literal` in `Settings`. Adding a new option means touching exactly three places: the factory, the Literal, and `pyproject.toml`. No call site changes.
 
@@ -85,10 +86,22 @@ The factories import vendor plugins **lazily** inside the branch, so installing 
 
 - **Where:** `app/agent/tools.py`. Decorate with `@function_tool`, return from `build_function_tools()`.
 - **The LLM sees only:** the function name, parameter types, and docstring. Write docstrings deliberately — they're effectively system-prompt extensions.
+- **Today's set:** `search_documents` (RAG seam), `update_ai_board` / `clear_ai_board` (publish on the `ai_board` data topic), `read_user_board` (reads cached `BoardState`).
+
+### 5. Board reader (`BoardReader`)
+
+- **Protocol:** `app/agent/whiteboard/reader/__init__.py::BoardReader` — `interpret(png_bytes: bytes) -> str`.
+- **Factory:** `app/agent/whiteboard/reader/__init__.py::get_board_reader()`, `lru_cache`d.
+- **Literal:** `BoardReaderName` in `app/config.py` (`null | openai_vision`).
+- **Implementations:** `NullBoardReader` (default, returns nothing) and `OpenAIVisionBoardReader` (vision-LLM handwriting recognition, configurable model + API key).
+
+The reader is invoked by the debounced `install_user_board_listener` pipeline in `app/agent/whiteboard/listener.py`. Its output lands in a per-room `BoardState`, and `WhiteboardAgent.on_user_turn_completed` injects that text as a synthetic system message at the start of every LLM turn — keeping the agent up to date on what the student has written without polluting the persistent `Agent.chat_ctx`.
 
 ## Frontend ↔ backend boundary
 
-`frontend/src/lib/api.ts` is the only place in the frontend that calls `fetch()`. Everything else imports the typed wrapper. Three calls:
+Two contracts, both hand-mirrored.
+
+**REST** — `frontend/src/lib/api.ts` is the only place in the frontend that calls `fetch()`. Everything else imports the typed wrapper. Three calls:
 
 | Call | Backend route | Returns |
 | --- | --- | --- |
@@ -98,9 +111,19 @@ The factories import vendor plugins **lazily** inside the branch, so installing 
 
 Then the React app connects to LiveKit Cloud directly via `@livekit/components-react` (`<LiveKitRoom serverUrl={url} token={token} />`) — the backend is no longer in the audio path.
 
+**LiveKit data channel** — schemas live in `backend/app/agent/whiteboard/messages.py` (pydantic) and are mirrored in `frontend/src/lib/whiteboard.ts` (plus `encode*` / `decode*` helpers). Two named topics:
+
+| Topic | Direction | Payload |
+| --- | --- | --- |
+| `ai_board` | server → clients | `AiBoardUpdate` — `op: "upsert" \| "clear"` with discriminated `AiBoardText \| AiBoardPlot \| AiBoardShape` items. |
+| `user_board` | clients → server | `UserBoardSnapshot` — base64 PNG (≤512px long edge) + `captured_at_ms` + `is_empty`. |
+
+There is no codegen — change both sides together.
+
 Voice UI is composed from LiveKit React primitives:
 - `useVoiceAssistant()` — agent state + audio track + agent transcriptions
 - `useTrackTranscription()` — user's mic transcription (via LiveKit's STT relay)
+- `useDataChannel(topic)` — wrapped in `useBoardChannel` for typed `ai_board` / `user_board` traffic
 - `<BarVisualizer />` — audio reactive bars
 - `<RoomAudioRenderer />` — actually plays the agent's audio
 

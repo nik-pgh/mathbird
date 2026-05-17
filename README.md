@@ -1,7 +1,10 @@
 # mathbird
 
 A LiveKit voice agent with a configurable STT/LLM/TTS/VAD pipeline and a React
-frontend for uploading PDFs that the agent can reason over.
+frontend for uploading PDFs that the agent can reason over. The voice session
+includes a pair of in-room whiteboards on a LiveKit data channel — one the
+agent writes typeset math, plots, and SVG shapes onto, and one the student
+draws on (snapshots are OCR'd back into the agent's chat context).
 
 Deployed to **LiveKit Cloud**. RAG is provider-driven: the default no-op
 retriever keeps local setup simple, and the built-in LlamaParse + LlamaIndex +
@@ -11,29 +14,39 @@ Qdrant provider can parse, index, and retrieve from uploaded textbooks.
 
 ```
 mathbird/
-├── backend/                       # Python: LiveKit agent worker + FastAPI HTTP API
+├── backend/                            # Python: LiveKit agent worker + FastAPI HTTP API
 │   └── app/
-│       ├── config.py              # all env-driven settings (single source of truth)
+│       ├── config.py                   # all env-driven settings (single source of truth)
 │       ├── agent/
-│       │   ├── main.py            # LiveKit worker entrypoint — joins rooms
-│       │   ├── tools.py           # function tools the LLM can call (incl. RAG search)
-│       │   └── providers/         # swappable STT / LLM / TTS / VAD factories
+│       │   ├── main.py                 # LiveKit worker entrypoint — joins rooms
+│       │   ├── tools.py                # function tools the LLM can call (RAG + whiteboard)
+│       │   ├── whiteboard_agent.py     # injects latest user-board reading each turn
+│       │   ├── providers/              # swappable STT / LLM / TTS / VAD factories
+│       │   └── whiteboard/             # data-channel messages + state + reader (null / vision)
 │       ├── api/
-│       │   ├── main.py            # FastAPI app
+│       │   ├── main.py                 # FastAPI app
 │       │   └── routes/
-│       │       ├── token.py       # POST /api/token       → LiveKit access token
-│       │       └── documents.py   # POST /api/documents   → PDF upload
-│       ├── storage/               # local-disk + S3 backends behind a Protocol
-│       └── rag/                   # Retriever Protocol + null and Qdrant providers
-└── frontend/                      # Vite + React + TypeScript
+│       │       ├── token.py            # POST /api/token       → LiveKit access token
+│       │       └── documents.py        # POST /api/documents   → PDF upload + RAG ingest
+│       ├── storage/                    # local-disk + S3 backends behind a Protocol
+│       └── rag/                        # Retriever Protocol + null and LlamaIndex+Qdrant providers
+└── frontend/                           # Vite + React + TypeScript
     └── src/
         ├── pages/
-        │   ├── UploadPage.tsx     # landing page: PDF dropzone
-        │   └── SessionPage.tsx    # LiveKit room + voice assistant UI
+        │   ├── UploadPage.tsx          # landing page: PDF dropzone + uploaded-doc list
+        │   └── SessionPage.tsx         # LiveKit room + voice assistant + twin whiteboards
         ├── components/
-        │   └── PdfDropZone.tsx
-        └── lib/api.ts             # typed client for the backend
+        │   ├── PdfDropZone.tsx
+        │   ├── Transcript.tsx
+        │   └── whiteboard/             # AiBoard, UserBoard, BoardItem, useBoardChannel
+        ├── lib/
+        │   ├── api.ts                  # typed REST client for the backend
+        │   └── whiteboard.ts           # TS mirror of whiteboard pydantic schemas
+        └── styles/                     # global.css + whiteboard.css
 ```
+
+A finer-grained file/module map lives in [`docs/INDEX.md`](./docs/INDEX.md);
+deeper architectural rationale in [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
 ### How a conversation flows
 
@@ -54,9 +67,11 @@ mathbird/
   │ LiveKit agent worker    │  ◀── audio frames ──────  │
   │ (Python, app/agent)     │                           │
   │  STT → LLM → TTS        │  ── audio frames ──────▶  │
-  │  ↑ function_tool:       │                           │
+  │  ↑ function tools:      │                           │
   │    search_documents() ──┼─► NullRetriever by default│
   │                         │    or Qdrant RAG provider │
+  │    update_ai_board()  ──┼─► ai_board data topic ───▶│  (typeset math / plots / shapes)
+  │    read_user_board()  ──┼─◀ user_board data topic ◀─│  (PNG snapshots → BoardReader)
   └─────────────────────────┘                           ▼
 ```
 
@@ -141,17 +156,18 @@ All four modalities are env-driven. To change a vendor, edit `.env`:
 ```bash
 STT_PROVIDER=deepgram    # deepgram | openai
 LLM_PROVIDER=openai      # openai
-TTS_PROVIDER=cartesia    # cartesia | openai
+TTS_PROVIDER=cartesia    # cartesia | elevenlabs | openai
 VAD_PROVIDER=silero      # silero
 ```
 
-To add a new vendor (e.g., ElevenLabs TTS):
+To add a new vendor (e.g., a new TTS provider):
 
-1. Add the plugin to `backend/pyproject.toml`.
+1. Add the plugin (or `livekit-agents` extra) to `backend/pyproject.toml`.
 2. Add a branch in `backend/app/agent/providers/tts.py`.
 3. Add the new option to `TtsProvider` in `backend/app/config.py`.
 
-The agent code is unchanged.
+The agent code is unchanged. The same three-step recipe applies to STT, LLM,
+VAD, storage, RAG, and board-reader seams.
 
 ## RAG with LlamaParse + Qdrant
 
@@ -198,6 +214,34 @@ For local Qdrant:
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 ```
 
+## Whiteboards
+
+`VoiceAgentPage` mounts two whiteboards alongside the voice UI. They communicate
+with the agent over named LiveKit data-channel topics:
+
+- `ai_board` (server → clients) — `AiBoardUpdate` messages carrying `text`
+  (markdown + `$...$` LaTeX, rendered with KaTeX), `plot` (1-D function plot
+  over `x_min..x_max`, rendered as inline SVG), or `shape` (sanitized SVG
+  fragment) items. The LLM publishes via the `update_ai_board` and
+  `clear_ai_board` function tools.
+- `user_board` (clients → server) — `UserBoardSnapshot` messages with a base64
+  PNG (≤512px on the long edge). The worker debounces them, hands the bytes to
+  the configured `BoardReader`, and caches the resulting text on a per-room
+  `BoardState`. `WhiteboardAgent.on_user_turn_completed` injects that reading
+  into the LLM's chat context every turn; `read_user_board` lets the LLM
+  re-read mid tool-chain.
+
+Schemas live in `backend/app/agent/whiteboard/messages.py` (pydantic) and are
+mirrored in `frontend/src/lib/whiteboard.ts`. Update both sides together — there
+is no schema generator.
+
+Board readers are a pluggable Protocol (`BoardReader.interpret(png) -> str`).
+The default `BOARD_READER=null` is a no-op; `BOARD_READER=openai_vision`
+sends each snapshot to a vision LLM (`BOARD_READER_MODEL`, defaults to
+`gpt-4o-mini`) and uses `OPENAI_API_KEY`. To add another reader, drop a module
+under `backend/app/agent/whiteboard/reader/`, add the name to `BoardReaderName`
+in `app/config.py`, and add the corresponding branch in `get_board_reader()`.
+
 ## Switching PDF storage to S3
 
 Set `STORAGE_BACKEND=s3` plus the `S3_*` and `AWS_*` env vars. The local
@@ -207,9 +251,12 @@ interface, so no other code changes are needed.
 ## Project conventions
 
 * **No vendor lock-in in business code.** The agent never imports `deepgram`
-  / `openai` / `cartesia` / `chroma` directly. Everything goes through the
-  provider / storage / retriever interfaces.
+  / `openai` / `cartesia` / `elevenlabs` / `qdrant` directly. Everything goes
+  through the provider / storage / retriever / board-reader interfaces.
 * **One env var per knob.** All config flows through `app.config.Settings`.
   Don't read `os.environ` elsewhere.
-* **Add a new provider / backend by adding a branch + a literal type.** Never
-  by editing call sites.
+* **Add a new provider / backend / reader by adding a branch + a literal type.**
+  Never by editing call sites.
+* **Whiteboard message types are mirrored by hand.** Pydantic schemas in
+  `backend/app/agent/whiteboard/messages.py` and TS types in
+  `frontend/src/lib/whiteboard.ts` change together.
