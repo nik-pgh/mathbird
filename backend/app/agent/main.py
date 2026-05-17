@@ -21,6 +21,8 @@ from app.observability import setup_phoenix
 
 setup_phoenix()
 
+import json  # noqa: E402
+
 from livekit.agents import (  # noqa: E402
     AgentSession,
     JobContext,
@@ -45,6 +47,19 @@ from app.config import get_settings  # noqa: E402
 logger = logging.getLogger("mathbird.agent")
 
 
+def _parse_active_doc_id(metadata: str | None) -> str | None:
+    if not metadata:
+        return None
+    try:
+        payload = json.loads(metadata)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    val = payload.get("active_doc_id")
+    return val if isinstance(val, str) and val else None
+
+
 async def entrypoint(ctx: JobContext) -> None:
     """Called by the LiveKit worker once per room."""
     settings = get_settings()
@@ -62,11 +77,18 @@ async def entrypoint(ctx: JobContext) -> None:
 
     await ctx.connect()
 
-    # Whiteboard wiring — must come before the session starts so the listener
-    # is in place by the time the user's first stroke arrives. ``SessionData``
-    # bundles BoardState (user board reading cache) and BoardCache (AiBoard
-    # items cache for the extractor) and rides on ``AgentSession.userdata``
-    # so tools can reach them via ``ctx.session.userdata``.
+    # Read active_doc_id from the joining participant's metadata. The token
+    # route writes ``{"active_doc_id": "..."}`` into it when the frontend
+    # supplies one. If no participant arrives or the metadata is missing,
+    # we proceed without a doc filter (search_documents falls back to all
+    # docs).
+    active_doc_id: str | None = None
+    try:
+        participant = await ctx.wait_for_participant()
+        active_doc_id = _parse_active_doc_id(participant.metadata)
+    except Exception:
+        logger.exception("Failed to read participant metadata; proceeding without doc filter.")
+
     board_state = BoardState()
     board_cache = BoardCache()
     board_reader = get_board_reader()
@@ -77,10 +99,13 @@ async def entrypoint(ctx: JobContext) -> None:
         reader=board_reader,
         interval=settings.board_reader_interval_seconds,
     )
-    # Defer cleanup to job shutdown so the listener lives for the whole session.
     ctx.add_shutdown_callback(listener.aclose)
 
-    session_data = SessionData(board_state=board_state, board_cache=board_cache)
+    session_data = SessionData(
+        board_state=board_state,
+        board_cache=board_cache,
+        active_doc_id=active_doc_id,
+    )
 
     session = AgentSession(
         stt=build_stt(settings),
@@ -104,7 +129,6 @@ async def entrypoint(ctx: JobContext) -> None:
         room_input_options=RoomInputOptions(),
     )
 
-    # Optional opening greeting — comment out to stay silent until spoken to.
     await session.generate_reply(
         instructions="Greet the user briefly and ask how you can help."
     )

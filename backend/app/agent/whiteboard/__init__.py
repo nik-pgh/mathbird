@@ -42,6 +42,7 @@ class SessionData:
 
     board_state: BoardState
     board_cache: BoardCache
+    active_doc_id: str | None = None
 
 
 __all__ = [
