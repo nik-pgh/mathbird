@@ -156,5 +156,12 @@ async def read_user_board(ctx: RunContext) -> str:
 
 
 def build_function_tools() -> list:
-    """Return the tool set the agent should expose to the LLM."""
-    return [search_documents, update_ai_board, clear_ai_board, read_user_board]
+    """Return the tool set the agent should expose to the LLM.
+
+    AiBoard writes (``update_ai_board`` / ``clear_ai_board``) are NOT in this
+    list — the AiBoard is now driven by the per-sentence extractor in
+    ``WhiteboardAgent`` rather than direct LLM tool calls. The two functions
+    stay defined in this module so the publish primitive is reachable for
+    tests and so re-enabling LLM-direct board writes is a one-line change.
+    """
+    return [search_documents, read_user_board]

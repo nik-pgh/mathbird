@@ -62,10 +62,12 @@ def _ctx(state: BoardState | None = None) -> _FakeRunContext:
     return _FakeRunContext(session=_FakeSession(userdata=data, room_io=_FakeRoomIO(room=room)))
 
 
-def test_build_function_tools_includes_whiteboard_tools() -> None:
+def test_build_function_tools_exposes_only_search_and_read() -> None:
+    # AiBoard writes are owned by the extractor now; update_ai_board and
+    # clear_ai_board are NOT in the LLM-facing tool list.
     tools = build_function_tools()
     names = {t.__name__ for t in tools}  # type: ignore[attr-defined]
-    assert {"search_documents", "update_ai_board", "clear_ai_board", "read_user_board"} <= names
+    assert names == {"search_documents", "read_user_board"}
 
 
 async def test_update_ai_board_publishes_upsert() -> None:
