@@ -40,9 +40,11 @@ class _FakeSession:
     """Minimal stand-in for ``livekit.agents.AgentSession``.
 
     The tools touch only ``session.userdata`` and ``session.room_io.room``.
+    ``userdata`` is either a ``SessionData`` (new shape) or a bare
+    ``BoardState`` (legacy shape — kept working defensively).
     """
 
-    userdata: BoardState
+    userdata: object
     room_io: _FakeRoomIO
 
 
@@ -54,20 +56,23 @@ class _FakeRunContext:
 def _ctx(state: BoardState | None = None) -> _FakeRunContext:
     state = state if state is not None else BoardState()
     room = _FakeRoom()
-    return _FakeRunContext(session=_FakeSession(userdata=state, room_io=_FakeRoomIO(room=room)))
+    from app.agent.whiteboard import BoardCache, SessionData
+
+    data = SessionData(board_state=state, board_cache=BoardCache())
+    return _FakeRunContext(session=_FakeSession(userdata=data, room_io=_FakeRoomIO(room=room)))
 
 
-def test_build_function_tools_includes_whiteboard_tools() -> None:
+def test_build_function_tools_exposes_only_search_and_read() -> None:
+    # AiBoard writes are owned by the extractor now; update_ai_board and
+    # clear_ai_board are NOT in the LLM-facing tool list.
     tools = build_function_tools()
     names = {t.__name__ for t in tools}  # type: ignore[attr-defined]
-    assert {"search_documents", "update_ai_board", "clear_ai_board", "read_user_board"} <= names
+    assert names == {"search_documents", "read_user_board"}
 
 
 async def test_update_ai_board_publishes_upsert() -> None:
     ctx = _ctx()
-    result = await update_ai_board(
-        ctx, items=[AiBoardText(kind="text", id="t1", markdown="hi")]
-    )
+    result = await update_ai_board(ctx, items=[AiBoardText(kind="text", id="t1", markdown="hi")])
     assert "1" in result  # ack mentions the item count
 
     calls = ctx.session.room_io.room.local_participant.calls
@@ -93,9 +98,7 @@ async def test_update_ai_board_returns_corrective_error_when_publish_fails(
     monkeypatch.setattr(tools, "publish_ai_board", boom)
 
     ctx = _ctx()
-    result = await update_ai_board(
-        ctx, items=[AiBoardText(kind="text", id="t1", markdown="hi")]
-    )
+    result = await update_ai_board(ctx, items=[AiBoardText(kind="text", id="t1", markdown="hi")])
     assert "update_ai_board failed" in result
     assert "RuntimeError" in result
     assert "publish blew up" in result

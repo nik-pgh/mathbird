@@ -23,6 +23,7 @@ ParserProvider = Literal["llamaparse"]
 RerankerProvider = Literal["none"]
 RagIngestionMode = Literal["sync"]
 BoardReaderName = Literal["null", "openai_vision"]
+BoardExtractorName = Literal["null", "openai"]
 
 
 class Settings(BaseSettings):
@@ -103,6 +104,12 @@ class Settings(BaseSettings):
     board_reader_model: str = "gpt-4o-mini"
     board_reader_interval_seconds: float = 2.0
     board_reader_max_image_dim: int = 512
+
+    # AiBoard extractor — second LLM that watches the agent's spoken
+    # sentences and publishes board items per sentence. Off by default.
+    board_extractor: BoardExtractorName = "null"
+    board_extractor_model: str = "gpt-4o-mini"
+    board_extractor_timeout_seconds: float = 2.0
 
     # Observability (Arize Phoenix LLM/RAG tracing). Off by default. To enable:
     # install with ``uv sync --extra observability``, run ``phoenix serve`` in

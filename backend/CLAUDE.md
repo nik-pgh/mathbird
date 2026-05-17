@@ -29,7 +29,7 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 1. **All env vars go through `app.config.Settings`.** Never `os.environ.get(...)` outside `config.py`. Add the field with a default, then `get_settings().my_field`.
 2. **Provider/storage/retriever/board-reader choices are `Literal` types.** Adding a new option = add to the Literal + add a branch in the factory + add the dep. Never modify call sites.
 3. **Vendor SDKs stay isolated to provider boundaries.** `from livekit.plugins import deepgram` lives in `app/agent/providers/stt.py` and not in business code. Same rule for `openai`, `cartesia`, `elevenlabs`, `boto3`, LlamaIndex, Qdrant, etc.: keep vendor imports inside agent provider modules, storage modules, RAG implementation modules under `app/rag/`, and board-reader modules under `app/agent/whiteboard/reader/`. Lazy imports keep startup fast and let users skip plugins they don't need.
-4. **Function tools are the agent's API surface.** New LLM-callable capabilities = a new `@function_tool` async function in `app/agent/tools.py`, returned from `build_function_tools()`. The agent picks it up automatically. **Write the docstring carefully** — the LLM reads it. Current tools: `search_documents` (RAG) + `update_ai_board` / `clear_ai_board` / `read_user_board` (whiteboard).
+4. **Function tools are the agent's API surface.** New LLM-callable capabilities = a new `@function_tool` async function in `app/agent/tools.py`, returned from `build_function_tools()`. The agent picks it up automatically. **Write the docstring carefully** — the LLM reads it. Current LLM-facing tools: `search_documents` (RAG) + `read_user_board` (student board reading). AiBoard writes are NOT done by the LLM — they come from the per-sentence `BoardExtractor` in `app/agent/whiteboard/extractor/` watching the agent's transcription stream.
 5. **`Settings` reads `.env` AND `../.env`.** The repo-root `.env` is the canonical location for shared secrets. `backend/README.md` says `cp ../.env.example ../.env`.
 6. **Singletons are cached.** `get_settings()`, `get_storage()`, `get_retriever()`, and `get_board_reader()` are all `lru_cache` or module-level. Restart the process to pick up env changes; clear caches in tests.
 7. **Whiteboard wire format is mirrored by hand.** Pydantic schemas in `app/agent/whiteboard/messages.py` are mirrored in `frontend/src/lib/whiteboard.ts`. No codegen — update both sides in the same change.
@@ -45,6 +45,7 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 | New storage backend | New file in `app/storage/` implementing `StorageBackend`; branch in `get_storage()` + `Literal` |
 | New whiteboard item kind | Pydantic model in `app/agent/whiteboard/messages.py`, extend `AiBoardItem`; mirror in `frontend/src/lib/whiteboard.ts`; render in `BoardItem.tsx` |
 | New board reader (handwriting recognizer) | New module under `app/agent/whiteboard/reader/`, add to `BoardReaderName`, branch in `get_board_reader()` |
+| New board extractor (sentence-streaming AiBoard writer) | New module under `app/agent/whiteboard/extractor/` implementing `BoardExtractor`; branch in `get_board_extractor()` + `Literal` in `BoardExtractorName` |
 | New env var | Field on `Settings` in `app/config.py` + entry in `../.env.example` |
 | Tune agent persona | `Settings.agent_instructions` default, or `AGENT_INSTRUCTIONS` env var |
 
@@ -56,5 +57,6 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 - TTS defaults are Cartesia-shaped (`TTS_VOICE` is a UUID). Replace `TTS_MODEL` and `TTS_VOICE` when switching `TTS_PROVIDER` (`cartesia | elevenlabs | openai`). ElevenLabs also reads `TTS_LANGUAGE` and `ELEVEN_API_KEY`.
 - `LLM_PROVIDER` Literal only allows `"openai"` today. Add to the Literal before changing `.env`.
 - `BOARD_READER` defaults to `"null"` (no-op). Set `BOARD_READER=openai_vision` (needs `OPENAI_API_KEY`) to feed user-board snapshots through `gpt-4o-mini` (configurable via `BOARD_READER_MODEL`). Snapshot cadence is `BOARD_READER_INTERVAL_SECONDS` (2s) and is debounced inside `app/agent/whiteboard/listener.py`.
+- `BOARD_EXTRACTOR` defaults to `"null"` (no-op). Set `BOARD_EXTRACTOR=openai` (needs `OPENAI_API_KEY`) to enable the sentence-streaming AiBoard writer (`gpt-4o-mini` by default; override with `BOARD_EXTRACTOR_MODEL`, timeout via `BOARD_EXTRACTOR_TIMEOUT_SECONDS`).
 - `uv.lock` is gitignored; `uv sync` regenerates it.
 - `pytest-asyncio` is in `auto` mode — async test functions don't need `@pytest.mark.asyncio`.

@@ -1,15 +1,23 @@
 """Function tools exposed to the LLM during a voice session.
 
-Tools are how the agent calls into our code mid-conversation. Two families today:
+Tools are how the agent calls into our code mid-conversation. The LLM-facing
+tool list (returned by :func:`build_function_tools`) is two tools today:
 
 * ``search_documents`` — delegates to ``app.rag.get_retriever()`` so voice
   answers can be grounded in uploaded textbook chunks when RAG is enabled.
-* ``update_ai_board`` / ``clear_ai_board`` / ``read_user_board`` — the
-  whiteboard surface. The agent uses these to write typeset math + plots /
-  shapes onto its board and to re-read the student's board mid tool-chain.
+* ``read_user_board`` — returns the latest reading of the student's board
+  (the agent's window into what the student has drawn since the last turn).
 
-Per-room whiteboard state is reached through the framework: ``BoardState``
-rides on ``ctx.session.userdata`` (set by the entrypoint when constructing
+AiBoard writes (``update_ai_board`` / ``clear_ai_board``) are still defined
+in this module but are NOT in the LLM-facing list — the AiBoard is now
+driven by the per-sentence extractor in ``WhiteboardAgent`` (see
+``app/agent/whiteboard/extractor/``). The two functions remain so the
+publish primitive is reachable for tests and so re-enabling LLM-direct
+board writes is a one-line change.
+
+Per-session state is reached through the framework: ``SessionData``
+(bundling ``BoardState`` and ``BoardCache``) rides on
+``ctx.session.userdata`` (set by the entrypoint when constructing
 ``AgentSession``), and the LiveKit ``Room`` is available at
 ``ctx.session.room_io.room``.
 """
@@ -24,6 +32,7 @@ from app.agent.whiteboard import (
     AiBoardItem,
     AiBoardUpdate,
     BoardState,
+    SessionData,
     publish_ai_board,
 )
 from app.config import get_settings
@@ -78,10 +87,17 @@ async def search_documents(ctx: RunContext, query: str) -> str:
 def _board_state(ctx: RunContext) -> BoardState | None:
     """Read the per-session ``BoardState`` set by ``app.agent.main.entrypoint``."""
     try:
-        state = ctx.session.userdata
+        data = ctx.session.userdata
     except Exception:
         return None
-    return state if isinstance(state, BoardState) else None
+    # New shape: SessionData bundles BoardState + BoardCache. Stay tolerant
+    # of the legacy bare-BoardState shape so we don't break older sessions
+    # mid-rollout (defensive — the new entrypoint always supplies SessionData).
+    if isinstance(data, SessionData):
+        return data.board_state
+    if isinstance(data, BoardState):
+        return data
+    return None
 
 
 @function_tool
@@ -148,5 +164,12 @@ async def read_user_board(ctx: RunContext) -> str:
 
 
 def build_function_tools() -> list:
-    """Return the tool set the agent should expose to the LLM."""
-    return [search_documents, update_ai_board, clear_ai_board, read_user_board]
+    """Return the tool set the agent should expose to the LLM.
+
+    AiBoard writes (``update_ai_board`` / ``clear_ai_board``) are NOT in this
+    list — the AiBoard is now driven by the per-sentence extractor in
+    ``WhiteboardAgent`` rather than direct LLM tool calls. The two functions
+    stay defined in this module so the publish primitive is reachable for
+    tests and so re-enabling LLM-direct board writes is a one-line change.
+    """
+    return [search_documents, read_user_board]
