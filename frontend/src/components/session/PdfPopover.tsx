@@ -66,8 +66,12 @@ export default function PdfPopover({ docId, title, onClose }: Props) {
   const resizeStart = useRef<{ x: number; y: number; w: number; h: number } | null>(
     null,
   );
+  const geomRef = useRef<Geom>(geom);
+  geomRef.current = geom;
 
-  // Persist geometry once after the user releases (avoid hammering localStorage).
+  // Persist geometry on every change. Pointer drag fires many state updates,
+  // but localStorage writes are cheap enough at this rate (single small JSON
+  // object) that debouncing isn't worth the complexity.
   useEffect(() => {
     saveGeom(geom);
   }, [geom]);
@@ -84,10 +88,11 @@ export default function PdfPopover({ docId, title, onClose }: Props) {
   const onHeaderPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if ((e.target as HTMLElement).closest("button")) return; // don't drag from close button
-      dragOffset.current = { dx: e.clientX - geom.x, dy: e.clientY - geom.y };
+      const g = geomRef.current;
+      dragOffset.current = { dx: e.clientX - g.x, dy: e.clientY - g.y };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
-    [geom.x, geom.y],
+    [],
   );
   const onHeaderPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -107,15 +112,16 @@ export default function PdfPopover({ docId, title, onClose }: Props) {
   const onResizePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.stopPropagation();
+      const g = geomRef.current;
       resizeStart.current = {
         x: e.clientX,
         y: e.clientY,
-        w: geom.w,
-        h: geom.h,
+        w: g.w,
+        h: g.h,
       };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
-    [geom.w, geom.h],
+    [],
   );
   const onResizePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
