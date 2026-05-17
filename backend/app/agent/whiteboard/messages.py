@@ -20,7 +20,13 @@ class AiBoardText(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["text"] = "text"
+    # No default on ``kind`` — discriminated-union dispatching from a JSON
+    # dict (which is how the LLM's tool args reach us) needs the
+    # discriminator field present in the JSON. With a default, pydantic
+    # marks ``kind`` as optional in the JSON Schema, so OpenAI tells the
+    # LLM it can omit it, and a missing ``kind`` then fails dispatch with
+    # ``union_tag_not_found``.
+    kind: Literal["text"]
     id: str = Field(description="Stable id; same id replaces, new id appends.")
     markdown: str
 
@@ -30,7 +36,7 @@ class AiBoardPlot(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["plot"] = "plot"
+    kind: Literal["plot"]
     id: str
     expression: str = Field(description="Python-style expression in x, e.g. 'x**2 - 4'.")
     x_min: float = -10
@@ -43,7 +49,7 @@ class AiBoardShape(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["shape"] = "shape"
+    kind: Literal["shape"]
     id: str
     svg: str = Field(description="SVG fragment without <svg> wrapper; client sanitizes.")
 

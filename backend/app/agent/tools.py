@@ -88,15 +88,35 @@ def _board_state(ctx: RunContext) -> BoardState | None:
 async def update_ai_board(ctx: RunContext, items: list[AiBoardItem]) -> str:
     """Write or update items on YOUR whiteboard (visible to the student).
 
-    Use this while you explain to: write typeset math (`AiBoardText` with $...$
-    LaTeX), draw a function plot (`AiBoardPlot` over `x_min..x_max`), or sketch
-    a shape (`AiBoardShape`, sanitized SVG fragment). Each item's `id` controls
-    upsert: pass the same `id` to replace an item, pass a new `id` to append.
-    Keep items small and self-contained — one equation or one figure per item.
+    Use this while you explain to: write typeset math, draw a function plot,
+    or sketch a shape. Each item's ``id`` controls upsert — pass the same
+    ``id`` to replace an item, pass a new ``id`` to append. Keep items small
+    and self-contained: one equation or one figure per item.
+
+    Every item MUST include a ``kind`` field naming its type:
+    - ``kind="text"`` with ``id`` and ``markdown`` (may contain $...$ LaTeX)
+    - ``kind="plot"`` with ``id``, ``expression`` (Python-style in x), and
+      optional ``x_min`` / ``x_max`` / ``label``
+    - ``kind="shape"`` with ``id`` and ``svg`` (fragment without <svg> wrapper)
+
+    Example call::
+
+        update_ai_board(items=[
+            {"kind": "text", "id": "eq1", "markdown": "$2x + 10 = 20$"},
+            {"kind": "plot", "id": "p1", "expression": "x**2 - 4"},
+        ])
     """
-    update = AiBoardUpdate(op="upsert", items=items)
-    room = ctx.session.room_io.room
-    await publish_ai_board(room, update)
+    try:
+        update = AiBoardUpdate(op="upsert", items=items)
+        room = ctx.session.room_io.room
+        await publish_ai_board(room, update)
+    except Exception as exc:
+        logger.exception("update_ai_board failed: items=%r", items)
+        # Return the error to the LLM so it can correct (e.g. add missing
+        # ``kind``) rather than apologise to the student. The function-tool
+        # layer otherwise replaces uncaught exceptions with a generic "An
+        # internal error occurred" that gives the LLM no signal to retry.
+        return f"update_ai_board failed: {type(exc).__name__}: {exc}"
     return f"Updated AI whiteboard with {len(items)} item(s)."
 
 
