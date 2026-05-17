@@ -6,11 +6,26 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
+from opentelemetry import trace
+
 from app.rag.formatter import format_records_as_chunks
 from app.rag.indexing import parsed_document_to_nodes
 from app.rag.parsing import BlockType, RetrievalRequest, RetrievedRecord, TextbookParser
 from app.rag.query_parser import parse_retrieval_query
 from app.rag.retriever import RetrievedChunk
+
+# Phoenix / Arize OpenInference semantic-convention attribute keys. Used as
+# literal strings so we don't pull the optional ``openinference`` package
+# into the core code path. When Phoenix is disabled, ``trace.get_tracer``
+# returns a NoOp tracer and these calls cost ~nothing. When Phoenix is on,
+# spans emitted here show up alongside ``VectorIndexRetriever.aretrieve``
+# in the UI under kind=RETRIEVER, so structured-lookup turns and semantic
+# turns can be compared side-by-side.
+_OI_SPAN_KIND = "openinference.span.kind"
+_OI_INPUT_VALUE = "input.value"
+_OI_OUTPUT_VALUE = "output.value"
+
+_tracer = trace.get_tracer("mathbird.rag")
 
 VALID_BLOCK_TYPES: frozenset[str] = frozenset(
     {
@@ -32,6 +47,39 @@ QDRANT_PAYLOAD_INDEXES: tuple[tuple[str, str], ...] = (
     ("example_number", "keyword"),
     ("textbook_doc_id", "keyword"),
 )
+
+
+def _annotate_retrieved_documents(span: Any, records: list[RetrievedRecord]) -> None:
+    """Attach OpenInference-formatted document attributes to a retrieval span.
+
+    Mirrors the schema LlamaIndexInstrumentor emits for
+    ``VectorIndexRetriever.aretrieve`` spans so the Phoenix UI renders
+    structured-lookup turns next to semantic-search turns under the same
+    kind=RETRIEVER view (with full content / score / metadata).
+    """
+    span.set_attribute("retrieval.documents.count", len(records))
+    for i, rec in enumerate(records):
+        prefix = f"retrieval.documents.{i}.document"
+        if rec.block_id:
+            span.set_attribute(f"{prefix}.id", rec.block_id)
+        span.set_attribute(f"{prefix}.content", rec.text)
+        if rec.score is not None:
+            span.set_attribute(f"{prefix}.score", rec.score)
+        # Metadata mirrors what LlamaIndexInstrumentor produces — keep the
+        # key set identical so cross-filter ("kind=RETRIEVER AND ex#=2")
+        # works uniformly.
+        meta = f"{prefix}.metadata"
+        span.set_attribute(f"{meta}.filename", rec.filename)
+        span.set_attribute(f"{meta}.page_number", rec.page_number)
+        span.set_attribute(f"{meta}.block_type", rec.block_type)
+        if rec.exercise_number:
+            span.set_attribute(f"{meta}.exercise_number", rec.exercise_number)
+        if rec.example_number:
+            span.set_attribute(f"{meta}.example_number", rec.example_number)
+        if rec.section_title:
+            span.set_attribute(f"{meta}.section_title", rec.section_title)
+        if rec.doc_id:
+            span.set_attribute(f"{meta}.textbook_doc_id", rec.doc_id)
 
 
 def _block_type_from_metadata(value: Any) -> BlockType:
@@ -124,6 +172,23 @@ class QdrantTextbookStore:
         self._payload_indexes_ready = True
 
     async def structured_lookup(self, request: RetrievalRequest) -> list[RetrievedRecord]:
+        with _tracer.start_as_current_span("structured_lookup") as span:
+            span.set_attribute(_OI_SPAN_KIND, "RETRIEVER")
+            span.set_attribute(_OI_INPUT_VALUE, request.query)
+            if request.page_number is not None:
+                span.set_attribute("filter.page_number", request.page_number)
+            if request.exercise_number:
+                span.set_attribute("filter.exercise_number", request.exercise_number)
+            if request.example_number:
+                span.set_attribute("filter.example_number", request.example_number)
+            if request.doc_ids:
+                span.set_attribute("filter.doc_ids", list(request.doc_ids))
+
+            records = await self._do_structured_lookup(request)
+            _annotate_retrieved_documents(span, records)
+            return records
+
+    async def _do_structured_lookup(self, request: RetrievalRequest) -> list[RetrievedRecord]:
         await self.ensure_payload_indexes()
 
         from qdrant_client.http import models
