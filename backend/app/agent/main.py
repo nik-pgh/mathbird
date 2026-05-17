@@ -77,6 +77,8 @@ async def entrypoint(ctx: JobContext) -> None:
         reader=board_reader,
         interval=settings.board_reader_interval_seconds,
     )
+    # Defer cleanup to job shutdown so the listener lives for the whole session.
+    ctx.add_shutdown_callback(listener.aclose)
 
     session_data = SessionData(board_state=board_state, board_cache=board_cache)
 
@@ -96,19 +98,16 @@ async def entrypoint(ctx: JobContext) -> None:
         extractor=board_extractor,
     )
 
-    try:
-        await session.start(
-            agent=agent,
-            room=ctx.room,
-            room_input_options=RoomInputOptions(),
-        )
+    await session.start(
+        agent=agent,
+        room=ctx.room,
+        room_input_options=RoomInputOptions(),
+    )
 
-        # Optional opening greeting — comment out to stay silent until spoken to.
-        await session.generate_reply(
-            instructions="Greet the user briefly and ask how you can help."
-        )
-    finally:
-        await listener.aclose()
+    # Optional opening greeting — comment out to stay silent until spoken to.
+    await session.generate_reply(
+        instructions="Greet the user briefly and ask how you can help."
+    )
 
 
 def main() -> None:

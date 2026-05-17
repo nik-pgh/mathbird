@@ -38,7 +38,7 @@ function renderMarkdownWithMath(src: string): string {
   let out = "";
   for (let i = 0; i < parts.length; i++) {
     if (i % 2 === 0) {
-      out += escapeHtml(parts[i]).replace(/\n/g, "<br/>");
+      out += applyInlineMarkdown(escapeHtml(parts[i]));
     } else {
       try {
         out += katex.renderToString(parts[i], {
@@ -51,6 +51,19 @@ function renderMarkdownWithMath(src: string): string {
     }
   }
   return out;
+}
+
+function applyInlineMarkdown(src: string): string {
+  // Operates on already-HTML-escaped text, so it's safe to inject tags.
+  // Order matters: line breaks first, then bold (**) before italic (*) so the
+  // inner emphasis pass does not consume the outer bold markers.
+  return src
+    .replace(/\\\\/g, "<br/>")
+    .replace(/\n/g, "<br/>")
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>")
+    .replace(/(?<!_)_([^_\n]+)_(?!_)/g, "<em>$1</em>")
+    .replace(/`([^`\n]+)`/g, "<code>$1</code>");
 }
 
 function escapeHtml(s: string): string {
