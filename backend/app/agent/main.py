@@ -32,7 +32,10 @@ from livekit.agents import (  # noqa: E402
 from app.agent.providers import build_llm, build_stt, build_tts, build_vad  # noqa: E402
 from app.agent.tools import build_function_tools  # noqa: E402
 from app.agent.whiteboard import (  # noqa: E402
+    BoardCache,
     BoardState,
+    SessionData,
+    get_board_extractor,
     get_board_reader,
     install_user_board_listener,
 )
@@ -46,23 +49,28 @@ async def entrypoint(ctx: JobContext) -> None:
     """Called by the LiveKit worker once per room."""
     settings = get_settings()
     logger.info(
-        "agent joining room=%s providers=stt:%s llm:%s tts:%s vad:%s board_reader=%s",
+        "agent joining room=%s providers=stt:%s llm:%s tts:%s vad:%s"
+        " board_reader=%s board_extractor=%s",
         ctx.room.name,
         settings.stt_provider,
         settings.llm_provider,
         settings.tts_provider,
         settings.vad_provider,
         settings.board_reader,
+        settings.board_extractor,
     )
 
     await ctx.connect()
 
     # Whiteboard wiring — must come before the session starts so the listener
-    # is in place by the time the user's first stroke arrives. ``BoardState``
-    # rides on ``AgentSession.userdata`` so the function tools can reach it
-    # via ``ctx.session.userdata``.
+    # is in place by the time the user's first stroke arrives. ``SessionData``
+    # bundles BoardState (user board reading cache) and BoardCache (AiBoard
+    # items cache for the extractor) and rides on ``AgentSession.userdata``
+    # so tools can reach them via ``ctx.session.userdata``.
     board_state = BoardState()
+    board_cache = BoardCache()
     board_reader = get_board_reader()
+    board_extractor = get_board_extractor()
     listener = install_user_board_listener(
         room=ctx.room,
         state=board_state,
@@ -70,18 +78,22 @@ async def entrypoint(ctx: JobContext) -> None:
         interval=settings.board_reader_interval_seconds,
     )
 
+    session_data = SessionData(board_state=board_state, board_cache=board_cache)
+
     session = AgentSession(
         stt=build_stt(settings),
         llm=build_llm(settings),
         tts=build_tts(settings),
         vad=build_vad(settings),
-        userdata=board_state,
+        userdata=session_data,
     )
 
     agent = WhiteboardAgent(
         instructions=settings.agent_instructions,
         tools=build_function_tools(),
         board_state=board_state,
+        board_cache=board_cache,
+        extractor=board_extractor,
     )
 
     try:
