@@ -52,11 +52,7 @@ export default function AiBoard() {
       </div>
       <div className="surface" ref={scrollRef}>
         {list.length === 0 ? (
-          <div className="empty">
-            함께 풀어봐요.
-            <br />
-            The tutor will sketch problems here.
-          </div>
+          <div className="empty">The tutor will sketch problems here.</div>
         ) : (
           list.map((item) => <BoardItem key={item.id} item={item} />)
         )}

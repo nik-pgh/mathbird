@@ -57,11 +57,7 @@ export default function Transcript() {
   if (lines.length === 0) {
     return (
       <div className="transcript empty">
-        <p>
-          Speak naturally — your conversation appears here.
-          <br />
-          대화를 시작하세요. 자막이 여기에 표시됩니다.
-        </p>
+        <p>Speak naturally — your conversation appears here.</p>
       </div>
     );
   }
