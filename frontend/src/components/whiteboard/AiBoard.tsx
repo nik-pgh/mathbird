@@ -9,11 +9,10 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 
-// Sliding-window cap: keep only the most recent N items visible. Older
-// items quietly scroll off the top. The backend can keep publishing
-// upserts for ids that have aged out — if the agent re-touches them, the
-// move-to-end logic below pulls them back into view.
-const MAX_ITEMS = 6;
+// Auto-scroll threshold: if the user is within this many px of the bottom
+// when a new item arrives, stick to the bottom; otherwise, leave the
+// scroll position alone so they can re-read earlier items in peace.
+const STICK_THRESHOLD_PX = 40;
 
 export default function AiBoard() {
   const [items, setItems] = useState<Map<string, AiBoardItem>>(
@@ -32,11 +31,6 @@ export default function AiBoard() {
         next.delete(item.id);
         next.set(item.id, item);
       }
-      while (next.size > MAX_ITEMS) {
-        const oldest = next.keys().next().value;
-        if (oldest === undefined) break;
-        next.delete(oldest);
-      }
       return next;
     });
   }, []);
@@ -49,9 +43,21 @@ export default function AiBoard() {
   });
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const wasAtBottom = useRef(true);
+
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    wasAtBottom.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < STICK_THRESHOLD_PX;
+  }, []);
+
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    if (wasAtBottom.current) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [items]);
 
   const list = Array.from(items.values());
@@ -65,7 +71,7 @@ export default function AiBoard() {
           {list.length === 1 ? "1 item" : `${list.length} items`}
         </span>
       </div>
-      <div className="surface" ref={scrollRef}>
+      <div className="surface" ref={scrollRef} onScroll={onScroll}>
         {list.length === 0 ? (
           <div className="empty">The tutor will sketch problems here.</div>
         ) : (
