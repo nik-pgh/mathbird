@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
+import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_PERSONA_FILE = _BACKEND_DIR / "personas" / "default.yaml"
 
 SttProvider = Literal["deepgram", "openai"]
 LlmProvider = Literal["openai"]
@@ -84,14 +89,14 @@ class Settings(BaseSettings):
     # Embeddings
     embedding_model: str = "text-embedding-3-small"
 
-    # Agent persona / system prompt — kept here so it's swappable per deployment.
-    agent_instructions: str = Field(
-        default=(
-            "You are a helpful voice assistant. Keep responses concise and "
-            "conversational. If the user asks about a document, use the "
-            "retrieval tool to ground your answer."
-        ),
-    )
+    # Agent persona — system prompt is loaded from a YAML file so it can be
+    # edited without touching code or env vars. Point PERSONA_FILE at a
+    # different file to swap personas per deployment.
+    persona_file: Path = Field(default=DEFAULT_PERSONA_FILE)
+
+    @property
+    def agent_instructions(self) -> str:
+        return _load_persona(self.persona_file)
 
     # Whiteboards
     board_reader: BoardReaderName = "null"
@@ -114,3 +119,14 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+@lru_cache
+def _load_persona(persona_file: Path) -> str:
+    data = yaml.safe_load(persona_file.read_text(encoding="utf-8"))
+    instructions = data.get("instructions") if isinstance(data, dict) else None
+    if not isinstance(instructions, str) or not instructions.strip():
+        raise ValueError(
+            f"Persona file {persona_file} must define a non-empty 'instructions' string."
+        )
+    return instructions
