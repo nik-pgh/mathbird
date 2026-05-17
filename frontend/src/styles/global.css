@@ -269,3 +269,159 @@ main {
   border-radius: var(--radius);
   font-size: 13px;
 }
+
+/* ─── Library page ──────────────────────────────────────────────────────── */
+
+.library-page .upload-jobs {
+  margin-top: 16px;
+}
+.library-page .upload-jobs ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  background: var(--bg);
+}
+.progress-row.error {
+  border-color: rgba(217, 57, 64, 0.4);
+}
+.progress-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.progress-row-name {
+  font-size: 13.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.progress-row-stage {
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+}
+.progress-row-error {
+  font-size: 12.5px;
+  color: var(--accent-danger);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.progress-row-error .retry {
+  background: transparent;
+  border: none;
+  color: var(--accent-danger);
+  font-weight: 600;
+  text-decoration: underline;
+  font-size: 12.5px;
+}
+
+.progress-bar {
+  position: relative;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--text) 50%,
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 1.4s infinite linear;
+  opacity: 0.5;
+}
+@keyframes progress-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.doc-list-section {
+  margin-top: 24px;
+}
+.doc-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.doc-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.doc-row.unindexed {
+  opacity: 0.7;
+}
+.doc-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  min-width: 0;
+}
+.doc-pick .doc-name {
+  font-size: 13.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-meta,
+.doc-status {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.doc-status.uploaded {
+  color: var(--text-3);
+}
+.doc-status.indexed {
+  color: var(--text-2);
+}
+.doc-status.failed {
+  color: var(--accent-danger);
+}
+.doc-row .reindex {
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text-2);
+}
+.doc-row .reindex:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
