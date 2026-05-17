@@ -35,6 +35,12 @@ export default function PdfDropZone({ onFiles, disabled }: Props) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       onClick={() => !disabled && inputRef.current?.click()}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && !disabled) {
+          e.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
       role="button"
       tabIndex={0}
     >

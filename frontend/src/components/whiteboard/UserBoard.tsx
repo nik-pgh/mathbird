@@ -17,11 +17,7 @@ type Tool = "pen" | "eraser";
 type Point = [number, number, number];
 type Stroke = { tool: Tool; points: Point[] };
 
-interface UserBoardProps {
-  enabled?: boolean;
-}
-
-export default function UserBoard({ enabled = true }: UserBoardProps) {
+export default function UserBoard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [tool, setTool] = useState<Tool>("pen");
@@ -54,7 +50,6 @@ export default function UserBoard({ enabled = true }: UserBoardProps) {
 
   const snapshotTimerRef = useRef<number | null>(null);
   const scheduleSnapshot = useCallback(() => {
-    if (!enabled) return;
     if (snapshotTimerRef.current !== null) {
       window.clearTimeout(snapshotTimerRef.current);
     }
@@ -71,7 +66,7 @@ export default function UserBoard({ enabled = true }: UserBoardProps) {
         is_empty: false,
       });
     }, SNAPSHOT_INTERVAL_MS);
-  }, [send, enabled]);
+  }, [send]);
 
   useEffect(
     () => () => {
@@ -111,13 +106,11 @@ export default function UserBoard({ enabled = true }: UserBoardProps) {
       window.clearTimeout(snapshotTimerRef.current);
       snapshotTimerRef.current = null;
     }
-    if (enabled) {
-      await send({
-        png_b64: "",
-        captured_at_ms: Date.now(),
-        is_empty: true,
-      });
-    }
+    await send({
+      png_b64: "",
+      captured_at_ms: Date.now(),
+      is_empty: true,
+    });
   };
 
   const isEmpty = strokes.length === 0;
