@@ -96,3 +96,21 @@ def test_ingest_failure_preserves_file_and_502(
     listing = client.get("/api/documents").json()
     statuses = {d["doc_id"]: d["status"] for d in listing["documents"]}
     assert statuses[doc_id] == "uploaded"
+
+
+def test_get_document_file_returns_pdf_bytes(isolated_storage: Path) -> None:  # noqa: ARG001
+    client = TestClient(app)
+    created = _upload_pdf(client, name="textbook.pdf")
+    doc_id = created["doc_id"]
+
+    res = client.get(f"/api/documents/{doc_id}/file")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/pdf"
+    assert "inline" in res.headers.get("content-disposition", "")
+    assert res.content.startswith(b"%PDF-1.4")
+
+
+def test_get_document_file_404_for_unknown_id(isolated_storage: Path) -> None:  # noqa: ARG001
+    client = TestClient(app)
+    res = client.get("/api/documents/does-not-exist/file")
+    assert res.status_code == 404
