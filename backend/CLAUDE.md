@@ -47,7 +47,8 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 | New board reader (handwriting recognizer) | New module under `app/agent/whiteboard/reader/`, add to `BoardReaderName`, branch in `get_board_reader()` |
 | New board extractor (sentence-streaming AiBoard writer) | New module under `app/agent/whiteboard/extractor/` implementing `BoardExtractor`; branch in `get_board_extractor()` + `Literal` in `BoardExtractorName` |
 | New env var | Field on `Settings` in `app/config.py` + entry in `../.env.example` |
-| Tune agent persona | `Settings.agent_instructions` default, or `AGENT_INSTRUCTIONS` env var |
+| Tune agent persona | Edit `backend/personas/default.yaml`, or set `PERSONA_FILE` to another YAML; `Settings.agent_instructions` loads it via `_load_persona` |
+| Add observability (LLM/RAG tracing) | Already wired via `app/observability.py`; toggle with `PHOENIX_ENABLED=true` after `uv sync --extra observability` |
 
 ## Gotchas
 
@@ -60,3 +61,6 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 - `BOARD_EXTRACTOR` defaults to `"null"` (no-op). Set `BOARD_EXTRACTOR=openai` (needs `OPENAI_API_KEY`) to enable the sentence-streaming AiBoard writer (`gpt-4o-mini` by default; override with `BOARD_EXTRACTOR_MODEL`, timeout via `BOARD_EXTRACTOR_TIMEOUT_SECONDS`).
 - `uv.lock` is gitignored; `uv sync` regenerates it.
 - `pytest-asyncio` is in `auto` mode — async test functions don't need `@pytest.mark.asyncio`.
+- **Agent persona is YAML, not env.** `Settings.agent_instructions` is a `@property` that calls `_load_persona(persona_file)` — there is no `AGENT_INSTRUCTIONS` env var anymore. The default `backend/personas/default.yaml` ships a math-tutor prompt; swap with `PERSONA_FILE=/path/to/other.yaml` (the YAML must define a non-empty top-level `instructions:` string).
+- **Phoenix tracing must be imported first.** `app/agent/main.py` calls `setup_phoenix()` at the top of the module, before any `livekit` or provider imports. Don't reorder — livekit caches unpatched OpenAI/LlamaIndex method references and the spans go missing. The HTTP API (`app/api/main.py`) does the same on its hot path.
+- **Observability deps are an optional extra.** `uv sync --extra observability` pulls `arize-phoenix`, `openinference-instrumentation-openai`, and `openinference-instrumentation-llama-index`. Without them, `PHOENIX_ENABLED=true` logs a warning and falls back to a no-op (does not crash).

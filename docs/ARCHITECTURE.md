@@ -135,3 +135,44 @@ When introducing a new knob:
 1. Add a field on `Settings` with a sensible default.
 2. Document it in `.env.example` with an inline comment about valid values.
 3. Read it via `get_settings()`.
+
+## Agent persona
+
+The system prompt is loaded from a YAML file, not an env var, so it can be
+edited without code changes. `Settings.agent_instructions` is a read-only
+`@property` backed by `_load_persona(persona_file)` (`@lru_cache`d). The
+default file is `backend/personas/default.yaml` (a math-tutor persona); set
+`PERSONA_FILE=/path/to/other.yaml` to swap.
+
+Why a property and not a `str` field: putting the persona in YAML keeps it
+out of `.env`, where it would be unreadable past a few lines and hard to
+version-control as prose. Why no `AGENT_INSTRUCTIONS` fallback: a single
+source of truth per setting; the YAML file is the truth, the env var picks
+which YAML file. A persona YAML must define a non-empty top-level
+`instructions:` string — `_load_persona` raises `ValueError` otherwise so
+the worker fails fast instead of greeting users with an empty prompt.
+
+## Observability — Arize Phoenix
+
+`app/observability.py` is the one module that owns vendor imports for
+tracing (`phoenix`, `openinference.instrumentation.openai`,
+`openinference.instrumentation.llama_index`). `setup_phoenix()` is
+idempotent and is called at the top of both `app/agent/main.py` and the
+HTTP API entrypoint, **before** any `livekit` or provider imports — livekit
+caches unpatched OpenAI/LlamaIndex method references, so instrumentation
+applied after livekit imports those modules is silently a no-op.
+
+The module is fully opt-in:
+
+- `PHOENIX_ENABLED=false` (default): `setup_phoenix()` returns immediately;
+  no vendor imports happen.
+- `PHOENIX_ENABLED=true` without the optional deps installed: logs a warning
+  and returns; the process keeps running with no tracing.
+- `PHOENIX_ENABLED=true` with `uv sync --extra observability`: every
+  OpenAI LLM completion, every `@function_tool` call (as a child span), and
+  every `Retriever.retrieve()` invocation produce spans visible at
+  `http://localhost:6006` (or a custom `PHOENIX_ENDPOINT`).
+
+`structured_lookup` inside `app/rag/llamaindex_qdrant.py` opens its own span
+(`kind=RETRIEVER`) so deterministic page/problem/example matches are
+distinguishable from semantic Qdrant searches in the trace UI.

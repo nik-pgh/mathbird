@@ -12,18 +12,20 @@ LiveKit voice agent with a configurable STT/LLM/TTS/VAD pipeline plus a React fr
 mathbird/
 ├── .env                       # root env, read by backend (Settings looks at .env AND ../.env)
 ├── backend/                   # Python 3.11+, two processes share one package
-│   └── app/
-│       ├── config.py          # pydantic-settings Settings — single env source of truth
-│       ├── agent/             # LiveKit worker
-│       │   ├── main.py        # entrypoint — joined per room
-│       │   ├── tools.py       # @function_tool functions (search_documents + whiteboard tools)
-│       │   ├── whiteboard_agent.py  # Agent subclass; injects user-board reading per turn
-│       │   ├── providers/     # stt.py / llm.py / tts.py / vad.py — factories
-│       │   └── whiteboard/    # messages, state, publisher, listener, reader/{null,openai_vision}
-│       ├── api/               # FastAPI app (token issuance + uploads)
-│       │   └── routes/        # token.py, documents.py
-│       ├── storage/           # base.py (Protocol) + local.py / s3.py
-│       └── rag/               # retriever.py (Protocol + Null/LlamaIndex+Qdrant) + parsing pipeline
+│   ├── app/
+│   │   ├── config.py          # pydantic-settings Settings — single env source of truth
+│   │   ├── agent/             # LiveKit worker
+│   │   │   ├── main.py        # entrypoint — joined per room
+│   │   │   ├── tools.py       # @function_tool functions (search_documents + whiteboard tools)
+│   │   │   ├── whiteboard_agent.py  # Agent subclass; injects user-board reading per turn
+│   │   │   ├── providers/     # stt.py / llm.py / tts.py / vad.py — factories
+│   │   │   └── whiteboard/    # messages, state, publisher, listener, reader/{null,openai_vision}
+│   │   ├── api/               # FastAPI app (token issuance + uploads)
+│   │   │   └── routes/        # token.py, documents.py
+│   │   ├── storage/           # base.py (Protocol) + local.py / s3.py
+│   │   ├── observability.py   # optional Arize Phoenix tracing for LLM/RAG/tool calls
+│   │   └── rag/               # retriever.py (Protocol + Null/LlamaIndex+Qdrant) + parsing pipeline
+│   └── personas/              # YAML system prompts; PERSONA_FILE picks which one is loaded
 └── frontend/                  # Vite + React + TS
     └── src/
         ├── App.tsx            # react-router: "/" UploadPage, "/session" SessionPage
@@ -112,7 +114,7 @@ These come from the README's "Project conventions" and the actual code shape. Vi
 | Add a new whiteboard item kind | Add a pydantic model to `app/agent/whiteboard/messages.py`, extend the `AiBoardItem` union, mirror in `frontend/src/lib/whiteboard.ts`, render in `frontend/src/components/whiteboard/BoardItem.tsx` |
 | Add a new board reader (handwriting recognizer) | New module under `app/agent/whiteboard/reader/`, add the name to `BoardReaderName` in `config.py`, add a branch in `get_board_reader()` |
 | Add a new board extractor (sentence-streaming AiBoard writer) | New module under `app/agent/whiteboard/extractor/`, add the name to `BoardExtractorName` in `config.py`, add a branch in `get_board_extractor()` |
-| Change agent persona / system prompt | `AGENT_INSTRUCTIONS` env var, or default in `Settings.agent_instructions` |
+| Change agent persona / system prompt | Edit `backend/personas/default.yaml`, or point `PERSONA_FILE` at a different YAML file (loaded by `Settings.agent_instructions`) |
 | Add a new HTTP endpoint | New router in `app/api/routes/`, mount in `app/api/main.py` |
 | Switch PDF storage to S3 | `STORAGE_BACKEND=s3` + `S3_*` / `AWS_*` env vars — no code changes |
 | Change the API base URL the frontend hits | `VITE_API_BASE_URL` in `frontend/.env.local` |
@@ -148,3 +150,5 @@ Pytest config lives in `backend/pyproject.toml` with `asyncio_mode = "auto"` —
 - **TTS defaults are Cartesia-shaped.** `TTS_VOICE` is a Cartesia voice UUID. If you switch `TTS_PROVIDER` (allowed values today: `cartesia | elevenlabs | openai`), also replace `TTS_MODEL` and `TTS_VOICE` — the comment block in `.env.example` lists per-provider formats. ElevenLabs additionally uses `TTS_LANGUAGE` and `ELEVEN_API_KEY`.
 - **LLM provider Literal only has `"openai"` today.** The pipeline supports more, but adding one means following rule 3 above before changing `.env`.
 - **`BOARD_READER` defaults to `null`.** The agent will see "no reading yet" until you set `BOARD_READER=openai_vision` (and have `OPENAI_API_KEY` set). Snapshots are throttled to `BOARD_READER_INTERVAL_SECONDS` (2s) and resized to `BOARD_READER_MAX_IMAGE_DIM` (512px) on the client.
+- **Agent persona lives in a YAML file, not an env var.** `Settings.agent_instructions` is a read-only `@property` that loads `backend/personas/default.yaml` (a math-tutor prompt by default). Edit that file or point `PERSONA_FILE` at another YAML with a top-level `instructions:` string. The old `AGENT_INSTRUCTIONS` env var is gone.
+- **Phoenix tracing is opt-in.** `app/observability.py` is a no-op unless `PHOENIX_ENABLED=true`. When enabled it instruments OpenAI + LlamaIndex so every LLM completion, function-tool call, and `Retriever.retrieve()` is captured. Install the deps with `uv sync --extra observability`. `setup_phoenix()` is called at the very top of `app/agent/main.py` — before any livekit imports — so don't move that import; livekit caches unpatched method refs otherwise.

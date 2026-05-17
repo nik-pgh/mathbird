@@ -35,6 +35,8 @@ There is no test suite for the frontend yet.
 5. **API request/response shapes match `pydantic.BaseModel`s in `backend/app/api/routes/`.** No schema generator — when you change one side, update the other in the same commit. `UploadedDocument` and `TokenResponse` interfaces in `lib/api.ts` mirror `DocumentResponse` and `TokenResponse` in the backend.
 6. **Whiteboard wire types live in `src/lib/whiteboard.ts`** and mirror `backend/app/agent/whiteboard/messages.py`. Same rule: update both sides together. The `useBoardChannel` hook in `src/components/whiteboard/` is a typed wrapper around `useDataChannel(topic)` that handles encode/decode for one topic.
 7. **`<UserBoard>` resizes snapshots to ≤512px on the long edge before publishing.** That cap matches `BOARD_READER_MAX_IMAGE_DIM` on the backend; keep them aligned if either side changes.
+8. **Session chrome lives in `src/components/session/`.** `SessionTopbar.tsx` renders the shared top bar (end-session control included), and `VoiceComposer.tsx` wraps the mic toggle + visualizer via `useTrackToggle` / `useVoiceAssistant`. Reuse these instead of recreating the layout per page.
+
 ## Quick "where to add..." map
 
 | Task | File(s) |
@@ -42,8 +44,9 @@ There is no test suite for the frontend yet.
 | New backend call | `src/lib/api.ts` |
 | New page / route | New file in `src/pages/`, register in `src/App.tsx` |
 | New shared component | `src/components/` |
+| New session-page chrome | `src/components/session/` (alongside `SessionTopbar.tsx` / `VoiceComposer.tsx`) |
 | New shared hook / util | `src/lib/` |
-| Styles | `src/styles/` |
+| Styles | `src/styles/` (`global.css` for app-wide, `session.css` for session-page + whiteboards) |
 | New whiteboard item kind | Mirror the pydantic type in `src/lib/whiteboard.ts`, render in `src/components/whiteboard/BoardItem.tsx` |
 | New data-channel topic | `src/components/whiteboard/useBoardChannel.ts` (typed wrapper around `useDataChannel`) |
 | Backend URL override | `VITE_API_BASE_URL` in `.env.local` |

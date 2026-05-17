@@ -69,6 +69,20 @@ attempts to delete the stored PDF and returns an upload error rather than listin
 unindexed document. A background job queue can replace this call site later without
 changing the retriever interface.
 
+## Agent persona
+
+The system prompt is loaded from a YAML file, not an env var. The default is
+`backend/personas/default.yaml`, a math-tutor persona; the file must define a
+non-empty top-level `instructions:` string. To swap personas without code
+changes:
+
+```bash
+PERSONA_FILE=./personas/my-persona.yaml
+```
+
+`Settings.agent_instructions` is a read-only property that calls
+`_load_persona()` (cached). Restart the worker after editing the YAML.
+
 ## Whiteboards
 
 `app/agent/whiteboard/` is a pluggable handwriting-recognition + per-room state

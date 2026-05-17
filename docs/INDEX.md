@@ -24,12 +24,14 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/CLAUDE.md` | Backend-scoped agent guidance (rules, gotchas, where-to-add map). |
 | `backend/uploads/` | (gitignored) — default `STORAGE_LOCAL_DIR`. |
 | `backend/tests/` | Pytest suite, grouped by seam (`tests/rag/`, `tests/whiteboard/`). |
+| `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
 
 ### `backend/app/` — shared package
 
 | Path | What it is |
 | --- | --- |
 | `app/config.py` | `Settings` (pydantic-settings) + provider `Literal` types + `get_settings()`. **All env-driven config lives here.** |
+| `app/observability.py` | Optional Arize Phoenix tracing. Idempotent `setup_phoenix()` instruments OpenAI + LlamaIndex when `PHOENIX_ENABLED=true`. Imported at the top of `app/agent/main.py` and `app/api/main.py`. |
 
 ### `backend/app/agent/` — LiveKit worker
 
@@ -110,9 +112,11 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `src/pages/SessionPage.tsx` | Wraps `<LiveKitRoom>` + `useVoiceAssistant` + visualizer + transcript. |
 | `src/components/PdfDropZone.tsx` | File-picker / drag-drop component for PDFs. |
 | `src/components/Transcript.tsx` | Streamed user + agent transcription, typewriter animation. |
-| `src/styles/` | Stylesheets. |
+| `src/components/session/SessionTopbar.tsx` | Shared top bar; renders the End-session control in session mode. |
+| `src/components/session/VoiceComposer.tsx` | Mic toggle + visualizer; wraps `useTrackToggle` / `useVoiceAssistant`. |
+| `src/styles/global.css` | App-wide base styles. |
+| `src/styles/session.css` | Session-page layout, voice composer, and both whiteboards. |
 | `src/lib/whiteboard.ts` | TS mirror of `backend/app/agent/whiteboard/messages.py` + encode/decode helpers. |
-| `src/styles/whiteboard.css` | Layout + bubble styling for both boards. |
 | `src/components/whiteboard/AiBoard.tsx` | Subscribes to `ai_board` topic, renders items via `BoardItem`. |
 | `src/components/whiteboard/UserBoard.tsx` | Freehand canvas + tool palette + debounced snapshot loop. |
 | `src/components/whiteboard/BoardItem.tsx` | Switch on `item.kind` → KaTeX / inline SVG plot / sanitized SVG. |

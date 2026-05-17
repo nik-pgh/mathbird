@@ -15,21 +15,23 @@ Qdrant provider can parse, index, and retrieve from uploaded textbooks.
 ```
 mathbird/
 ├── backend/                            # Python: LiveKit agent worker + FastAPI HTTP API
-│   └── app/
-│       ├── config.py                   # all env-driven settings (single source of truth)
-│       ├── agent/
-│       │   ├── main.py                 # LiveKit worker entrypoint — joins rooms
-│       │   ├── tools.py                # function tools the LLM can call (RAG + whiteboard)
-│       │   ├── whiteboard_agent.py     # injects latest user-board reading each turn
-│       │   ├── providers/              # swappable STT / LLM / TTS / VAD factories
-│       │   └── whiteboard/             # data-channel messages + state + reader (null / vision)
-│       ├── api/
-│       │   ├── main.py                 # FastAPI app
-│       │   └── routes/
-│       │       ├── token.py            # POST /api/token       → LiveKit access token
-│       │       └── documents.py        # POST /api/documents   → PDF upload + RAG ingest
-│       ├── storage/                    # local-disk + S3 backends behind a Protocol
-│       └── rag/                        # Retriever Protocol + null and LlamaIndex+Qdrant providers
+│   ├── app/
+│   │   ├── config.py                   # all env-driven settings (single source of truth)
+│   │   ├── agent/
+│   │   │   ├── main.py                 # LiveKit worker entrypoint — joins rooms
+│   │   │   ├── tools.py                # function tools the LLM can call (RAG + whiteboard)
+│   │   │   ├── whiteboard_agent.py     # injects latest user-board reading each turn
+│   │   │   ├── providers/              # swappable STT / LLM / TTS / VAD factories
+│   │   │   └── whiteboard/             # data-channel messages + state + reader (null / vision)
+│   │   ├── api/
+│   │   │   ├── main.py                 # FastAPI app
+│   │   │   └── routes/
+│   │   │       ├── token.py            # POST /api/token       → LiveKit access token
+│   │   │       └── documents.py        # POST /api/documents   → PDF upload + RAG ingest
+│   │   ├── storage/                    # local-disk + S3 backends behind a Protocol
+│   │   ├── observability.py            # optional Arize Phoenix tracing (LLM / RAG / tool calls)
+│   │   └── rag/                        # Retriever Protocol + null and LlamaIndex+Qdrant providers
+│   └── personas/                       # YAML system prompts; PERSONA_FILE picks which one to load
 └── frontend/                           # Vite + React + TypeScript
     └── src/
         ├── pages/
@@ -42,7 +44,7 @@ mathbird/
         ├── lib/
         │   ├── api.ts                  # typed REST client for the backend
         │   └── whiteboard.ts           # TS mirror of whiteboard pydantic schemas
-        └── styles/                     # global.css + whiteboard.css
+        └── styles/                     # global.css + session.css
 ```
 
 A finer-grained file/module map lives in [`docs/INDEX.md`](./docs/INDEX.md);
@@ -241,6 +243,28 @@ sends each snapshot to a vision LLM (`BOARD_READER_MODEL`, defaults to
 `gpt-4o-mini`) and uses `OPENAI_API_KEY`. To add another reader, drop a module
 under `backend/app/agent/whiteboard/reader/`, add the name to `BoardReaderName`
 in `app/config.py`, and add the corresponding branch in `get_board_reader()`.
+
+## Agent persona
+
+The agent's system prompt lives in a YAML file, not an env var, so it can be
+edited without touching code. The default is a math-tutor persona at
+`backend/personas/default.yaml`. To run a different persona, write a new YAML
+with a top-level `instructions:` string and point `PERSONA_FILE` at it:
+
+```bash
+PERSONA_FILE=./personas/my-persona.yaml
+```
+
+`Settings.agent_instructions` reads that file at process start and caches it;
+restart the worker (and the HTTP API, if it shares state) to pick up edits.
+
+## Observability (optional)
+
+Set `PHOENIX_ENABLED=true` and `uv sync --extra observability` to capture every
+OpenAI LLM call, function-tool invocation, and `Retriever.retrieve()` as
+Phoenix spans (default UI at `http://localhost:6006`). The instrumentation
+lives in `backend/app/observability.py` — vendor imports are confined to that
+module and are completely skipped when `PHOENIX_ENABLED` is unset.
 
 ## Switching PDF storage to S3
 
