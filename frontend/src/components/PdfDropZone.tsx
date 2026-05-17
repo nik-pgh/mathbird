@@ -50,11 +50,11 @@ export default function PdfDropZone({ onFiles, disabled }: Props) {
         }}
       />
       <div className="dropzone-inner">
-        <div className="dropzone-icon">PDF</div>
+        <div className="dropzone-arrow">↑</div>
         <p className="dropzone-title">
           {dragging ? "Drop to upload" : "Drop PDFs here or click to choose"}
         </p>
-        <p className="dropzone-hint">Uploads are indexed for the voice agent to reference.</p>
+        <p className="dropzone-hint">PDFs are indexed for retrieval during the session.</p>
       </div>
     </div>
   );
