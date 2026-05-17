@@ -80,8 +80,8 @@ The agent worker **needs LiveKit Cloud credentials in `.env`** to start in `dev`
 3. The agent worker is registered with LiveKit Cloud — when a participant joins, LiveKit dispatches `app.agent.main.entrypoint` into the room. The entrypoint installs a `user_board` data-channel listener, attaches a per-room `BoardState` to `AgentSession.userdata`, and starts a `WhiteboardAgent` that re-injects the latest student-board reading on every turn.
 4. Worker streams audio → STT → LLM → TTS → audio back into the room. The LLM can call function tools:
    - `search_documents` — RAG lookup through `get_retriever()`.
-   - `update_ai_board` / `clear_ai_board` — publish `ai_board` updates over the data channel to the React clients.
    - `read_user_board` — re-read the latest cached `BoardState` snapshot mid tool-chain.
+   The AiBoard (the agent's whiteboard) is driven separately: `WhiteboardAgent.transcription_node` tees the agent's outgoing text stream, accumulates sentences, and a background worker calls the configured `BoardExtractor` (`null` or `openai`) which publishes `update_ai_board` items over the data channel per sentence. The LLM does NOT call `update_ai_board` directly.
 5. In parallel, the `UserBoard` periodically posts PNG snapshots on the `user_board` topic. The listener decodes, debounces, hands the bytes to the configured `BoardReader` (`null` or `openai_vision`), and writes the resulting text into `BoardState`.
 
 You do **not** run a LiveKit server locally. The worker is a client that joins cloud rooms on demand.
@@ -111,6 +111,7 @@ These come from the README's "Project conventions" and the actual code shape. Vi
 | Add a new agent capability (callable mid-conversation) | New `@function_tool` in `app/agent/tools.py`, add to `build_function_tools()` |
 | Add a new whiteboard item kind | Add a pydantic model to `app/agent/whiteboard/messages.py`, extend the `AiBoardItem` union, mirror in `frontend/src/lib/whiteboard.ts`, render in `frontend/src/components/whiteboard/BoardItem.tsx` |
 | Add a new board reader (handwriting recognizer) | New module under `app/agent/whiteboard/reader/`, add the name to `BoardReaderName` in `config.py`, add a branch in `get_board_reader()` |
+| Add a new board extractor (sentence-streaming AiBoard writer) | New module under `app/agent/whiteboard/extractor/`, add the name to `BoardExtractorName` in `config.py`, add a branch in `get_board_extractor()` |
 | Change agent persona / system prompt | `AGENT_INSTRUCTIONS` env var, or default in `Settings.agent_instructions` |
 | Add a new HTTP endpoint | New router in `app/api/routes/`, mount in `app/api/main.py` |
 | Switch PDF storage to S3 | `STORAGE_BACKEND=s3` + `S3_*` / `AWS_*` env vars — no code changes |

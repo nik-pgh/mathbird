@@ -1,15 +1,23 @@
 """Function tools exposed to the LLM during a voice session.
 
-Tools are how the agent calls into our code mid-conversation. Two families today:
+Tools are how the agent calls into our code mid-conversation. The LLM-facing
+tool list (returned by :func:`build_function_tools`) is two tools today:
 
 * ``search_documents`` — delegates to ``app.rag.get_retriever()`` so voice
   answers can be grounded in uploaded textbook chunks when RAG is enabled.
-* ``update_ai_board`` / ``clear_ai_board`` / ``read_user_board`` — the
-  whiteboard surface. The agent uses these to write typeset math + plots /
-  shapes onto its board and to re-read the student's board mid tool-chain.
+* ``read_user_board`` — returns the latest reading of the student's board
+  (the agent's window into what the student has drawn since the last turn).
 
-Per-room whiteboard state is reached through the framework: ``BoardState``
-rides on ``ctx.session.userdata`` (set by the entrypoint when constructing
+AiBoard writes (``update_ai_board`` / ``clear_ai_board``) are still defined
+in this module but are NOT in the LLM-facing list — the AiBoard is now
+driven by the per-sentence extractor in ``WhiteboardAgent`` (see
+``app/agent/whiteboard/extractor/``). The two functions remain so the
+publish primitive is reachable for tests and so re-enabling LLM-direct
+board writes is a one-line change.
+
+Per-session state is reached through the framework: ``SessionData``
+(bundling ``BoardState`` and ``BoardCache``) rides on
+``ctx.session.userdata`` (set by the entrypoint when constructing
 ``AgentSession``), and the LiveKit ``Room`` is available at
 ``ctx.session.room_io.room``.
 """
