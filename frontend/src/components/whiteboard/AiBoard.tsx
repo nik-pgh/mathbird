@@ -9,6 +9,12 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 
+// Sliding-window cap: keep only the most recent N items visible. Older
+// items quietly scroll off the top. The backend can keep publishing
+// upserts for ids that have aged out — if the agent re-touches them, the
+// move-to-end logic below pulls them back into view.
+const MAX_ITEMS = 6;
+
 export default function AiBoard() {
   const [items, setItems] = useState<Map<string, AiBoardItem>>(
     () => new Map(),
@@ -21,7 +27,16 @@ export default function AiBoard() {
     }
     setItems((prev) => {
       const next = new Map(prev);
-      for (const item of msg.items) next.set(item.id, item);
+      for (const item of msg.items) {
+        // delete-then-set so an existing id moves to the end (most recent).
+        next.delete(item.id);
+        next.set(item.id, item);
+      }
+      while (next.size > MAX_ITEMS) {
+        const oldest = next.keys().next().value;
+        if (oldest === undefined) break;
+        next.delete(oldest);
+      }
       return next;
     });
   }, []);
