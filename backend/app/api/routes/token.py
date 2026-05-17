@@ -1,12 +1,14 @@
 """LiveKit access token issuance.
 
-The frontend hits ``POST /api/token`` with a desired identity + room. The
-backend signs a short-lived JWT with the LiveKit API key/secret so the client
-can join the room directly against LiveKit Cloud.
+The frontend hits ``POST /api/token`` with a desired identity + room (and
+optionally an ``active_doc_id``). The backend signs a short-lived JWT and
+embeds the active doc id in the participant metadata so the agent worker
+can scope retrieval to that PDF.
 """
 
 from __future__ import annotations
 
+import json
 import uuid
 
 from fastapi import APIRouter, HTTPException
@@ -28,6 +30,10 @@ class TokenRequest(BaseModel):
         description="Room name. If omitted, a random one is generated.",
     )
     name: str | None = Field(default=None, description="Display name shown to others.")
+    doc_id: str | None = Field(
+        default=None,
+        description="Active PDF doc_id for this session. Embedded in participant metadata.",
+    )
 
 
 class TokenResponse(BaseModel):
@@ -49,7 +55,7 @@ async def create_token(req: TokenRequest) -> TokenResponse:
     identity = req.identity or f"user-{uuid.uuid4().hex[:8]}"
     room = req.room or f"room-{uuid.uuid4().hex[:8]}"
 
-    token = (
+    builder = (
         api.AccessToken(settings.livekit_api_key, settings.livekit_api_secret)
         .with_identity(identity)
         .with_name(req.name or identity)
@@ -61,11 +67,12 @@ async def create_token(req: TokenRequest) -> TokenResponse:
                 can_subscribe=True,
             )
         )
-        .to_jwt()
     )
+    if req.doc_id:
+        builder = builder.with_metadata(json.dumps({"active_doc_id": req.doc_id}))
 
     return TokenResponse(
-        token=token,
+        token=builder.to_jwt(),
         url=settings.livekit_url,
         room=room,
         identity=identity,
