@@ -108,10 +108,14 @@ class LlamaIndexQdrantRetriever:
         document = await self.parser.parse_pdf(path, doc_id=doc_id, filename=filename)
         nodes = parsed_document_to_nodes(document)
         if nodes:
+            # Insert first so LlamaIndex creates the Qdrant collection with the
+            # right vector params if it doesn't exist yet. Payload indexes are
+            # then applied — Qdrant indexes existing points retroactively, so
+            # this order is correct on both fresh and pre-existing collections.
+            await self.index.ainsert_nodes(nodes)
             ensure_indexes = getattr(self.store, "ensure_payload_indexes", None)
             if ensure_indexes is not None:
                 await ensure_indexes()
-            await self.index.ainsert_nodes(nodes)
 
     async def retrieve(
         self,
