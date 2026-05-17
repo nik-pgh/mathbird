@@ -49,15 +49,17 @@ export default function DocList({
             </label>
             <span className="doc-meta">{formatBytes(d.size)}</span>
             <span className={`doc-status ${d.status}`}>{d.status}</span>
-            {!indexed && (
-              <button
-                className="reindex"
-                disabled={isReindexing}
-                onClick={() => onReindex(d.doc_id)}
-              >
-                {isReindexing ? "Indexing..." : "Re-index"}
-              </button>
-            )}
+            <span className="doc-action">
+              {!indexed && (
+                <button
+                  className="reindex"
+                  disabled={isReindexing}
+                  onClick={() => onReindex(d.doc_id)}
+                >
+                  {isReindexing ? "Indexing..." : "Re-index"}
+                </button>
+              )}
+            </span>
           </li>
         );
       })}

@@ -373,7 +373,7 @@ main {
 }
 .doc-row {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr 80px 80px 90px;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
@@ -403,6 +403,11 @@ main {
   font-size: 11px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.doc-action {
+  display: flex;
+  justify-content: flex-end;
 }
 .doc-status.uploaded {
   color: var(--text-3);
