@@ -24,6 +24,7 @@ from app.agent.whiteboard import (
     AiBoardItem,
     AiBoardUpdate,
     BoardState,
+    SessionData,
     publish_ai_board,
 )
 from app.config import get_settings
@@ -78,10 +79,17 @@ async def search_documents(ctx: RunContext, query: str) -> str:
 def _board_state(ctx: RunContext) -> BoardState | None:
     """Read the per-session ``BoardState`` set by ``app.agent.main.entrypoint``."""
     try:
-        state = ctx.session.userdata
+        data = ctx.session.userdata
     except Exception:
         return None
-    return state if isinstance(state, BoardState) else None
+    # New shape: SessionData bundles BoardState + BoardCache. Stay tolerant
+    # of the legacy bare-BoardState shape so we don't break older sessions
+    # mid-rollout (defensive — the new entrypoint always supplies SessionData).
+    if isinstance(data, SessionData):
+        return data.board_state
+    if isinstance(data, BoardState):
+        return data
+    return None
 
 
 @function_tool
