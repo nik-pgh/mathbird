@@ -9,14 +9,10 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 
-/**
- * Renders items the AI publishes on the `ai_board` topic.
- *
- * Local state is a Map<id, item> so `upsert` ops can replace items in place
- * without losing position. `clear` resets the map.
- */
 export default function AiBoard() {
-  const [items, setItems] = useState<Map<string, AiBoardItem>>(() => new Map());
+  const [items, setItems] = useState<Map<string, AiBoardItem>>(
+    () => new Map(),
+  );
 
   const onMessage = useCallback((msg: AiBoardUpdate) => {
     if (msg.op === "clear") {
@@ -30,8 +26,6 @@ export default function AiBoard() {
     });
   }, []);
 
-  // We never publish from here, but subscribing requires the hook to be
-  // initialized with `topic`. `send` is intentionally unused on this side.
   useBoardChannel<typeof AI_BOARD_TOPIC, AiBoardUpdate>({
     topic: AI_BOARD_TOPIC,
     decode: decodeAiUpdate,
@@ -39,21 +33,30 @@ export default function AiBoard() {
     onMessage,
   });
 
-  // Auto-scroll to the newest item.
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [items]);
 
+  const list = Array.from(items.values());
+
   return (
-    <div className="ai-board" ref={scrollRef}>
-      <div className="board-header">Tutor</div>
-      {items.size === 0 ? (
-        <div className="board-empty">자, 시작해 볼까요? 답을 함께 풀어보아요.</div>
-      ) : (
-        Array.from(items.values()).map((item) => <BoardItem key={item.id} item={item} />)
-      )}
+    <div className="board tutor-board">
+      <div className="head">
+        <span className="label">Tutor board</span>
+        <span className="spacer" />
+        <span className="count">
+          {list.length === 1 ? "1 item" : `${list.length} items`}
+        </span>
+      </div>
+      <div className="surface" ref={scrollRef}>
+        {list.length === 0 ? (
+          <div className="empty">The tutor will sketch problems here.</div>
+        ) : (
+          list.map((item) => <BoardItem key={item.id} item={item} />)
+        )}
+      </div>
     </div>
   );
 }

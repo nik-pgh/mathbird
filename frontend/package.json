@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.0",
-    "@livekit/components-styles": "^1.1.6",
     "dompurify": "^3.4.3",
     "katex": "^0.16.47",
     "livekit-client": "^2.13.0",

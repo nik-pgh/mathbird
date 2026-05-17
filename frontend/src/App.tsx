@@ -1,25 +1,14 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import UploadPage from "./pages/UploadPage";
-import VoiceAgentPage from "./pages/VoiceAgentPage";
+import SessionPage from "./pages/SessionPage";
 
 export default function App() {
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <Link to="/" className="brand">
-          mathbird
-        </Link>
-        <nav>
-          <Link to="/">Documents</Link>
-          <Link to="/voice">Voice agent</Link>
-        </nav>
-      </header>
-      <main>
-        <Routes>
-          <Route path="/" element={<UploadPage />} />
-          <Route path="/voice" element={<VoiceAgentPage />} />
-        </Routes>
-      </main>
+      <Routes>
+        <Route path="/" element={<UploadPage />} />
+        <Route path="/session" element={<SessionPage />} />
+      </Routes>
     </div>
   );
 }

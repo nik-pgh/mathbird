@@ -10,38 +10,28 @@ import {
 
 const SNAPSHOT_INTERVAL_MS = 2000;
 const MAX_LONG_EDGE = 512;
+const CANVAS_BG = "#fafafa";
+const STROKE_COLOR = "#0d0d0d";
 
 type Tool = "pen" | "eraser";
-type Point = [number, number, number]; // x, y, pressure
+type Point = [number, number, number];
 type Stroke = { tool: Tool; points: Point[] };
 
-interface UserBoardProps {
-  enabled?: boolean;
-}
-
-/**
- * Freehand canvas. Strokes are stored in component state only — no
- * localStorage, no sync with the agent's local copy. The agent only ever sees
- * the rendered PNG.
- *
- * Snapshots are debounced: any stroke event schedules a snapshot
- * SNAPSHOT_INTERVAL_MS in the future; new strokes reset the timer. After
- * "Clear" we publish a single is_empty=true snapshot so the agent learns the
- * board is blank without paying a vision-LLM round-trip.
- */
-export default function UserBoard({ enabled = true }: UserBoardProps) {
+export default function UserBoard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [tool, setTool] = useState<Tool>("pen");
   const [drawing, setDrawing] = useState<Stroke | null>(null);
 
-  const { send } = useBoardChannel<typeof USER_BOARD_TOPIC, UserBoardSnapshot>({
+  const { send } = useBoardChannel<
+    typeof USER_BOARD_TOPIC,
+    UserBoardSnapshot
+  >({
     topic: USER_BOARD_TOPIC,
     decode: decodeUserSnapshot,
     encode: encodeUserSnapshot,
   });
 
-  // ── Redraw whenever strokes change ────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -49,7 +39,7 @@ export default function UserBoard({ enabled = true }: UserBoardProps) {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#1a1a1f";
+    ctx.fillStyle = CANVAS_BG;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const allStrokes = drawing ? [...strokes, drawing] : strokes;
@@ -58,10 +48,8 @@ export default function UserBoard({ enabled = true }: UserBoardProps) {
     }
   }, [strokes, drawing]);
 
-  // ── Debounced snapshot loop ───────────────────────────────────────────────
   const snapshotTimerRef = useRef<number | null>(null);
   const scheduleSnapshot = useCallback(() => {
-    if (!enabled) return;
     if (snapshotTimerRef.current !== null) {
       window.clearTimeout(snapshotTimerRef.current);
     }
@@ -72,15 +60,22 @@ export default function UserBoard({ enabled = true }: UserBoardProps) {
       const blob = await canvasToScaledPngBlob(canvas, MAX_LONG_EDGE);
       if (!blob) return;
       const png_b64 = await blobToBase64(blob);
-      await send({ png_b64, captured_at_ms: Date.now(), is_empty: false });
+      await send({
+        png_b64,
+        captured_at_ms: Date.now(),
+        is_empty: false,
+      });
     }, SNAPSHOT_INTERVAL_MS);
-  }, [send, enabled]);
+  }, [send]);
 
-  useEffect(() => () => {
-    if (snapshotTimerRef.current !== null) window.clearTimeout(snapshotTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (snapshotTimerRef.current !== null)
+        window.clearTimeout(snapshotTimerRef.current);
+    },
+    [],
+  );
 
-  // ── Pointer handlers ──────────────────────────────────────────────────────
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const pt = pointerXY(e);
     setDrawing({ tool, points: [[pt.x, pt.y, e.pressure || 0.5]] });
@@ -89,7 +84,10 @@ export default function UserBoard({ enabled = true }: UserBoardProps) {
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!drawing) return;
     const pt = pointerXY(e);
-    setDrawing({ ...drawing, points: [...drawing.points, [pt.x, pt.y, e.pressure || 0.5]] });
+    setDrawing({
+      ...drawing,
+      points: [...drawing.points, [pt.x, pt.y, e.pressure || 0.5]],
+    });
   };
   const onPointerUp = () => {
     if (!drawing) return;
@@ -108,57 +106,67 @@ export default function UserBoard({ enabled = true }: UserBoardProps) {
       window.clearTimeout(snapshotTimerRef.current);
       snapshotTimerRef.current = null;
     }
-    if (enabled) {
-      await send({ png_b64: "", captured_at_ms: Date.now(), is_empty: true });
-    }
+    await send({
+      png_b64: "",
+      captured_at_ms: Date.now(),
+      is_empty: true,
+    });
   };
 
+  const isEmpty = strokes.length === 0;
+
   return (
-    <div className="user-board">
-      <div className="board-header">You</div>
-      <div className="user-board-toolbar">
-        <button
-          className={tool === "pen" ? "active" : ""}
-          onClick={() => setTool("pen")}
-          aria-label="Pen"
-        >
-          Pen
-        </button>
-        <button
-          className={tool === "eraser" ? "active" : ""}
-          onClick={() => setTool("eraser")}
-          aria-label="Eraser"
-        >
-          Eraser
-        </button>
-        <button onClick={undo} disabled={strokes.length === 0} aria-label="Undo">
-          Undo
-        </button>
-        <button onClick={clear} disabled={strokes.length === 0} aria-label="Clear">
-          Clear
-        </button>
+    <div className="board user-board">
+      <div className="head">
+        <span className="label">Your pad</span>
+        <span className="spacer" />
+        <div className="tools">
+          <button
+            className={tool === "pen" ? "active" : ""}
+            onClick={() => setTool("pen")}
+            aria-label="Pen"
+          >
+            Pen
+          </button>
+          <button
+            className={tool === "eraser" ? "active" : ""}
+            onClick={() => setTool("eraser")}
+            aria-label="Eraser"
+          >
+            Eraser
+          </button>
+          <button onClick={undo} disabled={isEmpty} aria-label="Undo">
+            Undo
+          </button>
+          <button onClick={clear} disabled={isEmpty} aria-label="Clear">
+            Clear
+          </button>
+        </div>
       </div>
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={600}
-        className="user-board-canvas"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      />
+      <div className="surface">
+        <canvas
+          ref={canvasRef}
+          width={1200}
+          height={900}
+          className="user-board-canvas"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        />
+      </div>
     </div>
   );
 }
-
-// ── helpers ──────────────────────────────────────────────────────────────────
 
 function pointerXY(e: React.PointerEvent<HTMLCanvasElement>) {
   const rect = e.currentTarget.getBoundingClientRect();
   const sx = e.currentTarget.width / rect.width;
   const sy = e.currentTarget.height / rect.height;
-  return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+  return {
+    x: (e.clientX - rect.left) * sx,
+    y: (e.clientY - rect.top) * sy,
+  };
 }
 
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
@@ -177,17 +185,13 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
     ctx.lineTo(outline[i][0], outline[i][1]);
   }
   ctx.closePath();
-  if (stroke.tool === "eraser") {
-    ctx.fillStyle = "#1a1a1f";
-  } else {
-    ctx.fillStyle = "#e8e8ee";
-  }
+  ctx.fillStyle = stroke.tool === "eraser" ? CANVAS_BG : STROKE_COLOR;
   ctx.fill();
 }
 
 async function canvasToScaledPngBlob(
   canvas: HTMLCanvasElement,
-  maxLongEdge: number
+  maxLongEdge: number,
 ): Promise<Blob | null> {
   const long = Math.max(canvas.width, canvas.height);
   const scale = long > maxLongEdge ? maxLongEdge / long : 1;
@@ -201,7 +205,9 @@ async function canvasToScaledPngBlob(
   if (!octx) return null;
   octx.drawImage(canvas, 0, 0, w, h);
 
-  return await new Promise((resolve) => off.toBlob((b) => resolve(b), "image/png"));
+  return await new Promise((resolve) =>
+    off.toBlob((b) => resolve(b), "image/png"),
+  );
 }
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -210,7 +216,6 @@ function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = () => reject(reader.error);
     reader.onload = () => {
       const result = reader.result as string;
-      // result looks like "data:image/png;base64,AAAA..."
       const idx = result.indexOf(",");
       resolve(idx >= 0 ? result.slice(idx + 1) : result);
     };
