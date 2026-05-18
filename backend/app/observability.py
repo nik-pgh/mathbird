@@ -63,6 +63,8 @@ def setup_phoenix() -> None:
     }
     if settings.phoenix_endpoint:
         register_kwargs["endpoint"] = settings.phoenix_endpoint
+    if settings.phoenix_api_key:
+        register_kwargs["api_key"] = settings.phoenix_api_key
 
     tracer_provider = register(**register_kwargs)
     OpenAIInstrumentor().instrument(tracer_provider=tracer_provider)

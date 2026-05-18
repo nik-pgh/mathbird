@@ -117,6 +117,9 @@ class Settings(BaseSettings):
     phoenix_enabled: bool = False
     phoenix_project: str = "mathbird"
     phoenix_endpoint: str = ""  # empty = phoenix auto-detect (gRPC :4317 or HTTP :6006)
+    # API key for Phoenix Cloud (app.phoenix.arize.com). Phoenix turns this
+    # into an ``Authorization: Bearer …`` header. Empty for local Phoenix.
+    phoenix_api_key: str = ""
 
     @property
     def cors_origins_list(self) -> list[str]:
