@@ -14,7 +14,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { documentFileUrl } from "../../lib/api";
 
-const GEOM_KEY = "mathbird:pdf_popover_geom";
+// Bump the suffix to invalidate older saved positions (e.g. when the
+// default anchor changes between left/right or sizes shift).
+const GEOM_KEY = "mathbird:pdf_popover_geom_v2";
 const MIN_W = 320;
 const MIN_H = 400;
 
