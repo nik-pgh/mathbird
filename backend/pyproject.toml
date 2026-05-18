@@ -5,7 +5,7 @@ description = "LiveKit voice agent backend for mathbird"
 requires-python = ">=3.11"
 dependencies = [
     # LiveKit agent runtime
-    "livekit-agents[deepgram,openai,cartesia,elevenlabs,silero,turn-detector]>=1.0.0",
+    "livekit-agents[deepgram,openai,cartesia,elevenlabs,silero,turn-detector]>=1.2.0",
     "livekit-api>=1.0.0",
 
     # HTTP API
