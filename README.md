@@ -1,202 +1,61 @@
-# mathbird
+<p align="center">
+  <img src="./docs/assets/mathbird-logo.svg" alt="Mathbird logo" width="360">
+</p>
 
-A LiveKit voice agent with a configurable STT/LLM/TTS/VAD pipeline and a React
-frontend for uploading PDFs that the agent can reason over. The voice session
-includes a pair of in-room whiteboards on a LiveKit data channel — one the
-agent writes typeset math, plots, and SVG shapes onto, and one the student
-draws on (snapshots are OCR'd back into the agent's chat context).
+# Mathbird
 
-Deployed to **LiveKit Cloud**. RAG is provider-driven: the default no-op
-retriever keeps local setup simple, and the built-in LlamaParse + LlamaIndex +
-Qdrant provider can parse, index, and retrieve from uploaded textbooks.
+Mathbird is a voice-based math tutor. Students upload a PDF, join a LiveKit
+voice room, and talk with an AI agent that can answer from the uploaded
+material. The app also includes shared whiteboards so the agent can show math
+work and the student can draw or write during the session.
 
-## Architecture
+On-the-fly demo: https://mathbird.vercel.app/
 
-```
-mathbird/
-├── backend/                            # Python: LiveKit agent worker + FastAPI HTTP API
-│   ├── app/
-│   │   ├── config.py                   # all env-driven settings (single source of truth)
-│   │   ├── agent/
-│   │   │   ├── main.py                 # LiveKit worker entrypoint — joins rooms
-│   │   │   ├── tools.py                # function tools the LLM can call (RAG + whiteboard)
-│   │   │   ├── whiteboard_agent.py     # injects latest user-board reading each turn
-│   │   │   ├── providers/              # swappable STT / LLM / TTS / VAD factories
-│   │   │   └── whiteboard/             # data-channel messages + state + reader (null / vision)
-│   │   ├── api/
-│   │   │   ├── main.py                 # FastAPI app
-│   │   │   └── routes/
-│   │   │       ├── token.py            # POST /api/token       → LiveKit access token
-│   │   │       └── documents.py        # POST /api/documents   → PDF upload + RAG ingest
-│   │   ├── storage/                    # local-disk + S3 backends behind a Protocol
-│   │   ├── observability.py            # optional Arize Phoenix tracing (LLM / RAG / tool calls)
-│   │   └── rag/                        # Retriever Protocol + null and LlamaIndex+Qdrant providers
-│   └── personas/                       # YAML system prompts; PERSONA_FILE picks which one to load
-└── frontend/                           # Vite + React + TypeScript
-    └── src/
-        ├── pages/
-        │   ├── UploadPage.tsx          # landing page: PDF dropzone + uploaded-doc list
-        │   └── SessionPage.tsx         # LiveKit room + voice assistant + twin whiteboards
-        ├── components/
-        │   ├── PdfDropZone.tsx
-        │   ├── Transcript.tsx
-        │   └── whiteboard/             # AiBoard, UserBoard, BoardItem, useBoardChannel
-        ├── lib/
-        │   ├── api.ts                  # typed REST client for the backend
-        │   └── whiteboard.ts           # TS mirror of whiteboard pydantic schemas
-        └── styles/                     # global.css + session.css
-```
+The project has two parts:
 
-A finer-grained file/module map lives in [`docs/INDEX.md`](./docs/INDEX.md);
-deeper architectural rationale in [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+- `backend/`: Python FastAPI app plus a LiveKit agent worker.
+- `frontend/`: Vite, React, and TypeScript web app.
 
-### How a conversation flows
+LiveKit Cloud handles the realtime room. You do not run a LiveKit server
+locally.
 
-```
-  ┌──────────────┐   1. POST /api/token        ┌─────────────────────┐
-  │  React app   │ ─────────────────────────▶ │  FastAPI (backend)  │
-  │              │   2. token + room name      │                     │
-  │              │ ◀───────────────────────── │                     │
-  └──────┬───────┘                             └─────────────────────┘
-         │ 3. connect with token
-         ▼
-  ┌─────────────────────────────────────────────────────────────────┐
-  │                       LiveKit Cloud (room)                      │
-  └────────────┬────────────────────────────────────────┬───────────┘
-               │ 4. participant joined event             │
-               ▼                                         │
-  ┌─────────────────────────┐                           │
-  │ LiveKit agent worker    │  ◀── audio frames ──────  │
-  │ (Python, app/agent)     │                           │
-  │  STT → LLM → TTS        │  ── audio frames ──────▶  │
-  │  ↑ function tools:      │                           │
-  │    search_documents() ──┼─► NullRetriever by default│
-  │                         │    or Qdrant RAG provider │
-  │    update_ai_board()  ──┼─► ai_board data topic ───▶│  (typeset math / plots / shapes)
-  │    read_user_board()  ──┼─◀ user_board data topic ◀─│  (PNG snapshots → BoardReader)
-  └─────────────────────────┘                           ▼
-```
+## Design Document
 
-### What's a LiveKit "room"?
+### End-to-end flow
 
-LiveKit organizes real-time audio/video into **rooms** — short-lived,
-named channels. Anyone with a JWT scoped to a given room name can join it and
-send/receive media to/from other participants.
+1. The student opens the React app and uploads a PDF.
+2. The frontend sends the PDF to the FastAPI backend with `POST /api/documents`.
+3. The backend stores the file and, when RAG is enabled, indexes it for search.
+4. The student starts a voice session.
+5. The frontend asks the backend for a LiveKit token with `POST /api/token`.
+6. The frontend joins a LiveKit Cloud room using that token.
+7. The LiveKit agent worker is dispatched into the room.
+8. The worker runs the voice pipeline:
+   - speech-to-text turns student audio into text
+   - the LLM decides how to respond and can call tools
+   - text-to-speech streams the answer back into the room
+9. When the student asks about the uploaded PDF, the agent can call the
+   document search tool before answering.
 
-In this app:
+The backend is split into two running processes:
 
-1. The user clicks "Start conversation" on the frontend.
-2. The frontend asks the backend for a JWT (`POST /api/token`). The backend
-   signs it with the LiveKit Cloud API key/secret and returns it along with
-   the room name (a random ID by default).
-3. The frontend connects to LiveKit Cloud and joins that room.
-4. The agent worker is registered with LiveKit Cloud as a *worker*. When a
-   participant joins a room, LiveKit dispatches the worker into that room.
-5. The worker streams audio out of the room into STT, pushes transcripts into
-   the LLM, streams the LLM's response into TTS, and sends synthesized audio
-   back into the room.
+- FastAPI HTTP API: uploads PDFs and issues LiveKit access tokens.
+- LiveKit agent worker: joins rooms and runs the STT -> LLM -> TTS loop.
 
-You don't run a LiveKit server yourself — LiveKit Cloud handles the SFU.
+Both processes share the same settings, storage, RAG, and provider interfaces.
 
-## Quick start
+### RAG integration
 
-### 1. Sign up + get credentials
+RAG is integrated through a small `Retriever` interface in `backend/app/rag`.
+That interface supports two actions:
 
-* Create a project at https://cloud.livekit.io
-* Grab the URL, API key, and API secret from **Settings → Keys**
-* Sign up for the provider keys you'll use:
-  * Deepgram: https://console.deepgram.com
-  * OpenAI: https://platform.openai.com
-  * Cartesia: https://play.cartesia.ai
+- `ingest_pdf(...)`: parse and index a newly uploaded PDF.
+- `retrieve(...)`: search indexed document chunks during a conversation.
 
-### 2. Configure env
+The default setting is `RAG_PROVIDER=null`, which makes uploads and retrieval
+no-ops. This keeps the app easy to run locally without Qdrant or LlamaParse.
 
-```bash
-cp .env.example .env
-# Edit .env, fill in LIVEKIT_* and the provider keys for your selected stack
-```
-
-The frontend reads its own `.env.local`:
-
-```bash
-cp frontend/.env.example frontend/.env.local
-# Set VITE_API_BASE_URL and VITE_LIVEKIT_URL
-```
-
-### 3. Install + run (three terminals)
-
-**Backend HTTP API** (PDF uploads + LiveKit tokens):
-
-```bash
-cd backend
-uv sync                         # or: python -m venv .venv && pip install -e ".[dev]"
-uv run uvicorn app.api.main:app --reload --port 8000
-```
-
-**LiveKit agent worker** (joins rooms, runs the voice pipeline):
-
-```bash
-cd backend
-uv run python -m app.agent.main dev
-```
-
-**Frontend**:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open http://localhost:5173, drop a PDF on the landing page, click "Talk to
-the agent →", and start speaking.
-
-## Swapping providers
-
-All four modalities are env-driven. To change a vendor, edit `.env`:
-
-```bash
-STT_PROVIDER=deepgram    # deepgram | openai
-LLM_PROVIDER=openai      # openai
-TTS_PROVIDER=cartesia    # cartesia | elevenlabs | openai
-VAD_PROVIDER=silero      # silero
-```
-
-To add a new vendor (e.g., a new TTS provider):
-
-1. Add the plugin (or `livekit-agents` extra) to `backend/pyproject.toml`.
-2. Add a branch in `backend/app/agent/providers/tts.py`.
-3. Add the new option to `TtsProvider` in `backend/app/config.py`.
-
-The agent code is unchanged. The same three-step recipe applies to STT, LLM,
-VAD, storage, RAG, and board-reader seams.
-
-## RAG with LlamaParse + Qdrant
-
-`backend/app/rag/retriever.py` defines a `Retriever` protocol:
-
-```python
-class Retriever(Protocol):
-    async def retrieve(
-        self,
-        query: str,
-        *,
-        top_k: int = 4,
-        doc_ids: tuple[str, ...] = (),
-    ) -> list[RetrievedChunk]: ...
-    async def ingest_pdf(self, path: str, *, doc_id: str) -> None: ...
-```
-
-The PDF upload route calls `ingest_pdf` after storing the file. In v1 ingestion
-runs synchronously during upload; if ingestion fails, the route attempts to
-delete the stored PDF and returns an upload error. The agent's `search_documents`
-function tool calls `retrieve` whenever the LLM decides it needs to look
-something up, and can pass a document id when the active UI/session knows which
-textbook the user is asking about.
-
-By default `RAG_PROVIDER=null` selects `NullRetriever`, so `ingest_pdf` and
-`retrieve` are no-ops and the app runs without RAG infrastructure. To enable
-the built-in textbook RAG provider, set:
+To enable real textbook retrieval, set:
 
 ```bash
 RAG_PROVIDER=llamaindex_qdrant
@@ -206,81 +65,232 @@ QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION=mathbird_documents
 ```
 
-With `RAG_PROVIDER=llamaindex_qdrant`, uploads are parsed with LlamaParse,
-normalized and indexed through LlamaIndex into Qdrant, and
-`search_documents` returns cited chunks from that collection.
+With that provider enabled:
 
-For local Qdrant:
+1. Uploaded PDFs are parsed with LlamaParse.
+2. Parsed content is normalized into page-aware textbook chunks.
+3. LlamaIndex embeds and indexes those chunks into Qdrant.
+4. During a voice session, the agent calls `search_documents`.
+5. Retrieved chunks are returned with citations and used to ground the answer.
+
+### Tools and frameworks
+
+Backend:
+
+- Python 3.11+
+- FastAPI for the HTTP API
+- LiveKit Agents for realtime voice agent sessions
+- Pydantic and pydantic-settings for typed config
+- LlamaParse, LlamaIndex, OpenAI embeddings, and Qdrant for RAG
+- Local filesystem or S3 for PDF storage
+- Optional Arize Phoenix tracing for LLM, RAG, and tool-call observability
+
+Frontend:
+
+- Vite
+- React
+- TypeScript
+- LiveKit React components
+- KaTeX for rendering math
+- DOMPurify for safe SVG/HTML rendering
+- perfect-freehand for the drawing canvas
+
+Voice provider options are configured by environment variables. The current
+setup supports Deepgram or OpenAI for STT, OpenAI for the LLM, Cartesia,
+ElevenLabs, or OpenAI for TTS, and Silero for VAD.
+
+## Setup
+
+### Prerequisites
+
+- Python 3.11+
+- `uv` for backend dependency management
+- Node.js and npm
+- A LiveKit Cloud project
+- API keys for the providers you choose in `.env`
+- Docker, only if you want to run Qdrant locally for RAG
+
+### 1. Configure environment variables
+
+Copy the root environment template:
+
+```bash
+cp .env.example .env
+```
+
+Fill in the LiveKit values from your LiveKit Cloud project:
+
+```bash
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...
+```
+
+Then add provider keys for the selected stack, for example:
+
+```bash
+DEEPGRAM_API_KEY=...
+OPENAI_API_KEY=...
+CARTESIA_API_KEY=...
+```
+
+Copy the frontend environment template:
+
+```bash
+cp frontend/.env.example frontend/.env.local
+```
+
+For local development, use:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+VITE_LIVEKIT_URL=wss://your-project.livekit.cloud
+```
+
+### 2. Start the backend API
+
+In the first terminal:
+
+```bash
+cd backend
+uv sync
+uv run uvicorn app.api.main:app --reload --port 8000
+```
+
+### 3. Start the LiveKit agent worker
+
+In the second terminal:
+
+```bash
+cd backend
+uv run python -m app.agent.main dev
+```
+
+The worker connects to LiveKit Cloud and waits for room dispatches.
+
+### 4. Start the frontend
+
+In the third terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+Upload a PDF, start a conversation, and speak to the agent.
+
+### Optional: run Qdrant for local RAG
 
 ```bash
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 ```
 
-## Whiteboards
+Then enable the `llamaindex_qdrant` RAG provider in `.env` as shown above.
 
-`VoiceAgentPage` mounts two whiteboards alongside the voice UI. They communicate
-with the agent over named LiveKit data-channel topics:
+### Running on the web
 
-- `ai_board` (server → clients) — `AiBoardUpdate` messages carrying `text`
-  (markdown + `$...$` LaTeX, rendered with KaTeX), `plot` (1-D function plot
-  over `x_min..x_max`, rendered as inline SVG), or `shape` (sanitized SVG
-  fragment) items. The LLM publishes via the `update_ai_board` and
-  `clear_ai_board` function tools.
-- `user_board` (clients → server) — `UserBoardSnapshot` messages with a base64
-  PNG (≤512px on the long edge). The worker debounces them, hands the bytes to
-  the configured `BoardReader`, and caches the resulting text on a per-room
-  `BoardState`. `WhiteboardAgent.on_user_turn_completed` injects that reading
-  into the LLM's chat context every turn; `read_user_board` lets the LLM
-  re-read mid tool-chain.
+For a hosted deployment, run the same three pieces:
 
-Schemas live in `backend/app/agent/whiteboard/messages.py` (pydantic) and are
-mirrored in `frontend/src/lib/whiteboard.ts`. Update both sides together — there
-is no schema generator.
+- FastAPI backend as a web service.
+- LiveKit agent worker as a long-running worker process.
+- Frontend as a static Vite build.
 
-Board readers are a pluggable Protocol (`BoardReader.interpret(png) -> str`).
-The default `BOARD_READER=null` is a no-op; `BOARD_READER=openai_vision`
-sends each snapshot to a vision LLM (`BOARD_READER_MODEL`, defaults to
-`gpt-4o-mini`) and uses `OPENAI_API_KEY`. To add another reader, drop a module
-under `backend/app/agent/whiteboard/reader/`, add the name to `BoardReaderName`
-in `app/config.py`, and add the corresponding branch in `get_board_reader()`.
+Set `VITE_API_BASE_URL` to the deployed backend URL and keep `VITE_LIVEKIT_URL`
+pointed at the same LiveKit Cloud project used by the backend and worker.
 
-## Agent persona
+## Additional Features
 
-The agent's system prompt lives in a YAML file, not an env var, so it can be
-edited without touching code. The default is a math-tutor persona at
-`backend/personas/default.yaml`. To run a different persona, write a new YAML
-with a top-level `instructions:` string and point `PERSONA_FILE` at it:
+### Whiteboards
+
+Mathbird has two LiveKit data-channel whiteboards:
+
+- The AI board shows the agent's work, such as equations, plots, and simple
+  shapes.
+- The user board lets the student draw or write during the session.
+
+The user board can be interpreted by a vision model when
+`BOARD_READER=openai_vision`. The latest reading is added to the agent's
+context so it can respond to what the student wrote.
+
+The AI board can be driven by the board extractor when `BOARD_EXTRACTOR=openai`.
+The extractor watches the agent's spoken sentences and publishes useful board
+items without exposing direct board-writing tools to the main agent.
+
+### Provider swapping
+
+Most external services are selected with environment variables:
+
+```bash
+STT_PROVIDER=deepgram
+LLM_PROVIDER=openai
+TTS_PROVIDER=cartesia
+VAD_PROVIDER=silero
+STORAGE_BACKEND=local
+RAG_PROVIDER=null
+```
+
+Provider-specific code lives behind factories and protocols, so the main agent
+flow does not need to change when a provider changes.
+
+### Persona
+
+The agent prompt lives in `backend/personas/default.yaml`. To use a different
+prompt, create another YAML file with an `instructions:` field and set:
 
 ```bash
 PERSONA_FILE=./personas/my-persona.yaml
 ```
 
-`Settings.agent_instructions` reads that file at process start and caches it;
-restart the worker (and the HTTP API, if it shares state) to pick up edits.
+Restart the backend processes after changing persona settings.
 
-## Observability (optional)
+### Storage
 
-Set `PHOENIX_ENABLED=true` and `uv sync --extra observability` to capture every
-OpenAI LLM call, function-tool invocation, and `Retriever.retrieve()` as
-Phoenix spans (default UI at `http://localhost:6006`). The instrumentation
-lives in `backend/app/observability.py` — vendor imports are confined to that
-module and are completely skipped when `PHOENIX_ENABLED` is unset.
+Uploaded PDFs are stored locally by default:
 
-## Switching PDF storage to S3
+```bash
+STORAGE_BACKEND=local
+STORAGE_LOCAL_DIR=./uploads
+```
 
-Set `STORAGE_BACKEND=s3` plus the `S3_*` and `AWS_*` env vars. The local
-implementation and the S3 implementation share the same `StorageBackend`
-interface, so no other code changes are needed.
+S3 is also supported:
 
-## Project conventions
+```bash
+STORAGE_BACKEND=s3
+S3_BUCKET=...
+S3_REGION=...
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+```
 
-* **No vendor lock-in in business code.** The agent never imports `deepgram`
-  / `openai` / `cartesia` / `elevenlabs` / `qdrant` directly. Everything goes
-  through the provider / storage / retriever / board-reader interfaces.
-* **One env var per knob.** All config flows through `app.config.Settings`.
-  Don't read `os.environ` elsewhere.
-* **Add a new provider / backend / reader by adding a branch + a literal type.**
-  Never by editing call sites.
-* **Whiteboard message types are mirrored by hand.** Pydantic schemas in
-  `backend/app/agent/whiteboard/messages.py` and TS types in
-  `frontend/src/lib/whiteboard.ts` change together.
+### Observability
+
+Phoenix tracing is optional. When enabled, it records LLM calls, RAG retrievals,
+and function-tool calls.
+
+```bash
+cd backend
+uv sync --extra observability
+uv run phoenix serve
+```
+
+Then set:
+
+```bash
+PHOENIX_ENABLED=true
+```
+
+The Phoenix UI runs at `http://localhost:6006` by default.
+
+### More documentation
+
+- `docs/ARCHITECTURE.md`: deeper explanation of the backend, frontend, RAG, and
+  whiteboard architecture.
+- `docs/INDEX.md`: hand-maintained map of important files and modules.
+- `backend/README.md`: backend-specific setup and operational notes.
