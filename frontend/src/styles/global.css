@@ -373,7 +373,10 @@ main {
 }
 .doc-row {
   display: grid;
-  grid-template-columns: 1fr 80px 80px 90px;
+  /* minmax(0, 1fr) lets the name column shrink past its intrinsic width so the
+   * right-hand cells stay anchored at consistent x positions even when a
+   * filename is long enough to otherwise push them rightward. */
+  grid-template-columns: minmax(0, 1fr) 80px 80px 90px;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
