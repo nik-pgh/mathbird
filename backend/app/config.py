@@ -116,7 +116,9 @@ class Settings(BaseSettings):
     # another shell, then set ``PHOENIX_ENABLED=true``.
     phoenix_enabled: bool = False
     phoenix_project: str = "mathbird"
-    phoenix_endpoint: str = ""  # empty = phoenix auto-detect (gRPC :4317 or HTTP :6006)
+    # Phoenix Cloud: use the space hostname from Settings, e.g.
+    # ``https://app.phoenix.arize.com/s/<space-name>``. Empty = local default.
+    phoenix_endpoint: str = ""
     # API key for Phoenix Cloud (app.phoenix.arize.com). Phoenix turns this
     # into an ``Authorization: Bearer …`` header. Empty for local Phoenix.
     phoenix_api_key: str = ""

@@ -171,7 +171,10 @@ The module is fully opt-in:
 - `PHOENIX_ENABLED=true` with `uv sync --extra observability`: every
   OpenAI LLM completion, every `@function_tool` call (as a child span), and
   every `Retriever.retrieve()` invocation produce spans visible at
-  `http://localhost:6006` (or a custom `PHOENIX_ENDPOINT`).
+  `http://localhost:6006` (or a custom `PHOENIX_ENDPOINT`). For Phoenix
+  Cloud, set `PHOENIX_ENDPOINT` to the space hostname from Phoenix Settings,
+  for example `https://app.phoenix.arize.com/s/<space-name>`, and set
+  `PHOENIX_API_KEY`.
 
 `structured_lookup` inside `app/rag/llamaindex_qdrant.py` opens its own span
 (`kind=RETRIEVER`) so deterministic page/problem/example matches are

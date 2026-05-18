@@ -127,7 +127,8 @@ Add these env vars (off by default — production stays untouched):
 # Backend observability (Arize Phoenix)
 PHOENIX_ENABLED=true
 PHOENIX_PROJECT=mathbird
-PHOENIX_ENDPOINT=                 # blank = phoenix default (gRPC :4317 / UI on :6006)
+PHOENIX_ENDPOINT=                 # blank = local Phoenix; Cloud = https://app.phoenix.arize.com/s/<space-name>
+PHOENIX_API_KEY=                  # required for Phoenix Cloud
 ```
 
 Restart **both** backend processes — `get_settings()` and the

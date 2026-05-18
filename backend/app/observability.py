@@ -18,6 +18,7 @@ process only instruments once.
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 from app.config import get_settings
@@ -60,11 +61,13 @@ def setup_phoenix() -> None:
     register_kwargs: dict[str, Any] = {
         "project_name": settings.phoenix_project,
         "auto_instrument": False,
+        "batch": True,
     }
+    os.environ["PHOENIX_PROJECT_NAME"] = settings.phoenix_project
     if settings.phoenix_endpoint:
-        register_kwargs["endpoint"] = settings.phoenix_endpoint
+        os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = settings.phoenix_endpoint
     if settings.phoenix_api_key:
-        register_kwargs["api_key"] = settings.phoenix_api_key
+        os.environ["PHOENIX_API_KEY"] = settings.phoenix_api_key
 
     tracer_provider = register(**register_kwargs)
     OpenAIInstrumentor().instrument(tracer_provider=tracer_provider)

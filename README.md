@@ -284,6 +284,10 @@ Then set:
 
 ```bash
 PHOENIX_ENABLED=true
+PHOENIX_PROJECT=mathbird
+# Phoenix Cloud only:
+PHOENIX_ENDPOINT=https://app.phoenix.arize.com/s/<space-name>
+PHOENIX_API_KEY=...
 ```
 
 The Phoenix UI runs at `http://localhost:6006` by default.
