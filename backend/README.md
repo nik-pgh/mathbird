@@ -34,7 +34,7 @@ Edit `.env` — no code changes required:
 ```bash
 STT_PROVIDER=deepgram    # deepgram | openai
 LLM_PROVIDER=openai      # openai
-TTS_PROVIDER=cartesia    # cartesia | openai
+TTS_PROVIDER=cartesia    # cartesia | elevenlabs | openai
 VAD_PROVIDER=silero      # silero
 ```
 
@@ -42,15 +42,106 @@ To add a new vendor (e.g., ElevenLabs TTS), add a branch in
 `app/agent/providers/tts.py` and a new option in `app.config.TtsProvider`.
 Nothing else changes.
 
-## Plugging in RAG later
+## RAG with LlamaParse + Qdrant
 
-`app/rag/retriever.py` defines a `Retriever` protocol with two methods:
-`retrieve(query)` and `ingest_pdf(path, doc_id)`. Today `NullRetriever`
-returns nothing. When you pick a framework (LlamaIndex, LangChain, OpenAI File
-Search, …):
+`app/rag/retriever.py` defines the `Retriever` protocol with `retrieve(...)` and
+`ingest_pdf(...)`. The default `RAG_PROVIDER=null` keeps the no-op retriever.
 
-1. Add a new module under `app/rag/` implementing the protocol.
-2. Return it from `app/rag/retriever.py::get_retriever()`.
+To enable math textbook RAG, set:
 
-The upload route and the agent's `search_documents` tool will start working
-immediately — neither needs to change.
+```bash
+RAG_PROVIDER=llamaindex_qdrant
+LLAMAPARSE_API_KEY=...
+OPENAI_API_KEY=...
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION=mathbird_documents
+```
+
+For local Qdrant, run:
+
+```bash
+docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+```
+
+Then upload a PDF through `POST /api/documents`; the v1 upload route stores the PDF and
+calls the active retriever's `ingest_pdf` synchronously. If ingestion fails, the route
+attempts to delete the stored PDF and returns an upload error rather than listing an
+unindexed document. A background job queue can replace this call site later without
+changing the retriever interface.
+
+## Agent persona
+
+The system prompt is loaded from a YAML file, not an env var. The default is
+`backend/personas/default.yaml`, a math-tutor persona; the file must define a
+non-empty top-level `instructions:` string. To swap personas without code
+changes:
+
+```bash
+PERSONA_FILE=./personas/my-persona.yaml
+```
+
+`Settings.agent_instructions` is a read-only property that calls
+`_load_persona()` (cached). Restart the worker after editing the YAML.
+
+## Whiteboards
+
+`app/agent/whiteboard/` is a pluggable handwriting-recognition + per-room state
+surface that runs alongside the voice pipeline. On every room join, the
+entrypoint installs a `user_board` data-channel listener and attaches a
+`BoardState` to `AgentSession.userdata`; a `WhiteboardAgent` subclass then
+injects the latest student-board reading into the LLM's chat context per turn.
+The LLM publishes back via the `update_ai_board` / `clear_ai_board` /
+`read_user_board` function tools.
+
+Default `BOARD_READER=null` keeps the reader a no-op; enable real OCR with:
+
+```bash
+BOARD_READER=openai_vision         # null | openai_vision
+BOARD_READER_MODEL=gpt-4o-mini
+BOARD_READER_INTERVAL_SECONDS=2.0  # debounce window
+BOARD_READER_MAX_IMAGE_DIM=512     # client-side resize hint
+OPENAI_API_KEY=...
+```
+
+Wire schemas live in `app/agent/whiteboard/messages.py` and are mirrored in
+`frontend/src/lib/whiteboard.ts`. There is no schema generator; change both
+sides together.
+
+## Observability — Arize Phoenix (optional)
+
+When you need to see, per voice turn, exactly which `query` the LLM passed
+to `search_documents`, which chunks Qdrant returned with what similarity
+scores, and how long each pipeline stage took, turn on Phoenix tracing.
+
+Install the optional dep group and start the Phoenix UI:
+
+```bash
+cd backend
+uv sync --extra observability
+uv run phoenix serve            # opens http://localhost:6006
+```
+
+Add these env vars (off by default — production stays untouched):
+
+```bash
+# Backend observability (Arize Phoenix)
+PHOENIX_ENABLED=true
+PHOENIX_PROJECT=mathbird
+PHOENIX_ENDPOINT=                 # blank = local Phoenix; Cloud = https://app.phoenix.arize.com/s/<space-name>
+PHOENIX_API_KEY=                  # required for Phoenix Cloud
+```
+
+Restart **both** backend processes — `get_settings()` and the
+instrumentation patch are per-process. Once both are up:
+
+- Every OpenAI LLM completion is captured (system + user messages, tool
+  calls with arguments, token usage, latency).
+- Every `Retriever.retrieve()` is captured with the query, returned
+  chunks, similarity scores, and metadata — same shot as `probe_retrieval`
+  but live for every real turn.
+- Every `@function_tool` call shows up as a child span of its parent LLM
+  call.
+
+The instrumentation lives in `app/observability.py` (one module, vendor
+imports lazy and confined). Setting `PHOENIX_ENABLED=false` (or leaving
+it unset) makes `setup_phoenix()` a no-op — no Phoenix imports at all.

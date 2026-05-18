@@ -36,6 +36,7 @@ coverage/
 # Vite
 frontend/dist/
 frontend/.vite/
+frontend/*.tsbuildinfo
 
 # Editors
 .idea/

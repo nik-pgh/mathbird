@@ -1,26 +1,50 @@
+/* ─── Tokens ──────────────────────────────────────────────────────────── */
+
 :root {
-  --bg: #0f0f12;
-  --surface: #17171c;
-  --surface-2: #1f1f26;
-  --border: #2a2a33;
-  --text: #e8e8ee;
-  --text-dim: #9a9aa8;
-  --accent: #6c8cff;
-  --accent-strong: #4a6cff;
-  --error: #ff6b6b;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --bg-pad: #fafafa;
+
+  --border: #ececf1;
+  --border-strong: #d9d9e3;
+
+  --text: #0d0d0d;
+  --text-2: #5d5d6e;
+  --text-3: #8e8ea0;
+
+  --accent-live: #19c37d;
+  --accent-danger: #d93940;
+
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-lifted: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif:
+    "Iowan Old Style", "Cambria Math", Georgia, serif;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
   height: 100%;
   background: var(--bg);
   color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -28,85 +52,137 @@ a {
   text-decoration: none;
 }
 
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ─── App shell ───────────────────────────────────────────────────────── */
+
 .app-shell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-.app-header {
+.topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 32px;
+  gap: 14px;
+  height: 56px;
+  padding: 0 20px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--bg);
 }
 
-.brand {
+.topbar .brand {
   font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.02em;
-}
-
-.app-header nav {
-  display: flex;
-  gap: 20px;
-}
-
-.app-header nav a {
-  color: var(--text-dim);
-  font-size: 14px;
-}
-
-.app-header nav a:hover {
+  font-size: 15px;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
+
+.topbar .spacer {
+  flex: 1;
+}
+
+.topbar .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-2);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+}
+
+.topbar .pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-live);
+}
+
+.topbar .pill.danger .dot {
+  background: var(--accent-danger);
+}
+
+.topbar .btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.topbar .btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.topbar .btn.primary {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.topbar .btn.primary:hover {
+  background: #2a2a2a;
+}
+
+/* ─── Library (was Upload) page ───────────────────────────────────────── */
 
 main {
   flex: 1;
   display: flex;
   justify-content: center;
-  padding: 48px 24px;
 }
 
-.page {
+.library-page {
   width: 100%;
   max-width: 720px;
+  padding: 48px 24px 80px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
 }
 
-.page-header h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
+.library-page .page-header h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
-.page-header p {
+.library-page .page-header p {
   margin: 0;
-  color: var(--text-dim);
+  color: var(--text-2);
+  font-size: 14px;
 }
-
-/* ── Dropzone ───────────────────────────────────────────────────────────── */
 
 .dropzone {
-  border: 2px dashed var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  padding: 64px 24px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--bg-soft);
+  padding: 56px 24px;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .dropzone:hover {
-  border-color: var(--accent);
+  border-color: var(--text-3);
+  background: var(--bg-pad);
 }
 
 .dropzone.dragging {
-  border-color: var(--accent-strong);
-  background: var(--surface-2);
+  border-color: var(--text);
+  background: var(--bg-pad);
 }
 
 .dropzone.disabled {
@@ -117,223 +193,243 @@ main {
 .dropzone-inner {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   align-items: center;
+  gap: 10px;
 }
 
-.dropzone-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: var(--surface-2);
+.dropzone-arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
   display: grid;
   place-items: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--accent);
+  font-size: 16px;
+  color: var(--text-2);
 }
 
 .dropzone-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
+  color: var(--text);
 }
 
 .dropzone-hint {
   margin: 0;
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-/* ── Doc list ───────────────────────────────────────────────────────────── */
-
-.doc-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .doc-list h2 {
-  margin: 0;
-  font-size: 16px;
-  color: var(--text-dim);
-  font-weight: 500;
-}
-
-.primary-link {
-  color: var(--accent);
-  font-size: 14px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
 }
 
 .doc-list ul {
   list-style: none;
   padding: 0;
   margin: 0;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
+  border-top: 1px solid var(--border);
 }
 
 .doc-list li {
   display: flex;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--surface);
+  padding: 14px 0;
   border-bottom: 1px solid var(--border);
-}
-
-.doc-list li:last-child {
-  border-bottom: none;
+  font-size: 14px;
 }
 
 .doc-name {
-  font-size: 14px;
+  color: var(--text);
 }
 
 .doc-meta {
-  font-size: 13px;
-  color: var(--text-dim);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
 }
 
 .empty {
-  color: var(--text-dim);
-  font-size: 14px;
-}
-
-/* ── Buttons / errors ───────────────────────────────────────────────────── */
-
-.primary-button, .secondary-button {
-  align-self: flex-start;
-  padding: 12px 24px;
-  font-size: 15px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.primary-button {
-  background: var(--accent-strong);
-  color: white;
-}
-
-.primary-button:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-
-.secondary-button {
-  background: var(--surface-2);
-  color: var(--text);
-  border: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 13px;
+  padding: 24px 0;
 }
 
 .error {
-  background: rgba(255, 107, 107, 0.1);
-  color: var(--error);
-  border: 1px solid rgba(255, 107, 107, 0.3);
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  background: rgba(217, 57, 64, 0.06);
+  color: var(--accent-danger);
+  border: 1px solid rgba(217, 57, 64, 0.25);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
 }
 
-/* ── Voice room ─────────────────────────────────────────────────────────── */
+/* ─── Library page ──────────────────────────────────────────────────────── */
 
-.voice-room {
-  display: contents;
+.library-page .upload-jobs {
+  margin-top: 16px;
 }
-
-.visualizer {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 32px;
-  min-height: 180px;
-  display: grid;
-  place-items: center;
-}
-
-.room-meta code {
-  background: var(--surface-2);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
-/* ── Transcript ─────────────────────────────────────────────────────────── */
-
-.transcript {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
-  min-height: 240px;
-  max-height: 50vh;
-  overflow-y: auto;
+.library-page .upload-jobs ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  scroll-behavior: smooth;
+  gap: 8px;
 }
 
-.transcript.empty {
-  display: grid;
-  place-items: center;
-  color: var(--text-dim);
-  font-size: 14px;
-  text-align: center;
-}
-
-.bubble {
-  max-width: 80%;
+.progress-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 10px 14px;
-  border-radius: 12px;
-  line-height: 1.45;
-  font-size: 15px;
-  word-wrap: break-word;
+  background: var(--bg);
 }
-
-.bubble.user {
-  align-self: flex-end;
-  background: var(--accent-strong);
-  color: white;
-  border-bottom-right-radius: 4px;
+.progress-row.error {
+  border-color: rgba(217, 57, 64, 0.4);
 }
-
-.bubble.agent {
-  align-self: flex-start;
-  background: var(--surface-2);
+.progress-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.progress-row-name {
+  font-size: 13.5px;
   color: var(--text);
-  border-bottom-left-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-.bubble.interim {
-  opacity: 0.75;
-}
-
-.role-label {
+.progress-row-stage {
   font-size: 11px;
-  font-weight: 600;
-  opacity: 0.6;
-  margin-bottom: 4px;
+  color: var(--text-3);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+}
+.progress-row-error {
+  font-size: 12.5px;
+  color: var(--accent-danger);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.progress-row-error .retry {
+  background: transparent;
+  border: none;
+  color: var(--accent-danger);
+  font-weight: 600;
+  text-decoration: underline;
+  font-size: 12.5px;
 }
 
-.bubble-text {
-  white-space: pre-wrap;
+.progress-bar {
+  position: relative;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
 }
-
-.caret {
-  display: inline-block;
-  margin-left: 2px;
-  animation: blink 1s steps(2, start) infinite;
-  opacity: 0.8;
+.progress-bar-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--text) 50%,
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 1.4s infinite linear;
+  opacity: 0.5;
 }
-
-@keyframes blink {
-  to {
-    visibility: hidden;
+@keyframes progress-shimmer {
+  0% {
+    background-position: 200% 0;
   }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.doc-list-section {
+  margin-top: 24px;
+}
+.doc-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.doc-row {
+  display: grid;
+  /* minmax(0, 1fr) lets the name column shrink past its intrinsic width so the
+   * right-hand cells stay anchored at consistent x positions even when a
+   * filename is long enough to otherwise push them rightward. */
+  grid-template-columns: minmax(0, 1fr) 80px 80px 90px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.doc-row.unindexed {
+  opacity: 0.7;
+}
+.doc-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  min-width: 0;
+}
+.doc-pick .doc-name {
+  font-size: 13.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-meta,
+.doc-status {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.doc-action {
+  display: flex;
+  justify-content: flex-end;
+}
+.doc-status.uploaded {
+  color: var(--text-3);
+}
+.doc-status.indexed {
+  color: var(--text-2);
+}
+.doc-status.failed {
+  color: var(--accent-danger);
+}
+.doc-row .reindex {
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text-2);
+}
+.doc-row .reindex:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

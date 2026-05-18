@@ -40,17 +40,19 @@ Both processes call `get_settings()`, `get_storage()`, and `get_retriever()` —
         │                                                              │                            │  ↓             │
         │                                                              │                            │ TTS            ▼
         │                                                              │                            │       Retriever.retrieve(...)
-        │ ◀── audio frames ───────────────────────────────────────── ╳ ◀──────── audio frames ─────│       (NullRetriever today)
+        │ ◀── audio frames ───────────────────────────────────────── ╳ ◀──────── audio frames ─────│       (NullRetriever by default;
+        │                                                                                          │        llamaindex_qdrant for real RAG)
 ```
 
 Key points:
 
 - **No self-hosted SFU.** LiveKit Cloud terminates the WebRTC connection. We never see raw RTP — we use the LiveKit Agents SDK.
 - **The worker is a long-lived client**, not an HTTP server. It "registers" against the cloud using API key/secret and waits for room-join events.
-- **Function tools are mid-conversation callbacks.** When the LLM emits a tool call, the LiveKit Agents framework dispatches it to the matching `@function_tool`-decorated function in `app.agent.tools` and inserts the result back into the LLM's context.
+- **Function tools are mid-conversation callbacks.** When the LLM emits a tool call, the LiveKit Agents framework dispatches it to the matching `@function_tool`-decorated function in `app.agent.tools` and inserts the result back into the LLM's context. Today's tools are `search_documents` (RAG) plus three whiteboard tools (`update_ai_board`, `clear_ai_board`, `read_user_board`).
 - **The HTTP API and the worker don't talk to each other directly.** Their only shared state is `Settings` (env-driven) and whatever the active `Retriever`/`StorageBackend` implementations happen to persist (filesystem, S3, vector store, ...).
+- **Whiteboard traffic rides on the same LiveKit room as the audio**, but on two named data-channel topics (`ai_board` server→clients, `user_board` clients→server). The HTTP API is never in this path either.
 
-## The four swappable seams
+## The five swappable seams
 
 Each seam is a Protocol (or LiveKit base type) + a factory + a `Literal` in `Settings`. Adding a new option means touching exactly three places: the factory, the Literal, and `pyproject.toml`. No call site changes.
 
@@ -74,20 +76,32 @@ The factories import vendor plugins **lazily** inside the branch, so installing 
 
 ### 3. Retriever (`Retriever`)
 
-- **Protocol:** `app/rag/retriever.py::Retriever` (`retrieve(query, top_k)` and `ingest_pdf(path, doc_id)`, both async).
+- **Protocol:** `app/rag/retriever.py::Retriever` (`retrieve(query, top_k, doc_ids=...)` and `ingest_pdf(path, doc_id)`, both async).
 - **Factory:** `app/rag/retriever.py::get_retriever()`, module-level singleton.
-- **Implementations:** `NullRetriever` only. To add LlamaIndex/LangChain/etc., add a module under `app/rag/` and return it from `get_retriever()`.
+- **Implementations:** `NullRetriever` for the default `RAG_PROVIDER=null` path, and `LlamaIndexQdrantRetriever` via `RAG_PROVIDER=llamaindex_qdrant`.
 
-`ingest_pdf` is called by the upload route after `storage.put`. `retrieve` is called by the `search_documents` function tool during a conversation. Both are no-ops today, so the system runs end-to-end without a vector store.
+`ingest_pdf` is called by the upload route after `storage.put`. In v1 this happens synchronously inside the upload request; if ingestion fails, the route attempts to delete the stored PDF and returns an error instead of listing an unindexed document. `retrieve` is called by the `search_documents` function tool during a conversation and can be scoped to a specific document id when the caller has one. With the default null provider both methods are no-ops, so the system runs end-to-end without RAG infrastructure. With `RAG_PROVIDER=llamaindex_qdrant`, PDF uploads are parsed with LlamaParse, normalized and indexed through LlamaIndex into Qdrant, and searches retrieve cited textbook chunks from that collection.
 
 ### 4. Function tools (the LLM's API into our code)
 
 - **Where:** `app/agent/tools.py`. Decorate with `@function_tool`, return from `build_function_tools()`.
 - **The LLM sees only:** the function name, parameter types, and docstring. Write docstrings deliberately — they're effectively system-prompt extensions.
+- **Today's set:** `search_documents` (RAG seam), `update_ai_board` / `clear_ai_board` (publish on the `ai_board` data topic), `read_user_board` (reads cached `BoardState`).
+
+### 5. Board reader (`BoardReader`)
+
+- **Protocol:** `app/agent/whiteboard/reader/__init__.py::BoardReader` — `interpret(png_bytes: bytes) -> str`.
+- **Factory:** `app/agent/whiteboard/reader/__init__.py::get_board_reader()`, `lru_cache`d.
+- **Literal:** `BoardReaderName` in `app/config.py` (`null | openai_vision`).
+- **Implementations:** `NullBoardReader` (default, returns nothing) and `OpenAIVisionBoardReader` (vision-LLM handwriting recognition, configurable model + API key).
+
+The reader is invoked by the debounced `install_user_board_listener` pipeline in `app/agent/whiteboard/listener.py`. Its output lands in a per-room `BoardState`, and `WhiteboardAgent.on_user_turn_completed` injects that text as a synthetic system message at the start of every LLM turn — keeping the agent up to date on what the student has written without polluting the persistent `Agent.chat_ctx`.
 
 ## Frontend ↔ backend boundary
 
-`frontend/src/lib/api.ts` is the only place in the frontend that calls `fetch()`. Everything else imports the typed wrapper. Three calls:
+Two contracts, both hand-mirrored.
+
+**REST** — `frontend/src/lib/api.ts` is the only place in the frontend that calls `fetch()`. Everything else imports the typed wrapper. Three calls:
 
 | Call | Backend route | Returns |
 | --- | --- | --- |
@@ -97,9 +111,19 @@ The factories import vendor plugins **lazily** inside the branch, so installing 
 
 Then the React app connects to LiveKit Cloud directly via `@livekit/components-react` (`<LiveKitRoom serverUrl={url} token={token} />`) — the backend is no longer in the audio path.
 
+**LiveKit data channel** — schemas live in `backend/app/agent/whiteboard/messages.py` (pydantic) and are mirrored in `frontend/src/lib/whiteboard.ts` (plus `encode*` / `decode*` helpers). Two named topics:
+
+| Topic | Direction | Payload |
+| --- | --- | --- |
+| `ai_board` | server → clients | `AiBoardUpdate` — `op: "upsert" \| "clear"` with discriminated `AiBoardText \| AiBoardPlot \| AiBoardShape` items. |
+| `user_board` | clients → server | `UserBoardSnapshot` — base64 PNG (≤512px long edge) + `captured_at_ms` + `is_empty`. |
+
+There is no codegen — change both sides together.
+
 Voice UI is composed from LiveKit React primitives:
 - `useVoiceAssistant()` — agent state + audio track + agent transcriptions
 - `useTrackTranscription()` — user's mic transcription (via LiveKit's STT relay)
+- `useDataChannel(topic)` — wrapped in `useBoardChannel` for typed `ai_board` / `user_board` traffic
 - `<BarVisualizer />` — audio reactive bars
 - `<RoomAudioRenderer />` — actually plays the agent's audio
 
@@ -112,3 +136,46 @@ When introducing a new knob:
 2. Document it in `.env.example` with an inline comment about valid values.
 3. Read it via `get_settings()`.
 
+## Agent persona
+
+The system prompt is loaded from a YAML file, not an env var, so it can be
+edited without code changes. `Settings.agent_instructions` is a read-only
+`@property` backed by `_load_persona(persona_file)` (`@lru_cache`d). The
+default file is `backend/personas/default.yaml` (a math-tutor persona); set
+`PERSONA_FILE=/path/to/other.yaml` to swap.
+
+Why a property and not a `str` field: putting the persona in YAML keeps it
+out of `.env`, where it would be unreadable past a few lines and hard to
+version-control as prose. Why no `AGENT_INSTRUCTIONS` fallback: a single
+source of truth per setting; the YAML file is the truth, the env var picks
+which YAML file. A persona YAML must define a non-empty top-level
+`instructions:` string — `_load_persona` raises `ValueError` otherwise so
+the worker fails fast instead of greeting users with an empty prompt.
+
+## Observability — Arize Phoenix
+
+`app/observability.py` is the one module that owns vendor imports for
+tracing (`phoenix`, `openinference.instrumentation.openai`,
+`openinference.instrumentation.llama_index`). `setup_phoenix()` is
+idempotent and is called at the top of both `app/agent/main.py` and the
+HTTP API entrypoint, **before** any `livekit` or provider imports — livekit
+caches unpatched OpenAI/LlamaIndex method references, so instrumentation
+applied after livekit imports those modules is silently a no-op.
+
+The module is fully opt-in:
+
+- `PHOENIX_ENABLED=false` (default): `setup_phoenix()` returns immediately;
+  no vendor imports happen.
+- `PHOENIX_ENABLED=true` without the optional deps installed: logs a warning
+  and returns; the process keeps running with no tracing.
+- `PHOENIX_ENABLED=true` with `uv sync --extra observability`: every
+  OpenAI LLM completion, every `@function_tool` call (as a child span), and
+  every `Retriever.retrieve()` invocation produce spans visible at
+  `http://localhost:6006` (or a custom `PHOENIX_ENDPOINT`). For Phoenix
+  Cloud, set `PHOENIX_ENDPOINT` to the space hostname from Phoenix Settings,
+  for example `https://app.phoenix.arize.com/s/<space-name>`, and set
+  `PHOENIX_API_KEY`.
+
+`structured_lookup` inside `app/rag/llamaindex_qdrant.py` opens its own span
+(`kind=RETRIEVER`) so deterministic page/problem/example matches are
+distinguishable from semantic Qdrant searches in the trace UI.

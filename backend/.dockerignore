@@ -1,0 +1,31 @@
+# Don't ship local PDFs into the image — storage in production is S3.
+uploads/
+
+# Tests aren't needed in the runtime image.
+tests/
+
+# Python noise.
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local databases / state files.
+*.db
+ruvector.db
+
+# Editor / OS junk.
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Secrets and local env files — env vars come from LiveKit Cloud secrets
+# in production, never from a baked-in .env.
+.env
+.env.local
+.env.*.local

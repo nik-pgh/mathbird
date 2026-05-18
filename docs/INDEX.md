@@ -9,6 +9,8 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `CLAUDE.md` | Agent guidance — commands, architecture rules, where to add things. |
 | `AGENTS.md` | Pointer file for non-Claude agents. |
 | `README.md` | Human-facing project README. |
+| `docs/ARCHITECTURE.md` | "Why" / "how" companion to `CLAUDE.md`. |
+| `docs/INDEX.md` | This file — hand-maintained file/module map. |
 | `.env.example` | Canonical env template. Copy to `.env` at repo root. |
 | `.env` | (gitignored) — actual secrets. Read by `backend/app/config.py`. |
 
@@ -19,13 +21,17 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/pyproject.toml` | Deps + ruff + pytest config. Add new vendor plugins here. |
 | `backend/.python-version` | Python 3.11+ pin for `uv`. |
 | `backend/README.md` | Backend-specific run instructions. |
+| `backend/CLAUDE.md` | Backend-scoped agent guidance (rules, gotchas, where-to-add map). |
 | `backend/uploads/` | (gitignored) — default `STORAGE_LOCAL_DIR`. |
+| `backend/tests/` | Pytest suite, grouped by seam (`tests/rag/`, `tests/whiteboard/`). |
+| `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
 
 ### `backend/app/` — shared package
 
 | Path | What it is |
 | --- | --- |
 | `app/config.py` | `Settings` (pydantic-settings) + provider `Literal` types + `get_settings()`. **All env-driven config lives here.** |
+| `app/observability.py` | Optional Arize Phoenix tracing. Idempotent `setup_phoenix()` instruments OpenAI + LlamaIndex when `PHOENIX_ENABLED=true`. Imported at the top of `app/agent/main.py` and `app/api/main.py`. |
 
 ### `backend/app/agent/` — LiveKit worker
 
@@ -38,6 +44,20 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `agent/providers/llm.py` | LLM factory. |
 | `agent/providers/tts.py` | TTS factory. Cartesia / ElevenLabs / OpenAI. |
 | `agent/providers/vad.py` | VAD factory. Silero only today. |
+| `agent/whiteboard_agent.py` | `Agent` subclass that injects the latest user-board reading into the chat context each turn. |
+
+### `backend/app/agent/whiteboard/` — pluggable handwriting reader + state
+
+| Path | What it is |
+| --- | --- |
+| `whiteboard/__init__.py` | Re-exports `BoardState`, `get_board_reader`, `publish_ai_board`, `install_user_board_listener`, and the wire-format schemas. |
+| `whiteboard/messages.py` | pydantic schemas for `ai_board` (server→clients) and `user_board` (clients→server) data-channel topics. |
+| `whiteboard/state.py` | `BoardState` — per-room cache of the latest user-board reading. |
+| `whiteboard/publisher.py` | `publish_ai_board(room, update)` — encodes + sends an `AiBoardUpdate`. |
+| `whiteboard/listener.py` | `install_user_board_listener(...)` — debounced data-received pipeline that feeds the `BoardReader`. |
+| `whiteboard/reader/__init__.py` | `BoardReader` Protocol + `get_board_reader()` factory. |
+| `whiteboard/reader/null.py` | `NullBoardReader` — no-op default. |
+| `whiteboard/reader/openai_vision.py` | `OpenAIVisionBoardReader` — vision-LLM handwriting recognition. |
 
 ### `backend/app/api/` — FastAPI HTTP API
 
@@ -59,8 +79,15 @@ Hand-maintained map of every important file. Update this when adding or renaming
 
 | Path | What it is |
 | --- | --- |
-| `rag/retriever.py` | `Retriever` Protocol, `RetrievedChunk` dataclass, `NullRetriever` (default), `get_retriever()` singleton. |
-| `rag/__init__.py` | Re-exports the above for `from app.rag import get_retriever`. |
+| `rag/retriever.py` | `Retriever` Protocol, `RetrievedChunk`, `NullRetriever`, and `get_retriever()` provider factory. |
+| `rag/parsing.py` | Normalized textbook parse models, retrieval request/result models, and parser protocol. |
+| `rag/llamaparse_parser.py` | Llama Cloud/LlamaParse adapter that parses PDF textbooks into normalized documents. |
+| `rag/normalizer.py` | Converts LlamaParse structured items into page-aware textbook blocks. |
+| `rag/indexing.py` | Converts normalized blocks into LlamaIndex nodes with Qdrant metadata. |
+| `rag/query_parser.py` | Detects page/problem/example references in student queries. |
+| `rag/formatter.py` | Converts internal retrieved records into cited `RetrievedChunk` results. |
+| `rag/llamaindex_qdrant.py` | Concrete LlamaIndex + Qdrant retriever implementation. |
+| `rag/__init__.py` | Re-exports the public RAG seam. |
 
 ## `frontend/` — Vite + React + TypeScript
 
@@ -77,12 +104,20 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | Path | What it is |
 | --- | --- |
 | `src/main.tsx` | React entry — mounts `<App />` into the root. |
-| `src/App.tsx` | `react-router-dom` shell — `/` → Upload, `/voice` → VoiceAgent. |
+| `src/App.tsx` | `react-router-dom` shell — `/` → Upload, `/session` → Session. |
 | `src/vite-env.d.ts` | Vite/TS environment types. |
 | `src/lib/api.ts` | **Only place that calls `fetch()`.** `uploadPdf`, `listDocuments`, `requestToken`. |
 | `src/lib/useTypewriter.ts` | Hook used by the transcript bubbles. |
 | `src/pages/UploadPage.tsx` | Landing page — `<PdfDropZone>` + uploaded-doc list. |
-| `src/pages/VoiceAgentPage.tsx` | Wraps `<LiveKitRoom>` + `useVoiceAssistant` + visualizer + transcript. |
+| `src/pages/SessionPage.tsx` | Wraps `<LiveKitRoom>` + `useVoiceAssistant` + visualizer + transcript. |
 | `src/components/PdfDropZone.tsx` | File-picker / drag-drop component for PDFs. |
 | `src/components/Transcript.tsx` | Streamed user + agent transcription, typewriter animation. |
-| `src/styles/` | Stylesheets. |
+| `src/components/session/SessionTopbar.tsx` | Shared top bar; renders the End-session control in session mode. |
+| `src/components/session/VoiceComposer.tsx` | Mic toggle + visualizer; wraps `useTrackToggle` / `useVoiceAssistant`. |
+| `src/styles/global.css` | App-wide base styles. |
+| `src/styles/session.css` | Session-page layout, voice composer, and both whiteboards. |
+| `src/lib/whiteboard.ts` | TS mirror of `backend/app/agent/whiteboard/messages.py` + encode/decode helpers. |
+| `src/components/whiteboard/AiBoard.tsx` | Subscribes to `ai_board` topic, renders items via `BoardItem`. |
+| `src/components/whiteboard/UserBoard.tsx` | Freehand canvas + tool palette + debounced snapshot loop. |
+| `src/components/whiteboard/BoardItem.tsx` | Switch on `item.kind` → KaTeX / inline SVG plot / sanitized SVG. |
+| `src/components/whiteboard/useBoardChannel.ts` | Typed `useDataChannel` wrapper for one board topic. |

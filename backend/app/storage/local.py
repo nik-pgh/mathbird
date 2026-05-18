@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import mimetypes
 import shutil
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import BinaryIO
 
@@ -42,8 +44,10 @@ class LocalStorage:
             content_type=content_type,
         )
 
-    async def open(self, key: str) -> BinaryIO:
-        return self._path(key).open("rb")
+    @asynccontextmanager
+    async def open(self, key: str) -> AsyncIterator[BinaryIO]:
+        with self._path(key).open("rb") as stream:
+            yield stream
 
     async def list(self, prefix: str = "") -> list[StoredObject]:
         base = self._path(prefix) if prefix else self.root
