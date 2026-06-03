@@ -31,7 +31,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | Path | What it is |
 | --- | --- |
 | `app/config.py` | `Settings` (pydantic-settings) + provider `Literal` types + `get_settings()`. **All env-driven config lives here.** |
-| `app/observability.py` | Optional Arize Phoenix tracing. Idempotent `setup_phoenix()` instruments OpenAI + LlamaIndex when `PHOENIX_ENABLED=true`. Imported at the top of `app/agent/main.py` and `app/api/main.py`. |
+| `app/observability.py` | Arize Phoenix tracing. Idempotent `setup_phoenix()` instruments OpenAI + LlamaIndex when `PHOENIX_ENABLED=true`. Imported at the top of `app/agent/main.py` and `app/api/main.py`. |
 
 ### `backend/app/agent/` — LiveKit worker
 

@@ -83,7 +83,7 @@ Backend:
 - Pydantic and pydantic-settings for typed config
 - LlamaParse, LlamaIndex, OpenAI embeddings, and Qdrant for RAG
 - Local filesystem or S3 for PDF storage
-- Optional Arize Phoenix tracing for LLM, RAG, and tool-call observability
+- Arize Phoenix tracing for LLM, RAG, and tool-call observability (enable with `PHOENIX_ENABLED=true`)
 
 Frontend:
 
@@ -271,12 +271,12 @@ AWS_SECRET_ACCESS_KEY=...
 
 ### Observability
 
-Phoenix tracing is optional. When enabled, it records LLM calls, RAG retrievals,
-and function-tool calls.
+Phoenix tracing is off by default (`PHOENIX_ENABLED=false`). When enabled, it
+records LLM calls, RAG retrievals, and function-tool calls. Deps ship with the
+backend (`uv sync`).
 
 ```bash
 cd backend
-uv sync --extra observability
 uv run phoenix serve
 ```
 

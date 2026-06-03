@@ -6,8 +6,8 @@ every LLM completion, function tool call, and ``retriever.retrieve()``
 invocation produces a span visible in Phoenix's trace UI (default
 ``http://localhost:6006``).
 
-Disabled by default — production paths pay nothing. Install the optional
-deps with ``uv sync --extra observability`` before enabling.
+Tracing is disabled by default (``PHOENIX_ENABLED=false``) so idle processes
+pay no export cost; Phoenix/OpenInference deps are always installed.
 
 Architectural note: vendor imports (phoenix, openinference) are confined to
 this module per the "vendor SDKs at boundaries" rule. Both backend
@@ -32,9 +32,8 @@ def setup_phoenix() -> None:
     """Initialize Phoenix tracing if ``PHOENIX_ENABLED``. No-op otherwise.
 
     Safe to call multiple times — only the first call per process performs
-    the instrumentation patching. When the optional ``observability`` deps
-    are missing, logs a warning and returns rather than raising, so a
-    misconfigured ``PHOENIX_ENABLED=true`` never crashes the worker.
+    the instrumentation patching. On missing deps (should not happen after
+    ``uv sync``), logs a warning and returns rather than raising.
     """
     global _initialized
     if _initialized:
@@ -53,7 +52,7 @@ def setup_phoenix() -> None:
     except ImportError as exc:
         logger.warning(
             "PHOENIX_ENABLED=true but Phoenix instrumentation deps are missing "
-            "(%s). Install with `uv sync --extra observability`.",
+            "(%s). Re-run `uv sync` in backend/.",
             exc,
         )
         return

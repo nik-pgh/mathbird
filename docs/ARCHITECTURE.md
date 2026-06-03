@@ -166,9 +166,9 @@ The module is fully opt-in:
 
 - `PHOENIX_ENABLED=false` (default): `setup_phoenix()` returns immediately;
   no vendor imports happen.
-- `PHOENIX_ENABLED=true` without the optional deps installed: logs a warning
-  and returns; the process keeps running with no tracing.
-- `PHOENIX_ENABLED=true` with `uv sync --extra observability`: every
+- `PHOENIX_ENABLED=true` with missing/broken Phoenix deps: logs a warning and
+  returns; the process keeps running with no tracing.
+- `PHOENIX_ENABLED=true`: every
   OpenAI LLM completion, every `@function_tool` call (as a child span), and
   every `Retriever.retrieve()` invocation produce spans visible at
   `http://localhost:6006` (or a custom `PHOENIX_ENDPOINT`). For Phoenix

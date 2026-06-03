@@ -23,7 +23,7 @@ mathbird/
 │   │   ├── api/               # FastAPI app (token issuance + uploads)
 │   │   │   └── routes/        # token.py, documents.py
 │   │   ├── storage/           # base.py (Protocol) + local.py / s3.py
-│   │   ├── observability.py   # optional Arize Phoenix tracing for LLM/RAG/tool calls
+│   │   ├── observability.py   # Arize Phoenix tracing for LLM/RAG/tool calls (PHOENIX_ENABLED)
 │   │   └── rag/               # retriever.py (Protocol + Null/LlamaIndex+Qdrant) + parsing pipeline
 │   └── personas/              # YAML system prompts; PERSONA_FILE picks which one is loaded
 └── frontend/                  # Vite + React + TS
@@ -151,4 +151,4 @@ Pytest config lives in `backend/pyproject.toml` with `asyncio_mode = "auto"` —
 - **LLM provider Literal only has `"openai"` today.** The pipeline supports more, but adding one means following rule 3 above before changing `.env`.
 - **`BOARD_READER` defaults to `null`.** The agent will see "no reading yet" until you set `BOARD_READER=openai_vision` (and have `OPENAI_API_KEY` set). Snapshots are throttled to `BOARD_READER_INTERVAL_SECONDS` (2s) and resized to `BOARD_READER_MAX_IMAGE_DIM` (512px) on the client.
 - **Agent persona lives in a YAML file, not an env var.** `Settings.agent_instructions` is a read-only `@property` that loads `backend/personas/default.yaml` (a math-tutor prompt by default). Edit that file or point `PERSONA_FILE` at another YAML with a top-level `instructions:` string. The old `AGENT_INSTRUCTIONS` env var is gone.
-- **Phoenix tracing is opt-in.** `app/observability.py` is a no-op unless `PHOENIX_ENABLED=true`. When enabled it instruments OpenAI + LlamaIndex so every LLM completion, function-tool call, and `Retriever.retrieve()` is captured. Install the deps with `uv sync --extra observability`. `setup_phoenix()` is called at the very top of `app/agent/main.py` — before any livekit imports — so don't move that import; livekit caches unpatched method refs otherwise.
+- **Phoenix tracing is opt-in via env.** `app/observability.py` is a no-op unless `PHOENIX_ENABLED=true` (Phoenix/OpenInference deps are always installed with `uv sync`). When enabled it instruments OpenAI + LlamaIndex so every LLM completion, function-tool call, and `Retriever.retrieve()` is captured. `setup_phoenix()` is called at the very top of `app/agent/main.py` — before any livekit imports — so don't move that import; livekit caches unpatched method refs otherwise.

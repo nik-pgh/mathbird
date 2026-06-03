@@ -17,13 +17,12 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Copy project metadata + source. We intentionally install with the
-# `observability` extra so the worker can emit traces to Phoenix Cloud.
+# Copy project metadata + source (Phoenix/OpenInference deps are core).
 COPY pyproject.toml ./
 COPY app/ ./app/
 COPY personas/ ./personas/
 
-RUN uv pip install -e ".[observability]"
+RUN uv pip install -e .
 
 # Prewarm plugin models (Silero VAD weights, turn-detector ONNX, etc.) at
 # build time so the first session in production isn't bottlenecked on a

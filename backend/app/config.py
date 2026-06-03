@@ -111,9 +111,8 @@ class Settings(BaseSettings):
     board_extractor_model: str = "gpt-4o-mini"
     board_extractor_timeout_seconds: float = 2.0
 
-    # Observability (Arize Phoenix LLM/RAG tracing). Off by default. To enable:
-    # install with ``uv sync --extra observability``, run ``phoenix serve`` in
-    # another shell, then set ``PHOENIX_ENABLED=true``.
+    # Observability (Arize Phoenix LLM/RAG tracing). Off by default. To enable,
+    # set ``PHOENIX_ENABLED=true``; for local UI run ``uv run phoenix serve``.
     phoenix_enabled: bool = False
     phoenix_project: str = "mathbird"
     # Phoenix Cloud: use the space hostname from Settings, e.g.

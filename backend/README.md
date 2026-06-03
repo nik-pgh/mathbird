@@ -113,11 +113,10 @@ When you need to see, per voice turn, exactly which `query` the LLM passed
 to `search_documents`, which chunks Qdrant returned with what similarity
 scores, and how long each pipeline stage took, turn on Phoenix tracing.
 
-Install the optional dep group and start the Phoenix UI:
+Start the Phoenix UI (deps are installed by `uv sync`):
 
 ```bash
 cd backend
-uv sync --extra observability
 uv run phoenix serve            # opens http://localhost:6006
 ```
 
@@ -144,4 +143,4 @@ instrumentation patch are per-process. Once both are up:
 
 The instrumentation lives in `app/observability.py` (one module, vendor
 imports lazy and confined). Setting `PHOENIX_ENABLED=false` (or leaving
-it unset) makes `setup_phoenix()` a no-op — no Phoenix imports at all.
+it unset) makes `setup_phoenix()` a no-op — no spans exported.

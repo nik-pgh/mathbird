@@ -21,9 +21,8 @@ COPY pyproject.toml ./
 COPY app/ ./app/
 COPY personas/ ./personas/
 
-# Include the observability extra so the API process can also emit traces
-# to Phoenix Cloud (api/main.py calls setup_phoenix() at import time).
-RUN uv pip install -e ".[observability]"
+# Phoenix/OpenInference are core deps (api/main.py calls setup_phoenix() at import).
+RUN uv pip install -e .
 
 RUN useradd -m -u 1000 app && chown -R app:app /app
 USER app
