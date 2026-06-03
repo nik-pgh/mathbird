@@ -31,7 +31,8 @@ primary_region = "iad"            # iad=Virginia (matches LiveKit US East B). Ch
   [[http_service.checks]]
     interval = "30s"
     timeout = "5s"
-    grace_period = "10s"
+    # Cold starts import a large stack; allow time to bind :8000 before marking unhealthy.
+    grace_period = "45s"
     method = "GET"
     path = "/health"
 
