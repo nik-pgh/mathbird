@@ -50,6 +50,27 @@ def build_embed_model(settings: Settings) -> Any:
 
         return VoyageEmbedding(model_name=model, voyage_api_key=settings.voyage_api_key)
 
+    if provider == "google":
+        if not settings.google_api_key:
+            raise RuntimeError("GOOGLE_API_KEY is required when EMBEDDING_PROVIDER=google.")
+        from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
+
+        return GoogleGenAIEmbedding(model_name=model, api_key=settings.google_api_key)
+
+    if provider == "mistral":
+        if not settings.mistral_api_key:
+            raise RuntimeError("MISTRAL_API_KEY is required when EMBEDDING_PROVIDER=mistral.")
+        from llama_index.embeddings.mistralai import MistralAIEmbedding
+
+        return MistralAIEmbedding(model_name=model, api_key=settings.mistral_api_key)
+
+    if provider == "jina":
+        if not settings.jina_api_key:
+            raise RuntimeError("JINA_API_KEY is required when EMBEDDING_PROVIDER=jina.")
+        from llama_index.embeddings.jinaai import JinaEmbedding
+
+        return JinaEmbedding(model=model, api_key=settings.jina_api_key)
+
     if provider == "huggingface":
         try:
             from llama_index.embeddings.huggingface import HuggingFaceEmbedding

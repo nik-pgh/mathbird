@@ -7,10 +7,11 @@ then embeds the same nodes into one Qdrant collection per provider/model pair.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Sequence
+import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from app.config import EmbeddingProvider, Settings, get_settings
 from app.rag.embeddings import embedding_collection_name
@@ -37,6 +38,50 @@ class EmbeddingIngestResult:
     node_count: int
 
 
+@dataclass(frozen=True)
+class EmbeddingIngestFailure:
+    embedding_provider: str
+    embedding_model: str
+    collection_name: str
+    error: str
+
+
+@dataclass(frozen=True)
+class MultiIngestReport:
+    successes: tuple[EmbeddingIngestResult, ...]
+    failures: tuple[EmbeddingIngestFailure, ...]
+
+    @property
+    def ok(self) -> bool:
+        return not self.failures
+
+
+MultiIngestEventKind = Literal[
+    "parse_start",
+    "parse_done",
+    "embed_start",
+    "embed_done",
+    "embed_failed",
+    "all_done",
+]
+
+
+@dataclass(frozen=True)
+class MultiIngestEvent:
+    kind: MultiIngestEventKind
+    provider: str = ""
+    model: str = ""
+    collection_name: str = ""
+    node_count: int = 0
+    target_index: int = 0
+    target_total: int = 0
+    elapsed_seconds: float = 0.0
+    error: str = ""
+
+
+MultiIngestProgress = Callable[[MultiIngestEvent], None]
+
+
 def _require_llamaparse(settings: Settings) -> None:
     if not settings.llamaparse_api_key:
         raise RuntimeError("LLAMAPARSE_API_KEY is required for PDF ingestion.")
@@ -47,6 +92,9 @@ def _embedding_api_key_field(provider: EmbeddingProvider) -> str:
         "openai": "openai_api_key",
         "cohere": "cohere_api_key",
         "voyage": "voyage_api_key",
+        "google": "google_api_key",
+        "mistral": "mistral_api_key",
+        "jina": "jina_api_key",
         "huggingface": "",
     }[provider]
 
@@ -65,6 +113,11 @@ def _validate_embedding_target(settings: Settings, provider: EmbeddingProvider, 
                 "HuggingFace embeddings require: uv sync --extra embeddings-huggingface"
             ) from exc
     _ = embedding_collection_name(provider, model)
+
+
+def _emit(on_progress: MultiIngestProgress | None, event: MultiIngestEvent) -> None:
+    if on_progress is not None:
+        on_progress(event)
 
 
 def build_parser(settings: Settings) -> LlamaParseParser:
@@ -128,7 +181,9 @@ async def ingest_pdf_all_embeddings(
     base_settings: Settings | None = None,
     targets: Sequence[tuple[EmbeddingProvider, str]] | None = None,
     parallel: bool = True,
-) -> list[EmbeddingIngestResult]:
+    continue_on_error: bool = False,
+    on_progress: MultiIngestProgress | None = None,
+) -> MultiIngestReport:
     """Parse *path* once, then index the same nodes into every embedding collection."""
     base = base_settings or get_settings()
     matrix = tuple(targets or DEFAULT_EMBEDDING_TARGETS)
@@ -138,9 +193,20 @@ async def ingest_pdf_all_embeddings(
     for provider, model in matrix:
         _validate_embedding_target(base, provider, model)
 
+    _emit(on_progress, MultiIngestEvent(kind="parse_start"))
+    parse_started = time.perf_counter()
     nodes = await parse_pdf_to_nodes(path, doc_id=doc_id, settings=base)
+    _emit(
+        on_progress,
+        MultiIngestEvent(
+            kind="parse_done",
+            node_count=len(nodes),
+            elapsed_seconds=time.perf_counter() - parse_started,
+        ),
+    )
+
     if not nodes:
-        return [
+        empty_results = tuple(
             EmbeddingIngestResult(
                 embedding_provider=provider,
                 embedding_model=model,
@@ -148,21 +214,153 @@ async def ingest_pdf_all_embeddings(
                 node_count=0,
             )
             for provider, model in matrix
-        ]
+        )
+        report = MultiIngestReport(successes=empty_results, failures=())
+        _emit(on_progress, MultiIngestEvent(kind="all_done"))
+        return report
 
-    async def _one(provider: EmbeddingProvider, model: str) -> EmbeddingIngestResult:
-        return await insert_nodes_for_embedding(
+    target_total = len(matrix)
+
+    async def _one(
+        provider: EmbeddingProvider,
+        model: str,
+        *,
+        target_index: int,
+    ) -> EmbeddingIngestResult:
+        collection_name = embedding_collection_name(provider, model)
+        _emit(
+            on_progress,
+            MultiIngestEvent(
+                kind="embed_start",
+                provider=provider,
+                model=model,
+                collection_name=collection_name,
+                target_index=target_index,
+                target_total=target_total,
+            ),
+        )
+        started = time.perf_counter()
+        result = await insert_nodes_for_embedding(
             nodes,
             base_settings=base,
             embedding_provider=provider,
             embedding_model=model,
         )
+        _emit(
+            on_progress,
+            MultiIngestEvent(
+                kind="embed_done",
+                provider=provider,
+                model=model,
+                collection_name=result.collection_name,
+                node_count=result.node_count,
+                target_index=target_index,
+                target_total=target_total,
+                elapsed_seconds=time.perf_counter() - started,
+            ),
+        )
+        return result
+
+    async def _one_safe(
+        provider: EmbeddingProvider,
+        model: str,
+        *,
+        target_index: int,
+    ) -> EmbeddingIngestResult | EmbeddingIngestFailure:
+        collection_name = embedding_collection_name(provider, model)
+        _emit(
+            on_progress,
+            MultiIngestEvent(
+                kind="embed_start",
+                provider=provider,
+                model=model,
+                collection_name=collection_name,
+                target_index=target_index,
+                target_total=target_total,
+            ),
+        )
+        started = time.perf_counter()
+        try:
+            result = await insert_nodes_for_embedding(
+                nodes,
+                base_settings=base,
+                embedding_provider=provider,
+                embedding_model=model,
+            )
+        except Exception as exc:
+            failure = EmbeddingIngestFailure(
+                embedding_provider=provider,
+                embedding_model=model,
+                collection_name=collection_name,
+                error=str(exc),
+            )
+            _emit(
+                on_progress,
+                MultiIngestEvent(
+                    kind="embed_failed",
+                    provider=provider,
+                    model=model,
+                    collection_name=collection_name,
+                    target_index=target_index,
+                    target_total=target_total,
+                    elapsed_seconds=time.perf_counter() - started,
+                    error=failure.error,
+                ),
+            )
+            return failure
+
+        _emit(
+            on_progress,
+            MultiIngestEvent(
+                kind="embed_done",
+                provider=provider,
+                model=model,
+                collection_name=result.collection_name,
+                node_count=result.node_count,
+                target_index=target_index,
+                target_total=target_total,
+                elapsed_seconds=time.perf_counter() - started,
+            ),
+        )
+        return result
 
     if parallel:
-        results = await asyncio.gather(*(_one(provider, model) for provider, model in matrix))
-        return list(results)
+        if continue_on_error:
+            outcomes = await asyncio.gather(
+                *(
+                    _one_safe(provider, model, target_index=index)
+                    for index, (provider, model) in enumerate(matrix, start=1)
+                )
+            )
+            successes = tuple(o for o in outcomes if isinstance(o, EmbeddingIngestResult))
+            failures = tuple(o for o in outcomes if isinstance(o, EmbeddingIngestFailure))
+            report = MultiIngestReport(successes=successes, failures=failures)
+            _emit(on_progress, MultiIngestEvent(kind="all_done"))
+            return report
 
-    results: list[EmbeddingIngestResult] = []
-    for provider, model in matrix:
-        results.append(await _one(provider, model))
-    return results
+        results = await asyncio.gather(
+            *(
+                _one(provider, model, target_index=index)
+                for index, (provider, model) in enumerate(matrix, start=1)
+            )
+        )
+        report = MultiIngestReport(successes=tuple(results), failures=())
+        _emit(on_progress, MultiIngestEvent(kind="all_done"))
+        return report
+
+    successes: list[EmbeddingIngestResult] = []
+    failures: list[EmbeddingIngestFailure] = []
+    for index, (provider, model) in enumerate(matrix, start=1):
+        if continue_on_error:
+            outcome = await _one_safe(provider, model, target_index=index)
+            if isinstance(outcome, EmbeddingIngestResult):
+                successes.append(outcome)
+            else:
+                failures.append(outcome)
+            continue
+
+        successes.append(await _one(provider, model, target_index=index))
+
+    report = MultiIngestReport(successes=tuple(successes), failures=tuple(failures))
+    _emit(on_progress, MultiIngestEvent(kind="all_done"))
+    return report

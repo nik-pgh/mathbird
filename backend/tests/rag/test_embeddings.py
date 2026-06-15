@@ -69,6 +69,69 @@ def test_build_embed_model_voyage_requires_api_key() -> None:
         build_embed_model(settings)
 
 
+def test_build_embed_model_google() -> None:
+    settings = Settings(
+        _env_file=None,
+        embedding_provider="google",
+        embedding_model="gemini-embedding-001",
+        google_api_key="google-test",
+    )
+
+    with patch("llama_index.embeddings.google_genai.GoogleGenAIEmbedding") as cls:
+        build_embed_model(settings)
+
+    cls.assert_called_once_with(model_name="gemini-embedding-001", api_key="google-test")
+
+
+def test_build_embed_model_google_requires_api_key() -> None:
+    settings = Settings(_env_file=None, embedding_provider="google", google_api_key="")
+
+    with pytest.raises(RuntimeError, match="GOOGLE_API_KEY is required"):
+        build_embed_model(settings)
+
+
+def test_build_embed_model_mistral() -> None:
+    settings = Settings(
+        _env_file=None,
+        embedding_provider="mistral",
+        embedding_model="mistral-embed",
+        mistral_api_key="mistral-test",
+    )
+
+    with patch("llama_index.embeddings.mistralai.MistralAIEmbedding") as cls:
+        build_embed_model(settings)
+
+    cls.assert_called_once_with(model_name="mistral-embed", api_key="mistral-test")
+
+
+def test_build_embed_model_mistral_requires_api_key() -> None:
+    settings = Settings(_env_file=None, embedding_provider="mistral", mistral_api_key="")
+
+    with pytest.raises(RuntimeError, match="MISTRAL_API_KEY is required"):
+        build_embed_model(settings)
+
+
+def test_build_embed_model_jina() -> None:
+    settings = Settings(
+        _env_file=None,
+        embedding_provider="jina",
+        embedding_model="jina-embeddings-v3-small",
+        jina_api_key="jina-test",
+    )
+
+    with patch("llama_index.embeddings.jinaai.JinaEmbedding") as cls:
+        build_embed_model(settings)
+
+    cls.assert_called_once_with(model="jina-embeddings-v3-small", api_key="jina-test")
+
+
+def test_build_embed_model_jina_requires_api_key() -> None:
+    settings = Settings(_env_file=None, embedding_provider="jina", jina_api_key="")
+
+    with pytest.raises(RuntimeError, match="JINA_API_KEY is required"):
+        build_embed_model(settings)
+
+
 def test_build_embed_model_huggingface() -> None:
     settings = Settings(
         _env_file=None,
@@ -93,6 +156,11 @@ def test_build_embed_model_huggingface() -> None:
         ("cohere", "embed-v4.0", "mathbird_cohere_embed_v4_0"),
         ("voyage", "voyage-3-lite", "mathbird_voyage_voyage_3_lite"),
         ("voyage", "voyage-3-large", "mathbird_voyage_voyage_3_large"),
+        ("google", "gemini-embedding-001", "mathbird_google_gemini_embedding_001"),
+        ("google", "text-embedding-004", "mathbird_google_text_embedding_004"),
+        ("mistral", "mistral-embed", "mathbird_mistral_mistral_embed"),
+        ("jina", "jina-embeddings-v3-small", "mathbird_jina_jina_embeddings_v3_small"),
+        ("jina", "jina-embeddings-v3-base", "mathbird_jina_jina_embeddings_v3_base"),
     ],
 )
 def test_embedding_collection_name(provider: str, model: str, expected: str) -> None:

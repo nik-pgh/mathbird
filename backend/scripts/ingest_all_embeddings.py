@@ -16,6 +16,9 @@ Run from ``backend/``::
 
     # Avoid parallel embedding API calls (slower, gentler on rate limits)
     uv run python -m scripts.ingest_all_embeddings book.pdf --sequential
+
+    # Voyage free tier is 3 RPM without billing — skip it or use --sequential
+    uv run python -m scripts.ingest_all_embeddings book.pdf --skip-provider voyage
 """
 
 from __future__ import annotations
@@ -23,11 +26,63 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 from app.config import EmbeddingProvider, get_settings
 from app.rag.embeddings import embedding_collection_name
-from app.rag.multi_ingest import DEFAULT_EMBEDDING_TARGETS, ingest_pdf_all_embeddings
+from app.rag.multi_ingest import (
+    DEFAULT_EMBEDDING_TARGETS,
+    MultiIngestEvent,
+    ingest_pdf_all_embeddings,
+)
+
+
+def _format_elapsed(seconds: float) -> str:
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    minutes = int(seconds // 60)
+    remainder = seconds % 60
+    return f"{minutes}m {remainder:.0f}s"
+
+
+def _print_progress(event: MultiIngestEvent) -> None:
+    stamp = datetime.now(UTC).strftime("%H:%M:%S")
+    if event.kind == "parse_start":
+        print(f"{stamp}  parse  start", flush=True)
+        return
+    if event.kind == "parse_done":
+        elapsed = _format_elapsed(event.elapsed_seconds)
+        print(f"{stamp}  parse  done   {event.node_count} nodes ({elapsed})", flush=True)
+        return
+    if event.kind == "embed_start":
+        label = f"{event.provider}/{event.model}"
+        print(
+            f"{stamp}  embed  start  [{event.target_index}/{event.target_total}] "
+            f"{label} -> {event.collection_name}",
+            flush=True,
+        )
+        return
+    if event.kind == "embed_done":
+        label = f"{event.provider}/{event.model}"
+        print(
+            f"{stamp}  embed  done   [{event.target_index}/{event.target_total}] "
+            f"{label}  {event.node_count} nodes ({_format_elapsed(event.elapsed_seconds)})",
+            flush=True,
+        )
+        return
+    if event.kind == "embed_failed":
+        label = f"{event.provider}/{event.model}"
+        print(
+            f"{stamp}  embed  FAIL   [{event.target_index}/{event.target_total}] "
+            f"{label} ({_format_elapsed(event.elapsed_seconds)})",
+            file=sys.stderr,
+            flush=True,
+        )
+        print(f"           {event.error}", file=sys.stderr, flush=True)
+        return
+    if event.kind == "all_done":
+        print(f"{stamp}  done", flush=True)
 
 
 def _parse_target(raw: str) -> tuple[EmbeddingProvider, str]:
@@ -50,6 +105,17 @@ def _default_doc_id(path: Path) -> str:
     return cleaned or "document"
 
 
+def _resolve_targets(
+    explicit: list[tuple[EmbeddingProvider, str]] | None,
+    *,
+    skip_providers: set[str],
+) -> tuple[tuple[EmbeddingProvider, str], ...]:
+    targets = tuple(explicit) if explicit else DEFAULT_EMBEDDING_TARGETS
+    if not skip_providers:
+        return targets
+    return tuple(t for t in targets if t[0] not in skip_providers)
+
+
 async def _amain(args: argparse.Namespace) -> int:
     pdf_path = Path(args.pdf).expanduser().resolve()
     if not pdf_path.is_file():
@@ -57,7 +123,12 @@ async def _amain(args: argparse.Namespace) -> int:
         return 1
 
     doc_id = args.doc_id or _default_doc_id(pdf_path)
-    targets = tuple(args.target) if args.target else DEFAULT_EMBEDDING_TARGETS
+    skip_providers = set(args.skip_provider or [])
+    targets = _resolve_targets(args.target, skip_providers=skip_providers)
+    if not targets:
+        print("No embedding targets left after filtering.", file=sys.stderr)
+        return 1
+
     settings = get_settings()
 
     print(f"PDF: {pdf_path}")
@@ -66,23 +137,51 @@ async def _amain(args: argparse.Namespace) -> int:
     print(f"Targets ({len(targets)}):")
     for provider, model in targets:
         print(f"  {provider}:{model} -> {embedding_collection_name(provider, model)}")
+    if skip_providers:
+        print(f"Skipped providers: {', '.join(sorted(skip_providers))}")
     print(f"Mode: {'parallel' if args.parallel else 'sequential'}")
+    if args.continue_on_error:
+        print("Errors: continue (partial success allowed)")
     print()
 
-    results = await ingest_pdf_all_embeddings(
+    report = await ingest_pdf_all_embeddings(
         str(pdf_path),
         doc_id=doc_id,
         targets=targets,
         parallel=args.parallel,
+        continue_on_error=args.continue_on_error,
+        on_progress=None if args.quiet else _print_progress,
     )
 
-    print("Done:")
-    for result in results:
-        print(
-            f"  {result.embedding_provider}/{result.embedding_model} "
-            f"-> {result.collection_name} ({result.node_count} nodes)"
-        )
-    return 0
+    if not args.quiet and (report.successes or report.failures):
+        print()
+    if report.successes:
+        print("Succeeded:")
+        for result in report.successes:
+            print(
+                f"  {result.embedding_provider}/{result.embedding_model} "
+                f"-> {result.collection_name} ({result.node_count} nodes)"
+            )
+
+    if report.failures:
+        print("\nFailed:", file=sys.stderr)
+        for failure in report.failures:
+            print(
+                f"  {failure.embedding_provider}/{failure.embedding_model} "
+                f"-> {failure.collection_name}",
+                file=sys.stderr,
+            )
+            print(f"    {failure.error}", file=sys.stderr)
+
+    if report.ok:
+        return 0
+
+    print(
+        "\nTip: Voyage free accounts are capped at 3 RPM — use --sequential, "
+        "--skip-provider voyage, or add billing at https://dashboard.voyageai.com/.",
+        file=sys.stderr,
+    )
+    return 1
 
 
 def main() -> None:
@@ -104,9 +203,25 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--skip-provider",
+        action="append",
+        metavar="PROVIDER",
+        help="Omit all targets for this provider (repeatable), e.g. voyage.",
+    )
+    parser.add_argument(
         "--sequential",
         action="store_true",
         help="Insert into collections one at a time instead of in parallel.",
+    )
+    parser.add_argument(
+        "--continue-on-error",
+        action="store_true",
+        help="Keep going when one embedding provider fails; report all outcomes.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress live progress lines (summary only).",
     )
     args = parser.parse_args()
     args.parallel = not args.sequential

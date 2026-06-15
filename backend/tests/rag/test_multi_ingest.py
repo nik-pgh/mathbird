@@ -7,6 +7,8 @@ from app.config import Settings
 from app.rag.indexing import clone_nodes, parsed_document_to_nodes
 from app.rag.multi_ingest import (
     DEFAULT_EMBEDDING_TARGETS,
+    EmbeddingIngestResult,
+    MultiIngestEvent,
     ingest_pdf_all_embeddings,
     insert_nodes_for_embedding,
     parse_pdf_to_nodes,
@@ -121,7 +123,7 @@ async def test_ingest_pdf_all_embeddings_parses_once_and_indexes_all_targets() -
     parse_mock = AsyncMock(return_value=nodes)
     insert_mock = AsyncMock(
         side_effect=[
-            MagicMock(
+            EmbeddingIngestResult(
                 embedding_provider=provider,
                 embedding_model=model,
                 collection_name=f"collection_{provider}_{model}",
@@ -144,7 +146,8 @@ async def test_ingest_pdf_all_embeddings_parses_once_and_indexes_all_targets() -
 
     parse_mock.assert_awaited_once()
     assert insert_mock.await_count == len(DEFAULT_EMBEDDING_TARGETS)
-    assert len(results) == len(DEFAULT_EMBEDDING_TARGETS)
+    assert len(results.successes) == len(DEFAULT_EMBEDDING_TARGETS)
+    assert results.failures == ()
 
 
 @pytest.mark.asyncio
@@ -162,3 +165,95 @@ async def test_ingest_pdf_all_embeddings_requires_provider_api_key() -> None:
             base_settings=settings,
             targets=[("openai", "text-embedding-3-small")],
         )
+
+
+@pytest.mark.asyncio
+async def test_ingest_pdf_all_embeddings_continue_on_error_collects_failures() -> None:
+    settings = Settings(
+        _env_file=None,
+        llamaparse_api_key="llx-test",
+        openai_api_key="sk-test",
+        cohere_api_key="cohere-test",
+        voyage_api_key="voyage-test",
+    )
+    nodes = [TextNode(text="chunk", id_="node-1")]
+    targets = (
+        ("openai", "text-embedding-3-small"),
+        ("voyage", "voyage-3-lite"),
+    )
+
+    async def _insert(
+        _nodes: list[TextNode],
+        *,
+        base_settings: Settings,
+        embedding_provider: str,
+        embedding_model: str,
+    ):
+        if embedding_provider == "voyage":
+            raise RuntimeError("rate limited")
+        return EmbeddingIngestResult(
+            embedding_provider=embedding_provider,
+            embedding_model=embedding_model,
+            collection_name=f"collection_{embedding_provider}_{embedding_model}",
+            node_count=1,
+        )
+
+    with (
+        patch("app.rag.multi_ingest.parse_pdf_to_nodes", AsyncMock(return_value=nodes)),
+        patch("app.rag.multi_ingest.insert_nodes_for_embedding", side_effect=_insert),
+    ):
+        report = await ingest_pdf_all_embeddings(
+            "/tmp/book.pdf",
+            doc_id="doc-1",
+            base_settings=settings,
+            targets=targets,
+            parallel=True,
+            continue_on_error=True,
+        )
+
+    assert len(report.successes) == 1
+    assert report.successes[0].embedding_provider == "openai"
+    assert len(report.failures) == 1
+    assert report.failures[0].embedding_provider == "voyage"
+    assert "rate limited" in report.failures[0].error
+
+
+@pytest.mark.asyncio
+async def test_ingest_pdf_all_embeddings_emits_progress_events() -> None:
+    settings = Settings(
+        _env_file=None,
+        llamaparse_api_key="llx-test",
+        openai_api_key="sk-test",
+        cohere_api_key="cohere-test",
+        voyage_api_key="voyage-test",
+    )
+    nodes = [TextNode(text="chunk", id_="node-1")]
+    targets = (("openai", "text-embedding-3-small"),)
+    events: list[MultiIngestEvent] = []
+
+    async def _insert(*_args, **_kwargs) -> EmbeddingIngestResult:
+        return EmbeddingIngestResult(
+            embedding_provider="openai",
+            embedding_model="text-embedding-3-small",
+            collection_name="mathbird_openai_text_embedding_3_small",
+            node_count=1,
+        )
+
+    with (
+        patch("app.rag.multi_ingest.parse_pdf_to_nodes", AsyncMock(return_value=nodes)),
+        patch("app.rag.multi_ingest.insert_nodes_for_embedding", side_effect=_insert),
+    ):
+        await ingest_pdf_all_embeddings(
+            "/tmp/book.pdf",
+            doc_id="doc-1",
+            base_settings=settings,
+            targets=targets,
+            parallel=False,
+            on_progress=events.append,
+        )
+
+    kinds = [event.kind for event in events]
+    assert kinds == ["parse_start", "parse_done", "embed_start", "embed_done", "all_done"]
+    assert events[1].node_count == 1
+    assert events[2].target_index == 1
+    assert events[3].node_count == 1

@@ -20,7 +20,9 @@ VadProvider = Literal["silero"]
 StorageBackendName = Literal["local", "s3"]
 RagProvider = Literal["null", "llamaindex_qdrant"]
 ParserProvider = Literal["llamaparse"]
-EmbeddingProvider = Literal["openai", "cohere", "voyage", "huggingface"]
+EmbeddingProvider = Literal[
+    "openai", "cohere", "voyage", "google", "mistral", "jina", "huggingface"
+]
 RerankerProvider = Literal["none"]
 RagIngestionMode = Literal["sync"]
 BoardReaderName = Literal["null", "openai_vision"]
@@ -93,6 +95,9 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-3-small"
     cohere_api_key: str = ""
     voyage_api_key: str = ""
+    google_api_key: str = ""
+    mistral_api_key: str = ""
+    jina_api_key: str = ""
 
     @property
     def resolved_qdrant_collection(self) -> str:
