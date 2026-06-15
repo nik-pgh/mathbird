@@ -115,14 +115,14 @@ def test_build_embed_model_jina() -> None:
     settings = Settings(
         _env_file=None,
         embedding_provider="jina",
-        embedding_model="jina-embeddings-v3-small",
+        embedding_model="jina-embeddings-v5-text-small",
         jina_api_key="jina-test",
     )
 
     with patch("llama_index.embeddings.jinaai.JinaEmbedding") as cls:
         build_embed_model(settings)
 
-    cls.assert_called_once_with(model="jina-embeddings-v3-small", api_key="jina-test")
+    cls.assert_called_once_with(model="jina-embeddings-v5-text-small", api_key="jina-test")
 
 
 def test_build_embed_model_jina_requires_api_key() -> None:
@@ -159,8 +159,9 @@ def test_build_embed_model_huggingface() -> None:
         ("google", "gemini-embedding-001", "mathbird_google_gemini_embedding_001"),
         ("google", "text-embedding-004", "mathbird_google_text_embedding_004"),
         ("mistral", "mistral-embed", "mathbird_mistral_mistral_embed"),
-        ("jina", "jina-embeddings-v3-small", "mathbird_jina_jina_embeddings_v3_small"),
-        ("jina", "jina-embeddings-v3-base", "mathbird_jina_jina_embeddings_v3_base"),
+        ("jina", "jina-embeddings-v5-text-nano", "mathbird_jina_jina_embeddings_v5_text_nano"),
+        ("jina", "jina-embeddings-v5-text-small", "mathbird_jina_jina_embeddings_v5_text_small"),
+        ("jina", "jina-embeddings-v3", "mathbird_jina_jina_embeddings_v3"),
     ],
 )
 def test_embedding_collection_name(provider: str, model: str, expected: str) -> None:
