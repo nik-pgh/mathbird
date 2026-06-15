@@ -26,6 +26,19 @@ export default function SessionTopbar({ session, pdf }: Props) {
       <Link to="/" className="brand">
         mathbird
       </Link>
+      {!session && (
+        <nav className="topbar-nav" aria-label="Primary navigation">
+          <Link className={onLibrary ? "active" : ""} to="/">
+            Library
+          </Link>
+          <Link
+            className={location.pathname === "/evals" ? "active" : ""}
+            to="/evals"
+          >
+            Evals
+          </Link>
+        </nav>
+      )}
       <div className="spacer" />
 
       {pdf && (
@@ -58,14 +71,15 @@ export default function SessionTopbar({ session, pdf }: Props) {
             End session
           </button>
         </>
-      ) : onLibrary ? (
+      ) : (
         <button
           className="btn primary"
           onClick={() => navigate("/session")}
         >
-          Start session →
+          <span className="btn-label-full">Start session →</span>
+          <span className="btn-label-short">Start</span>
         </button>
-      ) : null}
+      )}
     </header>
   );
 }
