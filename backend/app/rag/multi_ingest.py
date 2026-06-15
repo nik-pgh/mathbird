@@ -19,14 +19,14 @@ from app.rag.indexing import clone_nodes, parsed_document_to_nodes
 from app.rag.llamaindex_qdrant import build_qdrant_index_stack, close_qdrant_client
 from app.rag.llamaparse_parser import LlamaParseParser
 
-# Documented embedding matrix from .env.example (HuggingFace omitted — optional extra).
+# Default comparison matrix for Goodfellow retrieval evals.
 DEFAULT_EMBEDDING_TARGETS: tuple[tuple[EmbeddingProvider, str], ...] = (
     ("openai", "text-embedding-3-small"),
     ("openai", "text-embedding-3-large"),
     ("cohere", "embed-english-v3.0"),
     ("cohere", "embed-v4.0"),
-    ("voyage", "voyage-3-lite"),
-    ("voyage", "voyage-3-large"),
+    ("google", "gemini-embedding-001"),
+    ("mistral", "mistral-embed"),
 )
 
 

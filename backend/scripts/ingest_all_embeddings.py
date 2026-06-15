@@ -12,13 +12,10 @@ Run from ``backend/``::
     # Subset of models only
     uv run python -m scripts.ingest_all_embeddings book.pdf \\
         --target openai:text-embedding-3-small \\
-        --target voyage:voyage-3-lite
+        --target google:gemini-embedding-001
 
     # Avoid parallel embedding API calls (slower, gentler on rate limits)
     uv run python -m scripts.ingest_all_embeddings book.pdf --sequential
-
-    # Voyage free tier is 3 RPM without billing — skip it or use --sequential
-    uv run python -m scripts.ingest_all_embeddings book.pdf --skip-provider voyage
 """
 
 from __future__ import annotations
@@ -177,8 +174,7 @@ async def _amain(args: argparse.Namespace) -> int:
         return 0
 
     print(
-        "\nTip: Voyage free accounts are capped at 3 RPM — use --sequential, "
-        "--skip-provider voyage, or add billing at https://dashboard.voyageai.com/.",
+        "\nTip: Use --sequential or --continue-on-error if one provider is rate-limited.",
         file=sys.stderr,
     )
     return 1
@@ -199,7 +195,7 @@ def main() -> None:
         metavar="PROVIDER:MODEL",
         help=(
             "Embedding pair to index (repeatable). "
-            "Default: all six documented models from .env.example."
+            "Default: OpenAI small/large, Cohere English/v4, Google Gemini, and Mistral."
         ),
     )
     parser.add_argument(

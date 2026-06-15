@@ -38,6 +38,17 @@ def _sample_document() -> ParsedDocument:
     )
 
 
+def test_default_embedding_targets_match_current_eval_matrix() -> None:
+    assert DEFAULT_EMBEDDING_TARGETS == (
+        ("openai", "text-embedding-3-small"),
+        ("openai", "text-embedding-3-large"),
+        ("cohere", "embed-english-v3.0"),
+        ("cohere", "embed-v4.0"),
+        ("google", "gemini-embedding-001"),
+        ("mistral", "mistral-embed"),
+    )
+
+
 def test_clone_nodes_preserves_ids_and_metadata() -> None:
     original = parsed_document_to_nodes(_sample_document())
     clones = clone_nodes(original)
@@ -117,7 +128,8 @@ async def test_ingest_pdf_all_embeddings_parses_once_and_indexes_all_targets() -
         llamaparse_api_key="llx-test",
         openai_api_key="sk-test",
         cohere_api_key="cohere-test",
-        voyage_api_key="voyage-test",
+        google_api_key="google-test",
+        mistral_api_key="mistral-test",
     )
     nodes = [TextNode(text="chunk", id_="node-1")]
     parse_mock = AsyncMock(return_value=nodes)
