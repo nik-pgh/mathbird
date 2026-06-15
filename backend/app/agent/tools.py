@@ -67,11 +67,11 @@ async def search_documents(ctx: RunContext, query: str) -> str:
 
     Writing a good ``query``:
     - Use digits, not words: ``"problem 3"`` not ``"problem three"``,
-      ``"page 7"`` not ``"page seven"``. The index has fast exact-match
-      lookups keyed on numeric problem / page / example IDs; words bypass
-      them and fall back to weaker semantic search.
+      ``"page 7"`` not ``"page seven"``, ``"chapter 2"`` not ``"chapter two"``.
+      The index has fast exact-match lookups keyed on numeric problem / page /
+      chapter IDs; words bypass them and fall back to weaker semantic search.
     - Use the PDF's own vocabulary (``problem``, ``exercise``, ``example``,
-      ``page``) instead of conversational paraphrases like "the second
+      ``page``, ``chapter``) instead of conversational paraphrases like "the second
       one" or "question number three".
     - For open-ended topics, pass the student's question close to verbatim
       so semantic similarity has full context (e.g.

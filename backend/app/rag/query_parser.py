@@ -5,11 +5,14 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app.rag.chapter import parse_chapter_number
+
 
 @dataclass(frozen=True)
 class ParsedRetrievalQuery:
     query: str
     page_number: int | None = None
+    chapter_number: int | None = None
     exercise_number: str = ""
     section_title: str = ""
     example_number: str = ""
@@ -18,6 +21,7 @@ class ParsedRetrievalQuery:
     def is_structured_lookup(self) -> bool:
         return bool(
             self.page_number is not None
+            or self.chapter_number is not None
             or self.exercise_number
             or self.example_number
             or self.section_title
@@ -37,9 +41,7 @@ EXERCISE_PATTERNS = [
     re.compile(r"(?<!\w)#\s*([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE),
 ]
 
-EXAMPLE_PATTERN = re.compile(
-    r"\bexample\s+(?:number\s+)?([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE
-)
+EXAMPLE_PATTERN = re.compile(r"\bexample\s+(?:number\s+)?([A-Za-z]?\d+[A-Za-z]?)\b", re.IGNORECASE)
 
 # LLMs sampled from voice transcripts will sometimes spell numbers out
 # ("question three", "page seven") instead of using digits, even when
@@ -99,10 +101,12 @@ def parse_retrieval_query(query: str) -> ParsedRetrievalQuery:
     page = _first_match(PAGE_PATTERNS, normalized)
     exercise = _first_match(EXERCISE_PATTERNS, normalized)
     example_match = EXAMPLE_PATTERN.search(normalized)
+    chapter = parse_chapter_number(normalized)
 
     return ParsedRetrievalQuery(
         query=query,
         page_number=int(page) if page else None,
+        chapter_number=chapter,
         exercise_number=exercise,
         example_number=example_match.group(1) if example_match else "",
     )

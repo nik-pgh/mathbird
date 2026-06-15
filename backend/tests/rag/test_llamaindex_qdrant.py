@@ -197,6 +197,7 @@ def textbook_payload(*, block_type: str = "exercise") -> dict:
                         text="Problem 8. Solve 2x + 3 = 9.",
                         markdown="Problem 8. Solve 2x + 3 = 9.",
                         exercise_number="8",
+                        chapter_number=2,
                     )
                 ],
             )
@@ -208,6 +209,31 @@ def textbook_payload(*, block_type: str = "exercise") -> dict:
     node_content["metadata"]["block_type"] = block_type
     payload["_node_content"] = json.dumps(node_content)
     return payload
+
+
+def chapter_payload() -> dict:
+    document = ParsedDocument(
+        doc_id="textbook-doc",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=8,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="textbook-doc:p8:b0",
+                        page_number=8,
+                        block_type="paragraph",
+                        text="Sometimes we need to measure the size of a vector.",
+                        markdown="Sometimes we need to measure the size of a vector.",
+                        chapter_number=2,
+                    )
+                ],
+            )
+        ],
+    )
+    node = parsed_document_to_nodes(document)[0]
+    return node_to_metadata_dict(node, remove_text=False, flat_metadata=False)
 
 
 def example_payload() -> dict:
@@ -356,10 +382,62 @@ async def test_structured_lookup_creates_required_qdrant_payload_indexes() -> No
         for call in qdrant_client.create_payload_index_calls
     ] == [
         ("page_number", "integer"),
+        ("chapter_number", "integer"),
         ("exercise_number", "keyword"),
         ("example_number", "keyword"),
         ("textbook_doc_id", "keyword"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_filters_by_chapter_number() -> None:
+    point = SimpleNamespace(payload=chapter_payload())
+    qdrant_client = FakeQdrantClient(points=[point])
+    store = QdrantTextbookStore(
+        qdrant_client=qdrant_client,
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        request=RetrievalRequest(
+            query="chapter 2",
+            top_k=4,
+            chapter_number=2,
+        )
+    )
+
+    filter_conditions = qdrant_client.scroll_calls[0]["scroll_filter"].must
+    assert [condition.key for condition in filter_conditions] == ["chapter_number"]
+    assert records[0].source == "deep_learning_ch2.pdf, chapter 2, page 8"
+    assert records[0].chapter_number == 2
+
+
+@pytest.mark.asyncio
+async def test_retrieve_passes_chapter_number_to_structured_lookup() -> None:
+    store = FakeStore()
+    store.records = [
+        RetrievedRecord(
+            text="Linear algebra basics.",
+            filename="book.pdf",
+            page_number=1,
+            block_type="paragraph",
+            chapter_number=2,
+            block_id="doc-1:p1:b0",
+            score=1.0,
+        )
+    ]
+    retriever = LlamaIndexQdrantRetriever(
+        parser=FakeParser(),
+        index=FakeIndex(),
+        store=store,
+        filename_resolver=lambda path: "book.pdf",
+    )
+
+    chunks = await retriever.retrieve("chapter 2 linear algebra", top_k=4)
+
+    assert store.structured_requests[0].chapter_number == 2
+    assert chunks[0].source == "book.pdf, chapter 2, page 1"
 
 
 @pytest.mark.asyncio

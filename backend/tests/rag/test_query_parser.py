@@ -110,3 +110,24 @@ def test_query_field_preserves_original_phrasing() -> None:
     parsed = parse_retrieval_query("problem three")
 
     assert parsed.query == "problem three"
+
+
+def test_parse_chapter_query() -> None:
+    parsed = parse_retrieval_query("summarize chapter 2 on linear algebra")
+
+    assert parsed.chapter_number == 2
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_spelled_out_chapter() -> None:
+    parsed = parse_retrieval_query("what does chapter two cover")
+
+    assert parsed.chapter_number == 2
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_chapter_two_wording() -> None:
+    parsed = parse_retrieval_query("open ch 12")
+
+    assert parsed.chapter_number == 12
+    assert parsed.is_structured_lookup is True

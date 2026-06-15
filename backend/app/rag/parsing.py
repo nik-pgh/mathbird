@@ -50,6 +50,7 @@ class ParsedBlock:
     image_refs: tuple[str, ...] = ()
     bbox: tuple[float, float, float, float] | None = None
     section_title: str = ""
+    chapter_number: int = 0
     exercise_number: str = ""
     example_number: str = ""
     neighboring_block_ids: tuple[str, ...] = ()
@@ -69,7 +70,10 @@ class ParsedBlock:
         return "\n".join(part for part in parts if part.strip())
 
     def source_label(self, filename: str) -> str:
-        label = f"{filename}, page {self.page_number}"
+        label = filename
+        if self.chapter_number:
+            label += f", chapter {self.chapter_number}"
+        label += f", page {self.page_number}"
         if self.exercise_number:
             label += f", problem {self.exercise_number}"
         elif self.example_number:
@@ -109,6 +113,7 @@ class RetrievalRequest:
     top_k: int = 4
     doc_ids: tuple[str, ...] = ()
     page_number: int | None = None
+    chapter_number: int | None = None
     exercise_number: str = ""
     example_number: str = ""
     student_context: Mapping[str, Any] = field(default_factory=_empty_mapping)
@@ -132,6 +137,7 @@ class RetrievedRecord:
     exercise_number: str = ""
     example_number: str = ""
     section_title: str = ""
+    chapter_number: int = 0
     visual_refs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -139,7 +145,10 @@ class RetrievedRecord:
 
     @property
     def source(self) -> str:
-        label = f"{self.filename}, page {self.page_number}"
+        label = self.filename
+        if self.chapter_number:
+            label += f", chapter {self.chapter_number}"
+        label += f", page {self.page_number}"
         if self.exercise_number:
             label += f", problem {self.exercise_number}"
         elif self.example_number:

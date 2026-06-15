@@ -43,6 +43,7 @@ VALID_BLOCK_TYPES: frozenset[str] = frozenset(
 )
 QDRANT_PAYLOAD_INDEXES: tuple[tuple[str, str], ...] = (
     ("page_number", "integer"),
+    ("chapter_number", "integer"),
     ("exercise_number", "keyword"),
     ("example_number", "keyword"),
     ("textbook_doc_id", "keyword"),
@@ -78,6 +79,8 @@ def _annotate_retrieved_documents(span: Any, records: list[RetrievedRecord]) -> 
             span.set_attribute(f"{meta}.example_number", rec.example_number)
         if rec.section_title:
             span.set_attribute(f"{meta}.section_title", rec.section_title)
+        if rec.chapter_number:
+            span.set_attribute(f"{meta}.chapter_number", rec.chapter_number)
         if rec.doc_id:
             span.set_attribute(f"{meta}.textbook_doc_id", rec.doc_id)
 
@@ -130,6 +133,7 @@ class LlamaIndexQdrantRetriever:
             top_k=top_k,
             doc_ids=doc_ids,
             page_number=parsed.page_number,
+            chapter_number=parsed.chapter_number,
             exercise_number=parsed.exercise_number,
             example_number=parsed.example_number,
         )
@@ -181,6 +185,8 @@ class QdrantTextbookStore:
             span.set_attribute(_OI_INPUT_VALUE, request.query)
             if request.page_number is not None:
                 span.set_attribute("filter.page_number", request.page_number)
+            if request.chapter_number is not None:
+                span.set_attribute("filter.chapter_number", request.chapter_number)
             if request.exercise_number:
                 span.set_attribute("filter.exercise_number", request.exercise_number)
             if request.example_number:
@@ -203,6 +209,13 @@ class QdrantTextbookStore:
                 models.FieldCondition(
                     key="page_number",
                     match=models.MatchValue(value=request.page_number),
+                )
+            )
+        if request.chapter_number is not None:
+            must.append(
+                models.FieldCondition(
+                    key="chapter_number",
+                    match=models.MatchValue(value=request.chapter_number),
                 )
             )
         if request.exercise_number:
@@ -280,6 +293,7 @@ class QdrantTextbookStore:
                     exercise_number=str(metadata.get("exercise_number", "")),
                     example_number=str(metadata.get("example_number", "")),
                     section_title=str(metadata.get("section_title", "")),
+                    chapter_number=int(metadata.get("chapter_number", 0) or 0),
                     visual_refs=tuple(metadata.get("visual_refs", []) or []),
                 )
             )
@@ -305,6 +319,7 @@ class QdrantTextbookStore:
             exercise_number=str(metadata.get("exercise_number", "")),
             example_number=str(metadata.get("example_number", "")),
             section_title=str(metadata.get("section_title", "")),
+            chapter_number=int(metadata.get("chapter_number", 0) or 0),
             visual_refs=tuple(metadata.get("visual_refs", []) or []),
         )
 

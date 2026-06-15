@@ -100,6 +100,7 @@ async def _run_retriever(query: str, doc_id: str | None) -> None:
     parsed = parse_retrieval_query(query)
     print("\nparse_retrieval_query():")
     print(f"  page_number={parsed.page_number}")
+    print(f"  chapter_number={parsed.chapter_number!r}")
     print(f"  exercise_number={parsed.exercise_number!r}")
     print(f"  example_number={parsed.example_number!r}")
     print(f"  is_structured_lookup={parsed.is_structured_lookup}")
@@ -111,6 +112,7 @@ async def _run_retriever(query: str, doc_id: str | None) -> None:
         top_k=settings.rag_top_k,
         doc_ids=doc_ids,
         page_number=parsed.page_number,
+        chapter_number=parsed.chapter_number,
         exercise_number=parsed.exercise_number,
         example_number=parsed.example_number,
     )

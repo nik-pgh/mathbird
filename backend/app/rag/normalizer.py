@@ -6,6 +6,7 @@ import re
 from typing import Any
 from urllib.parse import unquote, urlparse
 
+from app.rag.chapter import parse_chapter_number
 from app.rag.parsing import BlockType, ParsedBlock, ParsedDocument, ParsedPage
 
 EXERCISE_RE = re.compile(
@@ -143,6 +144,7 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
     pages_payload = _pages_payload(payload)
     pages: list[ParsedPage] = []
     current_section = ""
+    current_chapter = 0
 
     for page_index, page_payload in enumerate(pages_payload, start=1):
         page_number = _page_number(page_payload, page_index)
@@ -160,6 +162,10 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
             block_type = _classify_item(item, text, markdown)
             if block_type == "heading":
                 current_section = text or markdown.lstrip("#").strip()
+
+            detected_chapter = parse_chapter_number(f"{text}\n{markdown}")
+            if detected_chapter is not None:
+                current_chapter = detected_chapter
 
             block_id = f"{doc_id}:p{page_number}:b{len(blocks)}"
             previous_block_id = blocks[-1].block_id if blocks else ""
@@ -180,6 +186,7 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
                     image_refs=_image_refs(item, doc_id, page_image_name),
                     bbox=_bbox(item),
                     section_title=current_section,
+                    chapter_number=current_chapter,
                     exercise_number=(
                         _exercise_number(text, markdown) if block_type == "exercise" else ""
                     ),

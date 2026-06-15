@@ -24,6 +24,7 @@ def parsed_document_to_nodes(document: ParsedDocument) -> list[TextNode]:
                 "filename": document.filename,
                 "page_number": block.page_number,
                 "section_title": block.section_title,
+                "chapter_number": block.chapter_number,
                 "block_type": block.block_type,
                 "exercise_number": block.exercise_number,
                 "example_number": block.example_number,

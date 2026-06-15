@@ -128,6 +128,7 @@ async def _amain(args: argparse.Namespace) -> None:
         return
 
     block_types: Counter[str] = Counter()
+    chapter_numbers: Counter[int] = Counter()
     exercise_numbers: Counter[str] = Counter()
     example_numbers: Counter[str] = Counter()
     doc_ids: Counter[str] = Counter()
@@ -152,6 +153,10 @@ async def _amain(args: argparse.Namespace) -> None:
         text = _decode_text(payload)
 
         block_types[str(metadata.get("block_type", "unknown"))] += 1
+        try:
+            chapter_numbers[int(metadata.get("chapter_number", 0) or 0)] += 1
+        except (TypeError, ValueError):
+            chapter_numbers[0] += 1
         exercise_numbers[str(metadata.get("exercise_number", ""))] += 1
         example_numbers[str(metadata.get("example_number", ""))] += 1
         doc_ids[str(metadata.get("textbook_doc_id") or metadata.get("doc_id", ""))] += 1
@@ -172,6 +177,7 @@ async def _amain(args: argparse.Namespace) -> None:
                 looks_like_problem_but_unnumbered.append((metadata, text))
 
     _print_distribution("block_type", block_types)
+    _print_distribution("chapter_number", chapter_numbers)
     _print_distribution("exercise_number", exercise_numbers)
     _print_distribution("example_number", example_numbers)
     _print_distribution("textbook_doc_id", doc_ids)
@@ -187,6 +193,7 @@ async def _amain(args: argparse.Namespace) -> None:
         for metadata, text in samples:
             print(
                 f"  page={metadata.get('page_number', '?')} "
+                f"chapter={metadata.get('chapter_number', 0) or '-'} "
                 f"block_type={metadata.get('block_type', '?')} "
                 f"ex#={metadata.get('exercise_number', '') or '-'} "
                 f"ex_ex#={metadata.get('example_number', '') or '-'}"

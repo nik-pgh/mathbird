@@ -18,6 +18,7 @@ def test_parsed_document_to_nodes_preserves_metadata() -> None:
                         text="Example 8. Solve 2x + 3 = 9.",
                         markdown="Example 8. Solve 2x + 3 = 9.",
                         example_number="8",
+                        chapter_number=2,
                         section_title="Solving Equations",
                         neighboring_block_ids=("doc-1:p37:b-1",),
                     )
@@ -35,6 +36,7 @@ def test_parsed_document_to_nodes_preserves_metadata() -> None:
     assert nodes[0].metadata["page_number"] == 37
     assert nodes[0].metadata["block_type"] == "example"
     assert nodes[0].metadata["example_number"] == "8"
+    assert nodes[0].metadata["chapter_number"] == 2
     assert nodes[0].metadata["neighboring_block_ids"] == ["doc-1:p37:b-1"]
 
 

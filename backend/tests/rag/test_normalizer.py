@@ -639,3 +639,61 @@ def test_normalize_llamaparse_items_classifies_equations() -> None:
 
     assert doc.pages[0].blocks[0].block_type == "equation"
     assert doc.pages[0].blocks[0].latex == "$$2x + 3 = 9$$"
+
+
+def test_normalize_llamaparse_items_detects_and_carries_chapter_number() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 1,
+                "items": [
+                    {
+                        "type": "text",
+                        "value": "Chapter2\nLinear Algebra",
+                        "md": "Chapter2\nLinear Algebra",
+                    }
+                ],
+            },
+            {
+                "page": 2,
+                "items": [
+                    {
+                        "type": "text",
+                        "value": "CHAPTER2.LINEARALGEBRA\nVectors are arrays of numbers.",
+                        "md": "CHAPTER2.LINEARALGEBRA\nVectors are arrays of numbers.",
+                    }
+                ],
+            },
+        ]
+    }
+
+    doc = normalize_llamaparse_items(
+        payload,
+        doc_id="doc-1",
+        filename="deep_learning_ian_goodfellow_chapter_2.pdf",
+    )
+
+    assert doc.pages[0].blocks[0].chapter_number == 2
+    assert doc.pages[1].blocks[0].chapter_number == 2
+
+
+def test_parsed_block_source_label_includes_chapter_number() -> None:
+    block = ParsedBlock(
+        block_id="doc-1:p8:b0",
+        page_number=8,
+        block_type="paragraph",
+        text="Norms measure vector size.",
+        chapter_number=2,
+    )
+    record = RetrievedRecord(
+        text=block.text,
+        filename="deep_learning_ch2.pdf",
+        page_number=8,
+        block_type="paragraph",
+        chapter_number=2,
+    )
+
+    assert block.source_label("deep_learning_ch2.pdf") == (
+        "deep_learning_ch2.pdf, chapter 2, page 8"
+    )
+    assert record.source == "deep_learning_ch2.pdf, chapter 2, page 8"
