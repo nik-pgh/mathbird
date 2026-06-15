@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
 from opentelemetry import trace
 
+from app.config import Settings
 from app.rag.formatter import format_records_as_chunks
 from app.rag.indexing import parsed_document_to_nodes
 from app.rag.parsing import BlockType, RetrievalRequest, RetrievedRecord, TextbookParser
@@ -92,6 +94,60 @@ def _block_type_from_metadata(value: Any) -> BlockType:
     return cast(BlockType, block_type)
 
 
+@dataclass(frozen=True)
+class QdrantIndexStack:
+    index: Any
+    store: QdrantTextbookStore
+    collection_name: str
+    qdrant_client: Any
+
+
+def build_qdrant_index_stack(settings: Settings) -> QdrantIndexStack:
+    """Wire LlamaIndex + Qdrant for one embedding provider/model pair."""
+    from llama_index.core import StorageContext, VectorStoreIndex
+    from llama_index.vector_stores.qdrant import QdrantVectorStore
+    from qdrant_client import AsyncQdrantClient
+
+    from app.rag.embeddings import build_embed_model
+
+    collection_name = settings.resolved_qdrant_collection
+    qdrant_client = AsyncQdrantClient(
+        url=settings.qdrant_url,
+        api_key=settings.qdrant_api_key or None,
+    )
+    vector_store = QdrantVectorStore(
+        aclient=qdrant_client,
+        collection_name=collection_name,
+    )
+    storage_context = StorageContext.from_defaults(vector_store=vector_store)
+    embed_model = build_embed_model(settings)
+    index = VectorStoreIndex.from_vector_store(
+        vector_store=vector_store,
+        storage_context=storage_context,
+        embed_model=embed_model,
+    )
+    store = QdrantTextbookStore(
+        qdrant_client=qdrant_client,
+        collection_name=collection_name,
+        index=index,
+    )
+    return QdrantIndexStack(
+        index=index,
+        store=store,
+        collection_name=collection_name,
+        qdrant_client=qdrant_client,
+    )
+
+
+async def close_qdrant_client(client: Any) -> None:
+    close = getattr(client, "close", None)
+    if close is None:
+        return
+    result = close()
+    if hasattr(result, "__await__"):
+        await result
+
+
 class LlamaIndexQdrantRetriever:
     def __init__(
         self,
@@ -110,15 +166,19 @@ class LlamaIndexQdrantRetriever:
         filename = self.filename_resolver(path)
         document = await self.parser.parse_pdf(path, doc_id=doc_id, filename=filename)
         nodes = parsed_document_to_nodes(document)
-        if nodes:
-            # Insert first so LlamaIndex creates the Qdrant collection with the
-            # right vector params if it doesn't exist yet. Payload indexes are
-            # then applied — Qdrant indexes existing points retroactively, so
-            # this order is correct on both fresh and pre-existing collections.
-            await self.index.ainsert_nodes(nodes)
-            ensure_indexes = getattr(self.store, "ensure_payload_indexes", None)
-            if ensure_indexes is not None:
-                await ensure_indexes()
+        await self.ingest_nodes(nodes)
+
+    async def ingest_nodes(self, nodes: list[Any]) -> None:
+        if not nodes:
+            return
+        # Insert first so LlamaIndex creates the Qdrant collection with the
+        # right vector params if it doesn't exist yet. Payload indexes are
+        # then applied — Qdrant indexes existing points retroactively, so
+        # this order is correct on both fresh and pre-existing collections.
+        await self.index.ainsert_nodes(nodes)
+        ensure_indexes = getattr(self.store, "ensure_payload_indexes", None)
+        if ensure_indexes is not None:
+            await ensure_indexes()
 
     async def retrieve(
         self,

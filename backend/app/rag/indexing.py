@@ -44,3 +44,19 @@ def parsed_document_to_nodes(document: ParsedDocument) -> list[TextNode]:
             )
 
     return nodes
+
+
+def clone_nodes(nodes: list[TextNode]) -> list[TextNode]:
+    """Return fresh ``TextNode`` copies so the same parse can be embedded multiple times."""
+    clones: list[TextNode] = []
+    for node in nodes:
+        clones.append(
+            TextNode(
+                id_=node.id_,
+                text=node.get_content(),
+                metadata=dict(node.metadata or {}),
+                excluded_embed_metadata_keys=list(node.excluded_embed_metadata_keys),
+                excluded_llm_metadata_keys=list(node.excluded_llm_metadata_keys),
+            )
+        )
+    return clones

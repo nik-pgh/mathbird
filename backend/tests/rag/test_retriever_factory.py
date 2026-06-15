@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -75,51 +75,30 @@ def test_build_llamaindex_qdrant_retriever_wires_constructors_without_hybrid() -
         embedding_provider="openai",
         embedding_model="text-embedding-3-large",
     )
-    fake_embed_model = object()
+    fake_stack = MagicMock()
+    fake_stack.index = object()
+    fake_stack.store = object()
 
     with (
-        patch("llama_index.core.StorageContext") as storage_context_cls,
-        patch("llama_index.core.VectorStoreIndex") as index_cls,
-        patch("app.rag.embeddings.build_embed_model", return_value=fake_embed_model) as build_embed,
-        patch("llama_index.vector_stores.qdrant.QdrantVectorStore") as vector_store_cls,
-        patch("qdrant_client.AsyncQdrantClient") as qdrant_client_cls,
+        patch(
+            "app.rag.llamaindex_qdrant.build_qdrant_index_stack",
+            return_value=fake_stack,
+        ) as build,
         patch("app.rag.llamaparse_parser.LlamaParseParser") as parser_cls,
-        patch("app.rag.llamaindex_qdrant.QdrantTextbookStore") as store_cls,
         patch("app.rag.llamaindex_qdrant.LlamaIndexQdrantRetriever") as retriever_cls,
     ):
         retriever = _build_llamaindex_qdrant_retriever(settings)
 
-    build_embed.assert_called_once_with(settings)
-    qdrant_client_cls.assert_called_once_with(
-        url="http://qdrant.test:6333",
-        api_key="qd-test",
-    )
-    vector_store_cls.assert_called_once_with(
-        aclient=qdrant_client_cls.return_value,
-        collection_name="test_collection",
-    )
-    storage_context_cls.from_defaults.assert_called_once_with(
-        vector_store=vector_store_cls.return_value,
-    )
-    index_cls.from_vector_store.assert_called_once_with(
-        vector_store=vector_store_cls.return_value,
-        storage_context=storage_context_cls.from_defaults.return_value,
-        embed_model=fake_embed_model,
-    )
+    build.assert_called_once_with(settings)
     parser_cls.assert_called_once_with(
         api_key="llx-test",
         tier="balanced",
         version="2026-01-01",
     )
-    store_cls.assert_called_once_with(
-        qdrant_client=qdrant_client_cls.return_value,
-        collection_name="test_collection",
-        index=index_cls.from_vector_store.return_value,
-    )
     retriever_cls.assert_called_once_with(
         parser=parser_cls.return_value,
-        index=index_cls.from_vector_store.return_value,
-        store=store_cls.return_value,
+        index=fake_stack.index,
+        store=fake_stack.store,
     )
     assert retriever is retriever_cls.return_value
 
