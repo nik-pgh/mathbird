@@ -25,6 +25,8 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/uploads/` | (gitignored) — default `STORAGE_LOCAL_DIR`. |
 | `backend/tests/` | Pytest suite, grouped by seam (`tests/rag/`, `tests/whiteboard/`). |
 | `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
+| `backend/evals/golden/goodfellow_ch2_retrieval.jsonl` | 20-row golden retrieval set for Goodfellow chapter 2. |
+| `backend/scripts/eval_retrieval.py` | CLI to compare retrieval quality across embedding collections. |
 
 ### `backend/app/` — shared package
 
@@ -65,7 +67,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | --- | --- |
 | `api/main.py` | FastAPI app, CORS, mounts routers, `/health`. |
 | `api/routes/token.py` | `POST /api/token` — signs LiveKit JWT, returns `{token, url, room, identity}`. |
-| `api/routes/documents.py` | `POST /api/documents` (multipart PDF), `GET /api/documents` (list). Calls `storage.put` then `retriever.ingest_pdf`. |
+| `api/routes/documents.py` | `POST /api/documents` stores PDFs, `POST /api/documents/{doc_id}/ingest` indexes them, `GET /api/documents` lists upload/index status. |
 
 ### `backend/app/storage/` — pluggable storage
 
@@ -87,6 +89,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `rag/query_parser.py` | Detects page/problem/example references in student queries. |
 | `rag/formatter.py` | Converts internal retrieved records into cited `RetrievedChunk` results. |
 | `rag/llamaindex_qdrant.py` | Concrete LlamaIndex + Qdrant retriever implementation. |
+| `rag/evaluation.py` | Golden-set retrieval evaluation: loads JSONL cases, scores retrieved chunks, aggregates metrics, and renders reports. |
 | `rag/__init__.py` | Re-exports the public RAG seam. |
 
 ## `frontend/` — Vite + React + TypeScript

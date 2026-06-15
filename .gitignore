@@ -49,6 +49,7 @@ frontend/*.tsbuildinfo
 backend/uploads/
 backend/.chroma/
 backend/data/
+backend/evals/results/
 *.log
 
 # docs

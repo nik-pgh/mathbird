@@ -63,11 +63,28 @@ For local Qdrant, run:
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 ```
 
-Then upload a PDF through `POST /api/documents`; the v1 upload route stores the PDF and
-calls the active retriever's `ingest_pdf` synchronously. If ingestion fails, the route
-attempts to delete the stored PDF and returns an upload error rather than listing an
-unindexed document. A background job queue can replace this call site later without
-changing the retriever interface.
+Then upload a PDF through `POST /api/documents`; the upload route stores the PDF and
+returns `status="uploaded"`. Call `POST /api/documents/{doc_id}/ingest` to run the
+active retriever's `ingest_pdf` synchronously. If ingestion fails, the route returns
+502 and preserves the stored PDF so it can be retried without re-uploading.
+
+## Retrieval evaluation
+
+After ingesting the same document into multiple embedding collections with
+`scripts.ingest_all_embeddings`, run the golden retrieval evaluator:
+
+```bash
+cd backend
+uv run python -m scripts.eval_retrieval --golden evals/golden/goodfellow_ch2_retrieval.jsonl --top-k 5
+```
+
+By default this evaluates the six embedding targets from
+`app.rag.multi_ingest.DEFAULT_EMBEDDING_TARGETS`. Use repeated `--target
+provider:model` flags to evaluate a subset. Reports are written to
+`backend/evals/results/` as JSON and Markdown. If one target fails, for example
+because its Qdrant collection is missing, the evaluator records that target under
+`failures`, continues with the remaining targets, writes the reports, and exits
+non-zero.
 
 ## Agent persona
 
@@ -90,8 +107,9 @@ surface that runs alongside the voice pipeline. On every room join, the
 entrypoint installs a `user_board` data-channel listener and attaches a
 `BoardState` to `AgentSession.userdata`; a `WhiteboardAgent` subclass then
 injects the latest student-board reading into the LLM's chat context per turn.
-The LLM publishes back via the `update_ai_board` / `clear_ai_board` /
-`read_user_board` function tools.
+The LLM can call `read_user_board` mid-tool-chain. AiBoard writes are driven by
+the per-sentence board extractor in `WhiteboardAgent`, not exposed as direct LLM
+tools.
 
 Default `BOARD_READER=null` keeps the reader a no-op; enable real OCR with:
 
