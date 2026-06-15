@@ -103,7 +103,7 @@ def _print_distribution(label: str, counter: Counter[Any], *, top: int = 20) -> 
 
 async def _amain(args: argparse.Namespace) -> None:
     settings = get_settings()
-    print(f"Qdrant: {settings.qdrant_url}  collection={settings.qdrant_collection}")
+    print(f"Qdrant: {settings.qdrant_url}  collection={settings.resolved_qdrant_collection}")
     if args.doc_id:
         print(f"Filtering by textbook_doc_id={args.doc_id}")
 
@@ -114,7 +114,7 @@ async def _amain(args: argparse.Namespace) -> None:
         api_key=settings.qdrant_api_key or None,
     )
     try:
-        points = await _scroll_all(client, settings.qdrant_collection, args.doc_id)
+        points = await _scroll_all(client, settings.resolved_qdrant_collection, args.doc_id)
     finally:
         close = getattr(client, "close", None)
         if close is not None:

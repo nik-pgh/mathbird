@@ -155,7 +155,7 @@ async def _run_retriever(query: str, doc_id: str | None) -> None:
 
 async def _amain(args: argparse.Namespace) -> None:
     settings = get_settings()
-    print(f"Qdrant: {settings.qdrant_url}  collection={settings.qdrant_collection}")
+    print(f"Qdrant: {settings.qdrant_url}  collection={settings.resolved_qdrant_collection}")
     print(f"Query: {args.query!r}")
     if args.doc_id:
         print(f"doc_id filter: {args.doc_id}")
@@ -168,7 +168,7 @@ async def _amain(args: argparse.Namespace) -> None:
     )
     try:
         print("\n=== 1. Raw payload of one stored point ===")
-        await _dump_raw_payload(client, settings.qdrant_collection)
+        await _dump_raw_payload(client, settings.resolved_qdrant_collection)
 
         parsed = parse_retrieval_query(args.query)
         if parsed.exercise_number:
@@ -177,7 +177,7 @@ async def _amain(args: argparse.Namespace) -> None:
                 f"{parsed.exercise_number!r} ==="
             )
             hits = await _raw_filter_count(
-                client, settings.qdrant_collection, parsed.exercise_number, args.doc_id
+                client, settings.resolved_qdrant_collection, parsed.exercise_number, args.doc_id
             )
             print(f"  matching points: {hits}")
             if hits == 0:

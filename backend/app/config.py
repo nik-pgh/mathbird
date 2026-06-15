@@ -20,6 +20,7 @@ VadProvider = Literal["silero"]
 StorageBackendName = Literal["local", "s3"]
 RagProvider = Literal["null", "llamaindex_qdrant"]
 ParserProvider = Literal["llamaparse"]
+EmbeddingProvider = Literal["openai", "cohere", "voyage", "huggingface"]
 RerankerProvider = Literal["none"]
 RagIngestionMode = Literal["sync"]
 BoardReaderName = Literal["null", "openai_vision"]
@@ -82,13 +83,31 @@ class Settings(BaseSettings):
     llamaparse_tier: str = "agentic"
     llamaparse_version: str = "latest"
 
-    # Qdrant
+    # Qdrant — set QDRANT_COLLECTION=auto (default) to derive from embedding provider/model
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str = ""
-    qdrant_collection: str = "mathbird_documents"
+    qdrant_collection: str = "auto"
 
-    # Embeddings
+    # Embeddings (see app/rag/embeddings.py — one collection per model/dimension)
+    embedding_provider: EmbeddingProvider = "openai"
     embedding_model: str = "text-embedding-3-small"
+    cohere_api_key: str = ""
+    voyage_api_key: str = ""
+
+    @property
+    def resolved_qdrant_collection(self) -> str:
+        """Qdrant collection for the active embedding pair.
+
+        ``QDRANT_COLLECTION=auto`` (default) derives a stable slug from
+        ``EMBEDDING_PROVIDER`` + ``EMBEDDING_MODEL``. Any other value is used
+        as a fixed override (production deployments).
+        """
+        raw = self.qdrant_collection.strip()
+        if not raw or raw.lower() == "auto":
+            from app.rag.embeddings import embedding_collection_name
+
+            return embedding_collection_name(self.embedding_provider, self.embedding_model)
+        return raw
 
     # Agent persona — system prompt is loaded from a YAML file so it can be
     # edited without touching code or env vars. Point PERSONA_FILE at a

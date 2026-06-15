@@ -34,7 +34,7 @@ def _decode(payload: dict[str, Any]) -> tuple[dict[str, Any], str]:
 
 async def _amain(args: argparse.Namespace) -> None:
     settings = get_settings()
-    print(f"Qdrant: {settings.qdrant_url}  collection={settings.qdrant_collection}")
+    print(f"Qdrant: {settings.qdrant_url}  collection={settings.resolved_qdrant_collection}")
     if args.doc_id:
         print(f"Filter: textbook_doc_id={args.doc_id}")
     if args.grep:
@@ -65,7 +65,7 @@ async def _amain(args: argparse.Namespace) -> None:
     try:
         while True:
             result = await client.scroll(
-                collection_name=settings.qdrant_collection,
+                collection_name=settings.resolved_qdrant_collection,
                 scroll_filter=scroll_filter,
                 limit=256,
                 offset=offset,

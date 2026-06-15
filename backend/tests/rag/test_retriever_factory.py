@@ -24,7 +24,8 @@ def test_rag_settings_defaults_keep_null_retriever() -> None:
     settings = Settings(_env_file=None)
 
     assert settings.rag_provider == "null"
-    assert settings.qdrant_collection == "mathbird_documents"
+    assert settings.resolved_qdrant_collection == "mathbird_openai_text_embedding_3_small"
+    assert settings.embedding_provider == "openai"
     assert settings.embedding_model == "text-embedding-3-small"
     assert settings.rag_top_k == 4
 
@@ -71,13 +72,15 @@ def test_build_llamaindex_qdrant_retriever_wires_constructors_without_hybrid() -
         qdrant_url="http://qdrant.test:6333",
         qdrant_api_key="qd-test",
         qdrant_collection="test_collection",
+        embedding_provider="openai",
         embedding_model="text-embedding-3-large",
     )
+    fake_embed_model = object()
 
     with (
         patch("llama_index.core.StorageContext") as storage_context_cls,
         patch("llama_index.core.VectorStoreIndex") as index_cls,
-        patch("llama_index.embeddings.openai.OpenAIEmbedding") as embedding_cls,
+        patch("app.rag.embeddings.build_embed_model", return_value=fake_embed_model) as build_embed,
         patch("llama_index.vector_stores.qdrant.QdrantVectorStore") as vector_store_cls,
         patch("qdrant_client.AsyncQdrantClient") as qdrant_client_cls,
         patch("app.rag.llamaparse_parser.LlamaParseParser") as parser_cls,
@@ -86,6 +89,7 @@ def test_build_llamaindex_qdrant_retriever_wires_constructors_without_hybrid() -
     ):
         retriever = _build_llamaindex_qdrant_retriever(settings)
 
+    build_embed.assert_called_once_with(settings)
     qdrant_client_cls.assert_called_once_with(
         url="http://qdrant.test:6333",
         api_key="qd-test",
@@ -97,14 +101,10 @@ def test_build_llamaindex_qdrant_retriever_wires_constructors_without_hybrid() -
     storage_context_cls.from_defaults.assert_called_once_with(
         vector_store=vector_store_cls.return_value,
     )
-    embedding_cls.assert_called_once_with(
-        model="text-embedding-3-large",
-        api_key="sk-test",
-    )
     index_cls.from_vector_store.assert_called_once_with(
         vector_store=vector_store_cls.return_value,
         storage_context=storage_context_cls.from_defaults.return_value,
-        embed_model=embedding_cls.return_value,
+        embed_model=fake_embed_model,
     )
     parser_cls.assert_called_once_with(
         api_key="llx-test",
@@ -134,19 +134,5 @@ def test_build_llamaindex_qdrant_retriever_requires_llamaparse_api_key() -> None
     with pytest.raises(
         RuntimeError,
         match="LLAMAPARSE_API_KEY is required when RAG_PROVIDER=llamaindex_qdrant.",
-    ):
-        _build_llamaindex_qdrant_retriever(settings)
-
-
-def test_build_llamaindex_qdrant_retriever_requires_openai_api_key() -> None:
-    settings = Settings(
-        rag_provider="llamaindex_qdrant",
-        llamaparse_api_key="llx-test",
-        openai_api_key="",
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match="OPENAI_API_KEY is required when RAG_PROVIDER=llamaindex_qdrant.",
     ):
         _build_llamaindex_qdrant_retriever(settings)

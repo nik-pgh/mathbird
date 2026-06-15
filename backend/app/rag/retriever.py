@@ -80,14 +80,12 @@ def get_retriever() -> Retriever:
 def _build_llamaindex_qdrant_retriever(settings: Settings) -> Retriever:
     if not settings.llamaparse_api_key:
         raise RuntimeError("LLAMAPARSE_API_KEY is required when RAG_PROVIDER=llamaindex_qdrant.")
-    if not settings.openai_api_key:
-        raise RuntimeError("OPENAI_API_KEY is required when RAG_PROVIDER=llamaindex_qdrant.")
 
     from llama_index.core import StorageContext, VectorStoreIndex
-    from llama_index.embeddings.openai import OpenAIEmbedding
     from llama_index.vector_stores.qdrant import QdrantVectorStore
     from qdrant_client import AsyncQdrantClient
 
+    from app.rag.embeddings import build_embed_model
     from app.rag.llamaindex_qdrant import LlamaIndexQdrantRetriever, QdrantTextbookStore
     from app.rag.llamaparse_parser import LlamaParseParser
 
@@ -97,13 +95,10 @@ def _build_llamaindex_qdrant_retriever(settings: Settings) -> Retriever:
     )
     vector_store = QdrantVectorStore(
         aclient=qdrant_client,
-        collection_name=settings.qdrant_collection,
+        collection_name=settings.resolved_qdrant_collection,
     )
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
-    embed_model = OpenAIEmbedding(
-        model=settings.embedding_model,
-        api_key=settings.openai_api_key,
-    )
+    embed_model = build_embed_model(settings)
     index = VectorStoreIndex.from_vector_store(
         vector_store=vector_store,
         storage_context=storage_context,
@@ -116,7 +111,7 @@ def _build_llamaindex_qdrant_retriever(settings: Settings) -> Retriever:
     )
     store = QdrantTextbookStore(
         qdrant_client=qdrant_client,
-        collection_name=settings.qdrant_collection,
+        collection_name=settings.resolved_qdrant_collection,
         index=index,
     )
     return LlamaIndexQdrantRetriever(parser=parser, index=index, store=store)
