@@ -1,19 +1,29 @@
 /* ─── Tokens ──────────────────────────────────────────────────────────── */
 
 :root {
-  --bg: #ffffff;
-  --bg-soft: #f7f7f8;
-  --bg-pad: #fafafa;
+  --mb-green: #29483e;
+  --mb-green-soft: #dcebe4;
+  --mb-coral: #ff775f;
+  --mb-coral-soft: #ffe3dc;
+  --mb-lavender: #d48be4;
+  --mb-lavender-soft: #f3def8;
+  --mb-paper: #fff8ed;
+  --mb-paper-deep: #f4e5cb;
+  --mb-ink: #20362f;
 
-  --border: #ececf1;
-  --border-strong: #d9d9e3;
+  --bg: #fffaf2;
+  --bg-soft: #fff4e4;
+  --bg-pad: #fff8ed;
 
-  --text: #0d0d0d;
-  --text-2: #5d5d6e;
-  --text-3: #8e8ea0;
+  --border: #eadcc7;
+  --border-strong: #d5c0a0;
 
-  --accent-live: #19c37d;
-  --accent-danger: #d93940;
+  --text: var(--mb-ink);
+  --text-2: #65756f;
+  --text-3: #8d9b95;
+
+  --accent-live: var(--mb-green);
+  --accent-danger: var(--mb-coral);
 
   --radius: 12px;
   --radius-lg: 16px;
@@ -83,7 +93,7 @@ button {
 .topbar .brand {
   font-weight: 700;
   font-size: 15px;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   color: var(--text);
 }
 
@@ -196,7 +206,7 @@ main {
   margin: 0 0 6px;
   font-size: 26px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .library-page .page-header p {
@@ -878,7 +888,8 @@ main {
   }
 
   .topbar .btn.primary {
-    display: none;
+    padding: 6px 10px;
+    white-space: nowrap;
   }
 
   .btn-label-full {
