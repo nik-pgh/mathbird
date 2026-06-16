@@ -2,11 +2,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 /** Top bar shared by both routes. Pass `session` to render session-mode controls. */
 interface Props {
-  /** Optional session-side props. When present, render the End button. */
+  /** Optional session-side props. When present, render session status. */
   session?: {
     status: "connecting" | "connected" | "disconnected";
     label?: string; // e.g. "Quadratics · 04:12"; defaults to "Session"
-    onEnd: () => void;
   };
   /** When supplied, renders a PDF toggle button on the right side of the topbar. */
   pdf?: {
@@ -54,23 +53,18 @@ export default function SessionTopbar({ session, pdf }: Props) {
       )}
 
       {session ? (
-        <>
-          <span
-            className={`pill ${
-              session.status === "disconnected" ? "danger" : ""
-            }`}
-          >
-            <span className="dot" />
-            {session.status === "connecting"
-              ? "Connecting…"
-              : session.status === "disconnected"
-              ? "Disconnected"
-              : session.label ?? "Session"}
-          </span>
-          <button className="btn" onClick={session.onEnd}>
-            End session
-          </button>
-        </>
+        <span
+          className={`pill ${
+            session.status === "disconnected" ? "danger" : ""
+          }`}
+        >
+          <span className="dot" />
+          {session.status === "connecting"
+            ? "Connecting…"
+            : session.status === "disconnected"
+            ? "Disconnected"
+            : session.label ?? "Session"}
+        </span>
       ) : (
         <button
           className="btn primary"

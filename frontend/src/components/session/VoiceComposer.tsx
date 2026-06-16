@@ -14,7 +14,7 @@ interface Props {
   transcriptOpen: boolean;
   /** Toggles the transcript overlay from the footer controls. */
   onTranscriptToggle: () => void;
-  /** Called when the user taps the end (●) button. */
+  /** Called when the user taps the end-session button. */
   onEnd: () => void;
   viewport: ViewportState;
   onZoomIn: () => void;
@@ -141,12 +141,12 @@ function ConnectedComposer({
           {micEnabled ? "⏸" : "▶"}
         </button>
         <button
-          className="icon-btn primary"
+          className="icon-btn end-session"
           onClick={onEnd}
           title="End session"
           aria-label="End session"
         >
-          ●
+          <ExitIcon />
         </button>
       </div>
     </VoiceFooter>
@@ -197,11 +197,12 @@ function PlaceholderComposer({
           ⏸
         </button>
         <button
-          className="icon-btn primary"
+          className="icon-btn end-session"
           onClick={onEnd}
           aria-label="End session"
+          title="End session"
         >
-          ●
+          <ExitIcon />
         </button>
       </div>
     </VoiceFooter>
@@ -236,5 +237,40 @@ function Bars() {
       <span />
       <span />
     </div>
+  );
+}
+
+function ExitIcon() {
+  return (
+    <svg
+      className="exit-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M10 5H6a1.5 1.5 0 0 0-1.5 1.5v11A1.5 1.5 0 0 0 6 19h4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 12H4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="m17 9 3 3-3 3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

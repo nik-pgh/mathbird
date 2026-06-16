@@ -78,9 +78,7 @@ export default function SessionPage() {
 
   return (
     <>
-      <SessionTopbar
-        session={{ status, label: "Session", onEnd: handleEnd }}
-      />
+      <SessionTopbar session={{ status, label: "Session" }} />
       {conn ? (
         <LiveKitRoom
           serverUrl={conn.url}
