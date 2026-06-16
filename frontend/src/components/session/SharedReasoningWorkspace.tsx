@@ -1,4 +1,4 @@
-import { useCallback, useReducer } from "react";
+import { useCallback, useLayoutEffect, useReducer, useRef } from "react";
 import {
   AI_BOARD_TOPIC,
   type AiBoardUpdate,
@@ -33,6 +33,8 @@ export default function SharedReasoningWorkspace({
     workspaceReducer,
     initialWorkspaceState,
   );
+  const boardRef = useRef<HTMLDivElement>(null);
+  const hasCustomizedHandwritingRef = useRef(false);
 
   const onAiMessage = useCallback((msg: AiBoardUpdate) => {
     if (msg.op === "clear") {
@@ -49,26 +51,58 @@ export default function SharedReasoningWorkspace({
     onMessage: onAiMessage,
   });
 
+  const moveObject = useCallback((id: string, position: { x: number; y: number }) => {
+    dispatch({ type: "move_object", id, position });
+  }, []);
+
+  const moveHandwriting = useCallback((position: { x: number; y: number }) => {
+    hasCustomizedHandwritingRef.current = true;
+    dispatch({ type: "move_handwriting", position });
+  }, []);
+
+  const resizeHandwriting = useCallback((size: { width: number; height: number }) => {
+    hasCustomizedHandwritingRef.current = true;
+    dispatch({ type: "resize_handwriting", size });
+  }, []);
+
+  const setCaptureActive = useCallback((value: boolean) => {
+    dispatch({ type: "set_capturing", value });
+  }, []);
+
+  useLayoutEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    const applyResponsiveDefault = () => {
+      if (hasCustomizedHandwritingRef.current) return;
+      const rect = board.getBoundingClientRect();
+      const layout = responsiveHandwritingLayout(rect.width, rect.height);
+      if (!layout) return;
+      dispatch({ type: "move_handwriting", position: layout.position });
+      dispatch({ type: "resize_handwriting", size: layout.size });
+    };
+
+    applyResponsiveDefault();
+    const observer = new ResizeObserver(applyResponsiveDefault);
+    observer.observe(board);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="shared-workspace">
-      <div className="shared-board" aria-label="Shared reasoning board">
-        <TutorObjectLayer
-          objects={state.objects}
-          onMoveObject={(id, position) =>
-            dispatch({ type: "move_object", id, position })
-          }
-        />
+      <div
+        className="shared-board"
+        aria-label="Shared reasoning board"
+        ref={boardRef}
+      >
+        <TutorObjectLayer objects={state.objects} onMoveObject={moveObject} />
         <HandwritingPanel
           position={state.handwriting.position}
           size={state.handwriting.size}
           isCapturing={state.handwriting.isCapturing}
-          onMove={(position) =>
-            dispatch({ type: "move_handwriting", position })
-          }
-          onResize={(size) => dispatch({ type: "resize_handwriting", size })}
-          onCaptureStateChange={(value) =>
-            dispatch({ type: "set_capturing", value })
-          }
+          onMove={moveHandwriting}
+          onResize={resizeHandwriting}
+          onCaptureStateChange={setCaptureActive}
         />
         <TextbookOverlay
           docId={activeDocId}
@@ -89,4 +123,26 @@ export default function SharedReasoningWorkspace({
       <VoiceComposer status={status} onEnd={onEnd} />
     </section>
   );
+}
+
+function responsiveHandwritingLayout(
+  boardWidth: number,
+  boardHeight: number,
+): { position: { x: number; y: number }; size: { width: number; height: number } } | null {
+  if (boardWidth > 900 || boardWidth <= 0 || boardHeight <= 0) return null;
+
+  const margin = boardWidth <= 560 ? 12 : 18;
+  const textbookHeight = Math.min(boardHeight * 0.3, boardWidth <= 560 ? 240 : 280);
+  const top = Math.round(margin + textbookHeight + (boardWidth <= 560 ? 20 : 24));
+  const transcriptClearance = 136;
+  const maxHeight = Math.max(210, boardHeight - transcriptClearance - top);
+  const desiredWidth = Math.min(520, boardWidth - margin * 2);
+  const desiredHeight = desiredWidth * 0.75;
+  const height = Math.max(210, Math.min(desiredHeight, maxHeight));
+  const width = Math.min(desiredWidth, height / 0.75);
+
+  return {
+    position: { x: margin, y: top },
+    size: { width, height },
+  };
 }

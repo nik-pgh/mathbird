@@ -38,8 +38,8 @@
 .handwriting-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  min-width: 320px;
-  min-height: 240px;
+  min-width: min(320px, calc(100vw - 24px));
+  min-height: 210px;
   overflow: hidden;
   border: 2px solid var(--mb-green);
   border-radius: 8px;
@@ -341,6 +341,10 @@
   backdrop-filter: blur(10px);
 }
 
+.transcript-overlay[hidden] {
+  display: none;
+}
+
 .transcript-overlay-head {
   display: flex;
   align-items: center;
@@ -637,23 +641,22 @@
 /* ─── Responsive rules ───────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
+  .shared-board {
+    overflow: auto;
+  }
+
   .textbook-overlay-large {
     top: 12px;
     right: 12px;
     left: 12px !important;
     width: auto;
-    height: min(50vh, 500px);
+    height: min(30%, 280px);
   }
 
   .textbook-overlay-small {
     top: 12px;
     right: 12px;
     width: min(182px, calc(100vw - 24px));
-  }
-
-  .handwriting-panel {
-    max-width: calc(100vw - 24px);
-    max-height: calc(100% - 104px);
   }
 
   .tutor-object {
@@ -679,18 +682,6 @@
     height: calc(100svh - 56px);
   }
 
-  .shared-board {
-    overflow: auto;
-  }
-
-  .handwriting-panel {
-    left: 12px !important;
-    top: 76px !important;
-    width: calc(100vw - 24px) !important;
-    height: min(42svh, 360px) !important;
-    min-width: 0;
-  }
-
   .handwriting-panel-head {
     align-items: flex-start;
     flex-direction: column;
@@ -707,7 +698,7 @@
   }
 
   .textbook-overlay-large {
-    height: min(44svh, 420px);
+    height: min(30%, 240px);
   }
 
   .tutor-object {

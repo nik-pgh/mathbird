@@ -274,9 +274,12 @@ export default function HandwritingPanel({
     const resize = resizeRef.current;
     if (!resize || resize.pointerId !== e.pointerId) return;
 
+    const widthDelta = e.clientX - resize.startX;
+    const heightDelta = (e.clientY - resize.startY) / 0.75;
+    const edgeDelta = Math.max(widthDelta, heightDelta);
     onResize({
-      width: resize.startSize.width + e.clientX - resize.startX,
-      height: resize.startSize.height + e.clientY - resize.startY,
+      width: resize.startSize.width + edgeDelta,
+      height: (resize.startSize.width + edgeDelta) * 0.75,
     });
   };
 

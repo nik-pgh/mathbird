@@ -10,7 +10,7 @@ import type {
 
 const DEFAULT_HANDWRITING: HandwritingPanelState = {
   position: { x: 56, y: 76 },
-  size: { width: 520, height: 380 },
+  size: { width: 520, height: 390 },
   isCapturing: false,
 };
 
@@ -40,11 +40,15 @@ export function workspaceReducer(
         ),
       };
     case "move_handwriting":
+      if (pointsEqual(state.handwriting.position, action.position)) return state;
       return {
         ...state,
         handwriting: { ...state.handwriting, position: action.position },
       };
     case "resize_handwriting":
+      if (sizesEqual(state.handwriting.size, clampPanelSize(action.size))) {
+        return state;
+      }
       return {
         ...state,
         handwriting: {
@@ -66,6 +70,7 @@ export function workspaceReducer(
         },
       };
     case "set_capturing":
+      if (state.handwriting.isCapturing === action.value) return state;
       return {
         ...state,
         handwriting: { ...state.handwriting, isCapturing: action.value },
@@ -111,14 +116,25 @@ function defaultObjectPosition(index: number): Point {
   const column = index % 3;
   const row = Math.floor(index / 3);
   return {
-    x: 640 + column * 44,
-    y: 96 + row * 52,
+    x: 128 + column * 44,
+    y: 540 + row * 52,
   };
 }
 
 function clampPanelSize(size: Size): Size {
+  const aspectWidth = Math.max(size.width, size.height / 0.75);
+  const width = Math.max(280, Math.min(860, aspectWidth));
   return {
-    width: Math.max(320, Math.min(860, size.width)),
-    height: Math.max(240, Math.min(640, size.height)),
+    width,
+    height: width * 0.75,
   };
+}
+
+function pointsEqual(a: Point, b: Point): boolean {
+  return Math.round(a.x) === Math.round(b.x) && Math.round(a.y) === Math.round(b.y);
+}
+
+function sizesEqual(a: Size, b: Size): boolean {
+  return Math.round(a.width) === Math.round(b.width)
+    && Math.round(a.height) === Math.round(b.height);
 }
