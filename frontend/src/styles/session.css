@@ -325,9 +325,9 @@
 /* ─── Transcript overlay and messages ─────────────────────────────────── */
 
 .transcript-overlay {
-  left: 18px;
-  bottom: 86px;
-  width: min(370px, 42vw);
+  left: 50%;
+  bottom: 18px;
+  width: min(720px, calc(100% - 28px));
   max-height: min(360px, 48%);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -338,6 +338,7 @@
   color: #ffffff;
   box-shadow: 0 14px 34px rgba(32, 54, 47, 0.18);
   backdrop-filter: blur(10px);
+  transform: translateX(-50%);
 }
 
 .transcript-overlay[hidden] {
@@ -669,10 +670,8 @@
   }
 
   .transcript-overlay {
-    right: 12px;
-    bottom: 84px;
-    left: 12px;
-    width: auto;
+    bottom: 12px;
+    width: min(720px, calc(100% - 20px));
     max-height: 32vh;
   }
 
