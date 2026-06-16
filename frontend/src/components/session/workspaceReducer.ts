@@ -25,7 +25,7 @@ export const initialWorkspaceState: WorkspaceState = {
   handwriting: DEFAULT_HANDWRITING,
   viewport: DEFAULT_VIEWPORT,
   overlays: {
-    textbook: "large",
+    textbook: "small",
     transcriptOpen: false,
   },
 };

@@ -1,6 +1,5 @@
 import { useCallback, useLayoutEffect, useReducer, useRef } from "react";
 import { zoomAtPoint } from "../../lib/canvasViewport";
-import { textbookLargeClearance } from "../../lib/textbookLayout";
 import {
   AI_BOARD_TOPIC,
   type AiBoardUpdate,
@@ -101,11 +100,7 @@ export default function SharedReasoningWorkspace({
     const applyResponsiveDefault = () => {
       if (hasCustomizedHandwritingRef.current) return;
       const rect = board.getBoundingClientRect();
-      const layout = responsiveHandwritingLayout(
-        rect.width,
-        rect.height,
-        state.overlays.textbook,
-      );
+      const layout = defaultHandwritingLayout(rect.width, rect.height);
       if (!layout) return;
       dispatch({ type: "move_handwriting", position: layout.position });
       dispatch({ type: "resize_handwriting", size: layout.size });
@@ -115,7 +110,7 @@ export default function SharedReasoningWorkspace({
     const observer = new ResizeObserver(applyResponsiveDefault);
     observer.observe(board);
     return () => observer.disconnect();
-  }, [state.overlays.textbook]);
+  }, []);
 
   return (
     <section className="shared-workspace">
@@ -169,28 +164,29 @@ export default function SharedReasoningWorkspace({
   );
 }
 
-function responsiveHandwritingLayout(
+function defaultHandwritingLayout(
   boardWidth: number,
   boardHeight: number,
-  textbookMode: "large" | "small",
 ): { position: { x: number; y: number }; size: { width: number; height: number } } | null {
-  if (boardWidth > 900 || boardWidth <= 0 || boardHeight <= 0) return null;
+  if (boardWidth <= 0 || boardHeight <= 0) return null;
 
   const margin = boardWidth <= 560 ? 12 : 18;
-  const textbookClearance =
-    textbookMode === "small"
-      ? 44 + 12
-      : textbookLargeClearance(boardWidth, boardHeight);
-  const top = Math.round(margin + textbookClearance + (boardWidth <= 560 ? 20 : 24));
-  const transcriptClearance = 136;
-  const maxHeight = Math.max(210, boardHeight - transcriptClearance - top);
-  const desiredWidth = Math.min(520, boardWidth - margin * 2);
-  const desiredHeight = desiredWidth * 0.75;
-  const height = Math.max(210, Math.min(desiredHeight, maxHeight));
-  const width = Math.min(desiredWidth, height / 0.75);
+  const maxWidth = Math.min(520, boardWidth - margin * 2);
+  const width = Math.max(280, maxWidth);
+  let height = width * 0.75;
+
+  if (height > boardHeight - margin * 2) {
+    height = Math.max(210, boardHeight - margin * 2);
+  }
+
+  const finalWidth = Math.min(width, height / 0.75);
+  const finalHeight = finalWidth * 0.75;
 
   return {
-    position: { x: margin, y: top },
-    size: { width, height },
+    position: {
+      x: Math.round((boardWidth - finalWidth) / 2),
+      y: Math.round((boardHeight - finalHeight) / 2),
+    },
+    size: { width: finalWidth, height: finalHeight },
   };
 }
