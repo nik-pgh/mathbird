@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Eraser, Pencil, Trash2, Undo2 } from "lucide-react";
 import { getStroke } from "perfect-freehand";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
 import {
@@ -22,6 +23,7 @@ const SNAPSHOT_INTERVAL_MS = 2000;
 const MAX_LONG_EDGE = 512;
 const CANVAS_BG = "#fffaf0";
 const STROKE_COLOR = "#213f35";
+const TOOL_ICON_SIZE = 14;
 
 type Tool = "pen" | "eraser";
 type Point = [number, number, number];
@@ -233,9 +235,8 @@ export default function HandwritingPanel({
     await sendEmptySnapshot();
   };
 
-  const onHeadPointerDown = (e: React.PointerEvent<HTMLElement>) => {
+  const onDragHandlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
     if (e.button !== 0 || isSpacePan) return;
-    if (e.target instanceof HTMLElement && e.target.closest("button")) return;
 
     const world = clientToWorld(e.clientX, e.clientY);
     dragRef.current = {
@@ -247,7 +248,7 @@ export default function HandwritingPanel({
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const onHeadPointerMove = (e: React.PointerEvent<HTMLElement>) => {
+  const onDragHandlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
 
@@ -262,6 +263,10 @@ export default function HandwritingPanel({
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
     dragRef.current = null;
+  };
+
+  const stopToolbarPointer = (e: React.PointerEvent<HTMLElement>) => {
+    e.stopPropagation();
   };
 
   const onResizePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -307,34 +312,56 @@ export default function HandwritingPanel({
       }}
       aria-label="AI-readable handwriting panel"
     >
-      <div
-        className="handwriting-panel-head"
-        onPointerDown={onHeadPointerDown}
-        onPointerMove={onHeadPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-      >
-        <span>AI reads this area</span>
-        <div className="handwriting-tools">
+      <div className="handwriting-panel-head">
+        <span
+          className="handwriting-panel-drag-handle"
+          onPointerDown={onDragHandlePointerDown}
+          onPointerMove={onDragHandlePointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
+          AI reads this area
+        </span>
+        <div
+          className="handwriting-tools"
+          onPointerDown={stopToolbarPointer}
+          onPointerUp={stopToolbarPointer}
+        >
           <button
+            type="button"
             className={tool === "pen" ? "active" : ""}
             onClick={() => setTool("pen")}
             aria-label="Pen"
+            title="Pen"
           >
-            Pen
+            <Pencil size={TOOL_ICON_SIZE} aria-hidden="true" />
           </button>
           <button
+            type="button"
             className={tool === "eraser" ? "active" : ""}
             onClick={() => setTool("eraser")}
             aria-label="Eraser"
+            title="Eraser"
           >
-            Eraser
+            <Eraser size={TOOL_ICON_SIZE} aria-hidden="true" />
           </button>
-          <button onClick={undo} disabled={isEmpty} aria-label="Undo">
-            Undo
+          <button
+            type="button"
+            onClick={undo}
+            disabled={isEmpty}
+            aria-label="Undo"
+            title="Undo"
+          >
+            <Undo2 size={TOOL_ICON_SIZE} aria-hidden="true" />
           </button>
-          <button onClick={clear} disabled={isEmpty} aria-label="Clear">
-            Clear
+          <button
+            type="button"
+            onClick={clear}
+            disabled={isEmpty}
+            aria-label="Clear"
+            title="Clear"
+          >
+            <Trash2 size={TOOL_ICON_SIZE} aria-hidden="true" />
           </button>
         </div>
       </div>

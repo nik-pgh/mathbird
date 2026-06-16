@@ -125,49 +125,59 @@
 .handwriting-panel-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 7px 9px 7px 12px;
+  gap: 6px;
+  min-height: 0;
+  padding: 4px 6px 4px 8px;
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 250, 242, 0.96);
-  color: var(--mb-green);
+  background: rgba(255, 253, 247, 0.88);
+  color: var(--text-2);
+}
+
+.handwriting-panel-drag-handle {
+  min-width: 0;
+  flex: 1;
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
   cursor: grab;
   touch-action: none;
   user-select: none;
 }
 
-.handwriting-panel-head:active {
+.handwriting-panel-drag-handle:active {
   cursor: grabbing;
-}
-
-.handwriting-panel-head > span {
-  min-width: 0;
-  flex: 1;
-  color: var(--mb-green);
-  font-size: 12px;
-  font-weight: 750;
-  overflow-wrap: anywhere;
 }
 
 .handwriting-tools {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
 .handwriting-tools button {
-  min-width: 44px;
-  min-height: 34px;
-  padding: 0 9px;
-  border: 1px solid var(--border-strong);
-  border-radius: 7px;
-  background: #ffffff;
-  color: var(--mb-green);
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-2);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.handwriting-tools button svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .handwriting-tools button:hover:not(:disabled) {
@@ -790,9 +800,9 @@
   }
 
   .handwriting-panel-head {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    flex-direction: row;
+    gap: 4px;
   }
 
   .handwriting-tools {
@@ -801,7 +811,7 @@
   }
 
   .handwriting-tools button {
-    flex: 1 1 64px;
+    flex: 0 0 auto;
   }
 
   .textbook-overlay-large {
