@@ -118,6 +118,13 @@ export default function SharedReasoningWorkspace({
         className="shared-board"
         aria-label="Shared reasoning board"
         ref={boardRef}
+        style={
+          {
+            "--canvas-pan-x": `${state.viewport.pan.x}px`,
+            "--canvas-pan-y": `${state.viewport.pan.y}px`,
+            "--canvas-zoom": String(state.viewport.zoom),
+          } as React.CSSProperties
+        }
       >
         <TextbookOverlay
           docId={activeDocId}

@@ -20,16 +20,26 @@
   background: linear-gradient(135deg, var(--mb-paper) 0%, #fffaf2 55%, var(--bg-soft) 100%);
 }
 
+.shared-board::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle,
+    rgba(41, 72, 62, 0.13) 1px,
+    transparent 1px
+  );
+  background-size: calc(18px * var(--canvas-zoom, 1)) calc(18px * var(--canvas-zoom, 1));
+  background-position: var(--canvas-pan-x, 0px) var(--canvas-pan-y, 0px);
+}
+
 .canvas-world {
   position: absolute;
   inset: 0;
+  z-index: 1;
   transform-origin: 0 0;
-  background:
-    radial-gradient(circle, rgba(41, 72, 62, 0.13) 1px, transparent 1px),
-    linear-gradient(135deg, var(--mb-paper) 0%, #fffaf2 55%, var(--bg-soft) 100%);
-  background-size:
-    18px 18px,
-    auto;
 }
 
 .shared-board.space-pan,
