@@ -42,28 +42,23 @@
 }
 
 .canvas-controls {
-  position: absolute;
-  z-index: 4;
-  left: 14px;
-  bottom: 14px;
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px;
+  align-items: stretch;
+  flex-shrink: 0;
+  overflow: hidden;
   border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 8px 22px rgba(32, 54, 47, 0.12);
-  backdrop-filter: blur(8px);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-soft);
 }
 
 .canvas-controls button {
-  min-width: 32px;
-  min-height: 32px;
-  padding: 0 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  background: #ffffff;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--mb-green);
   font-size: 14px;
   font-weight: 700;
@@ -71,12 +66,17 @@
 }
 
 .canvas-controls button:hover {
-  border-color: var(--mb-green);
+  background: rgba(41, 72, 62, 0.07);
 }
 
 .canvas-controls-zoom {
-  min-width: 52px !important;
+  min-width: 48px !important;
+  padding: 0 8px !important;
+  border-left: 1px solid var(--border) !important;
+  border-right: 1px solid var(--border) !important;
   font-size: 11px !important;
+  font-weight: 750 !important;
+  color: var(--text-2) !important;
 }
 
 .handwriting-panel,
@@ -88,8 +88,7 @@
 }
 
 .textbook-overlay,
-.transcript-overlay,
-.canvas-controls {
+.transcript-overlay {
   z-index: 5;
 }
 
@@ -521,6 +520,10 @@
 /* ─── Voice composer ──────────────────────────────────────────────────── */
 
 .voice-composer {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 12px 14px 14px;
   border-top: 1px solid var(--border);
   background:
@@ -528,13 +531,24 @@
     var(--bg-soft);
 }
 
+.voice-composer-main {
+  min-width: 0;
+}
+
+.voice-composer .canvas-controls {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .voice-composer .wrap {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: min(720px, 100%);
+  width: min(720px, calc(100vw - 180px));
   min-height: 48px;
-  margin: 0 auto;
+  margin: 0;
   padding: 6px 6px 6px 15px;
   border: 1px solid var(--border-strong);
   border-radius: 24px;
@@ -770,6 +784,14 @@
 
   .voice-composer {
     padding: 10px;
+  }
+
+  .voice-composer .canvas-controls {
+    right: 10px;
+  }
+
+  .voice-composer .wrap {
+    width: min(720px, calc(100vw - 120px));
   }
 
   .voice-composer .state {

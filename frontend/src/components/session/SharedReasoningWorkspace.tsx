@@ -8,7 +8,6 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
-import CanvasControls from "./CanvasControls";
 import CanvasViewport from "./CanvasViewport";
 import HandwritingPanel from "./HandwritingPanel";
 import TextbookOverlay from "./TextbookOverlay";
@@ -125,12 +124,6 @@ export default function SharedReasoningWorkspace({
         aria-label="Shared reasoning board"
         ref={boardRef}
       >
-        <CanvasControls
-          viewport={state.viewport}
-          onZoomIn={() => zoomFromCenter(1.15)}
-          onZoomOut={() => zoomFromCenter(1 / 1.15)}
-          onReset={() => dispatch({ type: "reset_viewport" })}
-        />
         <TextbookOverlay
           docId={activeDocId}
           title={filename}
@@ -167,6 +160,10 @@ export default function SharedReasoningWorkspace({
         transcriptOpen={state.overlays.transcriptOpen}
         onTranscriptToggle={() => dispatch({ type: "toggle_transcript" })}
         onEnd={onEnd}
+        viewport={state.viewport}
+        onZoomIn={() => zoomFromCenter(1.15)}
+        onZoomOut={() => zoomFromCenter(1 / 1.15)}
+        onResetViewport={() => dispatch({ type: "reset_viewport" })}
       />
     </section>
   );

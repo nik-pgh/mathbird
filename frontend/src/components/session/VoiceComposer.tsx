@@ -3,6 +3,9 @@ import {
   useVoiceAssistant,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import type { ReactNode } from "react";
+import CanvasControls from "./CanvasControls";
+import type { ViewportState } from "./workspaceTypes";
 
 interface Props {
   /** Session-level status from the parent (LiveKit may not yet be attached). */
@@ -13,6 +16,10 @@ interface Props {
   onTranscriptToggle: () => void;
   /** Called when the user taps the end (●) button. */
   onEnd: () => void;
+  viewport: ViewportState;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetViewport: () => void;
 }
 
 export default function VoiceComposer({
@@ -20,12 +27,20 @@ export default function VoiceComposer({
   transcriptOpen,
   onTranscriptToggle,
   onEnd,
+  viewport,
+  onZoomIn,
+  onZoomOut,
+  onResetViewport,
 }: Props) {
   return status === "connected" ? (
     <ConnectedComposer
       transcriptOpen={transcriptOpen}
       onTranscriptToggle={onTranscriptToggle}
       onEnd={onEnd}
+      viewport={viewport}
+      onZoomIn={onZoomIn}
+      onZoomOut={onZoomOut}
+      onResetViewport={onResetViewport}
     />
   ) : (
     <PlaceholderComposer
@@ -33,7 +48,39 @@ export default function VoiceComposer({
       transcriptOpen={transcriptOpen}
       onTranscriptToggle={onTranscriptToggle}
       onEnd={onEnd}
+      viewport={viewport}
+      onZoomIn={onZoomIn}
+      onZoomOut={onZoomOut}
+      onResetViewport={onResetViewport}
     />
+  );
+}
+
+function VoiceFooter({
+  className,
+  viewport,
+  onZoomIn,
+  onZoomOut,
+  onResetViewport,
+  children,
+}: {
+  className?: string;
+  viewport: ViewportState;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetViewport: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className={`voice-composer ${className ?? ""}`.trim()}>
+      <div className="voice-composer-main">{children}</div>
+      <CanvasControls
+        viewport={viewport}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+        onReset={onResetViewport}
+      />
+    </div>
   );
 }
 
@@ -41,10 +88,18 @@ function ConnectedComposer({
   transcriptOpen,
   onTranscriptToggle,
   onEnd,
+  viewport,
+  onZoomIn,
+  onZoomOut,
+  onResetViewport,
 }: {
   transcriptOpen: boolean;
   onTranscriptToggle: () => void;
   onEnd: () => void;
+  viewport: ViewportState;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetViewport: () => void;
 }) {
   const { state } = useVoiceAssistant();
   const { enabled: micEnabled, toggle: toggleMic } = useTrackToggle({
@@ -61,7 +116,13 @@ function ConnectedComposer({
       : "Connecting…";
 
   return (
-    <div className={`voice-composer ${micEnabled ? "" : "muted"}`}>
+    <VoiceFooter
+      className={micEnabled ? "" : "muted"}
+      viewport={viewport}
+      onZoomIn={onZoomIn}
+      onZoomOut={onZoomOut}
+      onResetViewport={onResetViewport}
+    >
       <div className="wrap">
         <div className="state">
           <Bars />
@@ -88,7 +149,7 @@ function ConnectedComposer({
           ●
         </button>
       </div>
-    </div>
+    </VoiceFooter>
   );
 }
 
@@ -97,14 +158,28 @@ function PlaceholderComposer({
   transcriptOpen,
   onTranscriptToggle,
   onEnd,
+  viewport,
+  onZoomIn,
+  onZoomOut,
+  onResetViewport,
 }: {
   status: "connecting" | "disconnected";
   transcriptOpen: boolean;
   onTranscriptToggle: () => void;
   onEnd: () => void;
+  viewport: ViewportState;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetViewport: () => void;
 }) {
   return (
-    <div className={`voice-composer ${status}`}>
+    <VoiceFooter
+      className={status}
+      viewport={viewport}
+      onZoomIn={onZoomIn}
+      onZoomOut={onZoomOut}
+      onResetViewport={onResetViewport}
+    >
       <div className="wrap">
         <div className="state">
           <Bars />
@@ -129,7 +204,7 @@ function PlaceholderComposer({
           ●
         </button>
       </div>
-    </div>
+    </VoiceFooter>
   );
 }
 
