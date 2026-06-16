@@ -120,7 +120,12 @@ export default function SharedReasoningWorkspace({
           onToggle={() => dispatch({ type: "toggle_transcript" })}
         />
       </div>
-      <VoiceComposer status={status} onEnd={onEnd} />
+      <VoiceComposer
+        status={status}
+        transcriptOpen={state.overlays.transcriptOpen}
+        onTranscriptToggle={() => dispatch({ type: "toggle_transcript" })}
+        onEnd={onEnd}
+      />
     </section>
   );
 }

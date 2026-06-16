@@ -7,19 +7,45 @@ import { Track } from "livekit-client";
 interface Props {
   /** Session-level status from the parent (LiveKit may not yet be attached). */
   status: "connecting" | "connected" | "disconnected";
+  /** Whether the transcript overlay is open on the shared board. */
+  transcriptOpen: boolean;
+  /** Toggles the transcript overlay from the footer controls. */
+  onTranscriptToggle: () => void;
   /** Called when the user taps the end (●) button. */
   onEnd: () => void;
 }
 
-export default function VoiceComposer({ status, onEnd }: Props) {
+export default function VoiceComposer({
+  status,
+  transcriptOpen,
+  onTranscriptToggle,
+  onEnd,
+}: Props) {
   return status === "connected" ? (
-    <ConnectedComposer onEnd={onEnd} />
+    <ConnectedComposer
+      transcriptOpen={transcriptOpen}
+      onTranscriptToggle={onTranscriptToggle}
+      onEnd={onEnd}
+    />
   ) : (
-    <PlaceholderComposer status={status} onEnd={onEnd} />
+    <PlaceholderComposer
+      status={status}
+      transcriptOpen={transcriptOpen}
+      onTranscriptToggle={onTranscriptToggle}
+      onEnd={onEnd}
+    />
   );
 }
 
-function ConnectedComposer({ onEnd }: { onEnd: () => void }) {
+function ConnectedComposer({
+  transcriptOpen,
+  onTranscriptToggle,
+  onEnd,
+}: {
+  transcriptOpen: boolean;
+  onTranscriptToggle: () => void;
+  onEnd: () => void;
+}) {
   const { state } = useVoiceAssistant();
   const { enabled: micEnabled, toggle: toggleMic } = useTrackToggle({
     source: Track.Source.Microphone,
@@ -41,6 +67,10 @@ function ConnectedComposer({ onEnd }: { onEnd: () => void }) {
           <Bars />
           {label}
         </div>
+        <TranscriptButton
+          open={transcriptOpen}
+          onToggle={onTranscriptToggle}
+        />
         <button
           className="icon-btn"
           onClick={() => toggleMic()}
@@ -64,9 +94,13 @@ function ConnectedComposer({ onEnd }: { onEnd: () => void }) {
 
 function PlaceholderComposer({
   status,
+  transcriptOpen,
+  onTranscriptToggle,
   onEnd,
 }: {
   status: "connecting" | "disconnected";
+  transcriptOpen: boolean;
+  onTranscriptToggle: () => void;
   onEnd: () => void;
 }) {
   return (
@@ -76,6 +110,10 @@ function PlaceholderComposer({
           <Bars />
           {status === "connecting" ? "Connecting…" : "Disconnected"}
         </div>
+        <TranscriptButton
+          open={transcriptOpen}
+          onToggle={onTranscriptToggle}
+        />
         <button
           className="icon-btn"
           disabled
@@ -92,6 +130,25 @@ function PlaceholderComposer({
         </button>
       </div>
     </div>
+  );
+}
+
+function TranscriptButton({
+  open,
+  onToggle,
+}: {
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      className={`transcript-toggle ${open ? "active" : ""}`}
+      onClick={onToggle}
+      aria-label={open ? "Hide transcript" : "Open transcript"}
+      aria-pressed={open}
+    >
+      Transcript
+    </button>
   );
 }
 

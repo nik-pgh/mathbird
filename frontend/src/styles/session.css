@@ -27,8 +27,7 @@
 .handwriting-panel,
 .tutor-object,
 .textbook-overlay,
-.transcript-overlay,
-.transcript-toggle {
+.transcript-overlay {
   position: absolute;
   z-index: 2;
 }
@@ -452,20 +451,6 @@
   }
 }
 
-.transcript-toggle {
-  left: 18px;
-  bottom: 86px;
-  min-height: 40px;
-  padding: 0 13px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(32, 54, 47, 0.82);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 750;
-  backdrop-filter: blur(10px);
-}
-
 /* ─── Voice composer ──────────────────────────────────────────────────── */
 
 .voice-composer {
@@ -582,6 +567,26 @@
   cursor: not-allowed;
 }
 
+.voice-composer .transcript-toggle {
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--mb-green);
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.voice-composer .transcript-toggle:hover,
+.voice-composer .transcript-toggle.active {
+  border-color: var(--mb-green);
+  background: var(--mb-green);
+  color: #ffffff;
+}
+
 /* ─── Error and loading states ────────────────────────────────────────── */
 
 .session-error {
@@ -671,10 +676,6 @@
     max-height: 32vh;
   }
 
-  .transcript-toggle {
-    bottom: 84px;
-    left: 12px;
-  }
 }
 
 @media (max-width: 560px) {
@@ -720,5 +721,10 @@
   .voice-composer .wrap {
     min-height: 46px;
     padding-left: 12px;
+  }
+
+  .voice-composer .transcript-toggle {
+    padding: 0 10px;
+    font-size: 11px;
   }
 }
