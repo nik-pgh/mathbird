@@ -8,11 +8,7 @@ import {
 } from "../lib/api";
 import { getActiveDocId } from "../lib/activeDoc";
 import SessionTopbar from "../components/session/SessionTopbar";
-import VoiceComposer from "../components/session/VoiceComposer";
-import Transcript from "../components/Transcript";
-import AiBoard from "../components/whiteboard/AiBoard";
-import UserBoard from "../components/whiteboard/UserBoard";
-import PdfPopover from "../components/session/PdfPopover";
+import SharedReasoningWorkspace from "../components/session/SharedReasoningWorkspace";
 import "../styles/session.css";
 
 interface Connection {
@@ -29,11 +25,10 @@ export default function SessionPage() {
   const [status, setStatus] = useState<Status>("connecting");
   const [error, setError] = useState<string | null>(null);
   const [activeDoc, setActiveDoc] = useState<UploadedDocument | null>(null);
-  const [pdfOpen, setPdfOpen] = useState(false);
 
   const activeDocId = useMemo(() => getActiveDocId(), []);
 
-  // Resolve filename for the popover button tooltip.
+  // Resolve filename for the textbook overlay title.
   useEffect(() => {
     if (!activeDocId) return;
     listDocuments()
@@ -81,20 +76,10 @@ export default function SessionPage() {
     return parts[parts.length - 1] || activeDoc.doc_id;
   }, [activeDoc]);
 
-  const pdfProp =
-    activeDocId && filename
-      ? {
-          filename,
-          isOpen: pdfOpen,
-          onToggle: () => setPdfOpen((v) => !v),
-        }
-      : undefined;
-
   return (
     <>
       <SessionTopbar
         session={{ status, label: "Session", onEnd: handleEnd }}
-        pdf={pdfProp}
       />
       {conn ? (
         <LiveKitRoom
@@ -110,32 +95,21 @@ export default function SessionPage() {
             setStatus("disconnected");
           }}
         >
-          <section className="session-room">
-            <div className="session-conv">
-              <Transcript />
-              {error && (
-                <div className="session-error">
-                  <span>{error}</span>
-                  <button className="retry" onClick={connect}>
-                    Retry
-                  </button>
-                </div>
-              )}
-              <VoiceComposer status={status} onEnd={handleEnd} />
+          {error && (
+            <div className="session-error">
+              <span>{error}</span>
+              <button className="retry" onClick={connect}>
+                Retry
+              </button>
             </div>
-            <div className="session-boards">
-              <AiBoard />
-              <UserBoard />
-            </div>
-          </section>
-          <RoomAudioRenderer />
-          {pdfOpen && activeDocId && (
-            <PdfPopover
-              docId={activeDocId}
-              title={filename ?? "PDF"}
-              onClose={() => setPdfOpen(false)}
-            />
           )}
+          <SharedReasoningWorkspace
+            status={status}
+            activeDocId={activeDocId}
+            filename={filename}
+            onEnd={handleEnd}
+          />
+          <RoomAudioRenderer />
         </LiveKitRoom>
       ) : (
         <SessionSkeleton error={error} onRetry={connect} />
