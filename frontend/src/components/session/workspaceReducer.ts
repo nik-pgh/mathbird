@@ -4,6 +4,7 @@ import type {
   HandwritingPanelState,
   Point,
   Size,
+  ViewportState,
   WorkspaceAction,
   WorkspaceState,
 } from "./workspaceTypes";
@@ -14,9 +15,15 @@ const DEFAULT_HANDWRITING: HandwritingPanelState = {
   isCapturing: false,
 };
 
+const DEFAULT_VIEWPORT: ViewportState = {
+  pan: { x: 0, y: 0 },
+  zoom: 1,
+};
+
 export const initialWorkspaceState: WorkspaceState = {
   objects: [],
   handwriting: DEFAULT_HANDWRITING,
+  viewport: DEFAULT_VIEWPORT,
   overlays: {
     textbook: "large",
     transcriptOpen: false,
@@ -75,6 +82,10 @@ export function workspaceReducer(
         ...state,
         handwriting: { ...state.handwriting, isCapturing: action.value },
       };
+    case "set_viewport":
+      return { ...state, viewport: action.viewport };
+    case "reset_viewport":
+      return { ...state, viewport: DEFAULT_VIEWPORT };
     default: {
       const _exhaustive: never = action;
       return _exhaustive;

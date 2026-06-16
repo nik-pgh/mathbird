@@ -7,6 +7,7 @@ import {
   decodeUserSnapshot,
   encodeUserSnapshot,
 } from "../../lib/whiteboard";
+import { useCanvasViewportContext } from "./CanvasViewportContext";
 
 interface Props {
   position: { x: number; y: number };
@@ -61,6 +62,7 @@ export default function HandwritingPanel({
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [tool, setTool] = useState<Tool>("pen");
   const [drawing, setDrawing] = useState<Stroke | null>(null);
+  const { isSpacePan, clientToWorld, viewport } = useCanvasViewportContext();
 
   const { send } = useBoardChannel<
     typeof USER_BOARD_TOPIC,
@@ -166,6 +168,7 @@ export default function HandwritingPanel({
   );
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0 || isSpacePan) return;
     if (drawingPointerRef.current !== null) return;
 
     const pt = pointerXY(e);
@@ -231,13 +234,14 @@ export default function HandwritingPanel({
   };
 
   const onHeadPointerDown = (e: React.PointerEvent<HTMLElement>) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || isSpacePan) return;
     if (e.target instanceof HTMLElement && e.target.closest("button")) return;
 
+    const world = clientToWorld(e.clientX, e.clientY);
     dragRef.current = {
       pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
+      startX: world.x,
+      startY: world.y,
       startPosition: positionRef.current,
     };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -247,9 +251,10 @@ export default function HandwritingPanel({
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
 
+    const world = clientToWorld(e.clientX, e.clientY);
     onMove({
-      x: drag.startPosition.x + e.clientX - drag.startX,
-      y: drag.startPosition.y + e.clientY - drag.startY,
+      x: drag.startPosition.x + (world.x - drag.startX),
+      y: drag.startPosition.y + (world.y - drag.startY),
     });
   };
 
@@ -274,8 +279,8 @@ export default function HandwritingPanel({
     const resize = resizeRef.current;
     if (!resize || resize.pointerId !== e.pointerId) return;
 
-    const widthDelta = e.clientX - resize.startX;
-    const heightDelta = (e.clientY - resize.startY) / 0.75;
+    const widthDelta = (e.clientX - resize.startX) / viewport.zoom;
+    const heightDelta = (e.clientY - resize.startY) / viewport.zoom / 0.75;
     const edgeDelta = Math.max(widthDelta, heightDelta);
     onResize({
       width: resize.startSize.width + edgeDelta,

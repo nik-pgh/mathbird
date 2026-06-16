@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useReducer, useRef } from "react";
+import { zoomAtPoint } from "../../lib/canvasViewport";
 import {
   AI_BOARD_TOPIC,
   type AiBoardUpdate,
@@ -6,6 +7,8 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
+import CanvasControls from "./CanvasControls";
+import CanvasViewport from "./CanvasViewport";
 import HandwritingPanel from "./HandwritingPanel";
 import TextbookOverlay from "./TextbookOverlay";
 import TranscriptOverlay from "./TranscriptOverlay";
@@ -69,6 +72,28 @@ export default function SharedReasoningWorkspace({
     dispatch({ type: "set_capturing", value });
   }, []);
 
+  const setViewport = useCallback((viewport: typeof state.viewport) => {
+    dispatch({ type: "set_viewport", viewport });
+  }, []);
+
+  const zoomFromCenter = useCallback(
+    (factor: number) => {
+      const board = boardRef.current;
+      if (!board) return;
+      const rect = board.getBoundingClientRect();
+      dispatch({
+        type: "set_viewport",
+        viewport: zoomAtPoint(
+          state.viewport,
+          state.viewport.zoom * factor,
+          rect.width / 2,
+          rect.height / 2,
+        ),
+      });
+    },
+    [state.viewport],
+  );
+
   useLayoutEffect(() => {
     const board = boardRef.current;
     if (!board) return;
@@ -95,14 +120,11 @@ export default function SharedReasoningWorkspace({
         aria-label="Shared reasoning board"
         ref={boardRef}
       >
-        <TutorObjectLayer objects={state.objects} onMoveObject={moveObject} />
-        <HandwritingPanel
-          position={state.handwriting.position}
-          size={state.handwriting.size}
-          isCapturing={state.handwriting.isCapturing}
-          onMove={moveHandwriting}
-          onResize={resizeHandwriting}
-          onCaptureStateChange={setCaptureActive}
+        <CanvasControls
+          viewport={state.viewport}
+          onZoomIn={() => zoomFromCenter(1.15)}
+          onZoomOut={() => zoomFromCenter(1 / 1.15)}
+          onReset={() => dispatch({ type: "reset_viewport" })}
         />
         <TextbookOverlay
           docId={activeDocId}
@@ -119,6 +141,21 @@ export default function SharedReasoningWorkspace({
           open={state.overlays.transcriptOpen}
           onToggle={() => dispatch({ type: "toggle_transcript" })}
         />
+        <CanvasViewport
+          boardRef={boardRef}
+          viewport={state.viewport}
+          onViewportChange={setViewport}
+        >
+          <TutorObjectLayer objects={state.objects} onMoveObject={moveObject} />
+          <HandwritingPanel
+            position={state.handwriting.position}
+            size={state.handwriting.size}
+            isCapturing={state.handwriting.isCapturing}
+            onMove={moveHandwriting}
+            onResize={resizeHandwriting}
+            onCaptureStateChange={setCaptureActive}
+          />
+        </CanvasViewport>
       </div>
       <VoiceComposer
         status={status}

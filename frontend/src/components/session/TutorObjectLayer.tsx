@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import BoardItem from "../whiteboard/BoardItem";
+import { useCanvasViewportContext } from "./CanvasViewportContext";
 import type { BoardObject, Point } from "./workspaceTypes";
 
 interface Props {
@@ -18,6 +19,7 @@ export default function TutorObjectLayer({
   onMoveObject,
 }: Props) {
   const dragRef = useDragRef();
+  const { clientToWorld } = useCanvasViewportContext();
 
   return (
     <div
@@ -43,12 +45,13 @@ export default function TutorObjectLayer({
             style={{ touchAction: "none" }}
             onPointerDown={(event) => {
               if (event.button !== 0) return;
+              const world = clientToWorld(event.clientX, event.clientY);
               dragRef.current = {
                 objectId: object.id,
                 pointerId: event.pointerId,
                 offset: {
-                  x: event.clientX - object.position.x,
-                  y: event.clientY - object.position.y,
+                  x: world.x - object.position.x,
+                  y: world.y - object.position.y,
                 },
               };
               event.currentTarget.setPointerCapture(event.pointerId);
@@ -56,9 +59,10 @@ export default function TutorObjectLayer({
             onPointerMove={(event) => {
               const drag = dragRef.current;
               if (!drag || drag.pointerId !== event.pointerId) return;
+              const world = clientToWorld(event.clientX, event.clientY);
               onMoveObject(drag.objectId, {
-                x: Math.max(0, event.clientX - drag.offset.x),
-                y: Math.max(0, event.clientY - drag.offset.y),
+                x: world.x - drag.offset.x,
+                y: world.y - drag.offset.y,
               });
             }}
             onPointerUp={(event) => {

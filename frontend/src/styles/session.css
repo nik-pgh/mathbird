@@ -16,6 +16,14 @@
   position: relative;
   min-height: 0;
   overflow: hidden;
+  touch-action: none;
+  background: linear-gradient(135deg, var(--mb-paper) 0%, #fffaf2 55%, var(--bg-soft) 100%);
+}
+
+.canvas-world {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
   background:
     radial-gradient(circle, rgba(41, 72, 62, 0.13) 1px, transparent 1px),
     linear-gradient(135deg, var(--mb-paper) 0%, #fffaf2 55%, var(--bg-soft) 100%);
@@ -24,12 +32,65 @@
     auto;
 }
 
+.shared-board.space-pan,
+.canvas-world.space-pan {
+  cursor: grab;
+}
+
+.canvas-world.space-pan:active {
+  cursor: grabbing;
+}
+
+.canvas-controls {
+  position: absolute;
+  z-index: 4;
+  left: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 22px rgba(32, 54, 47, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.canvas-controls button {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--mb-green);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.canvas-controls button:hover {
+  border-color: var(--mb-green);
+}
+
+.canvas-controls-zoom {
+  min-width: 52px !important;
+  font-size: 11px !important;
+}
+
 .handwriting-panel,
 .tutor-object,
 .textbook-overlay,
 .transcript-overlay {
   position: absolute;
   z-index: 2;
+}
+
+.textbook-overlay,
+.transcript-overlay,
+.canvas-controls {
+  z-index: 5;
 }
 
 /* ─── Handwriting panel ───────────────────────────────────────────────── */
@@ -149,10 +210,11 @@
 /* ─── Tutor objects ───────────────────────────────────────────────────── */
 
 .tutor-object-layer {
-  position: absolute !important;
+  position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  overflow: visible;
 }
 
 .tutor-object {
@@ -647,10 +709,6 @@
 /* ─── Responsive rules ───────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
-  .shared-board {
-    overflow: auto;
-  }
-
   .textbook-overlay-large {
     top: 12px;
     right: 12px;
