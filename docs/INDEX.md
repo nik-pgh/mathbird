@@ -120,7 +120,8 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `src/styles/global.css` | App-wide base styles. |
 | `src/styles/session.css` | Session-page layout, voice composer, and both whiteboards. |
 | `src/lib/whiteboard.ts` | TS mirror of `backend/app/agent/whiteboard/messages.py` + encode/decode helpers. |
-| `src/components/whiteboard/AiBoard.tsx` | Subscribes to `ai_board` topic, renders items via `BoardItem`. |
-| `src/components/whiteboard/UserBoard.tsx` | Freehand canvas + tool palette + debounced snapshot loop. |
+| `src/components/session/SharedReasoningWorkspace.tsx` | Session canvas shell; subscribes to `ai_board`, hosts tutor objects + handwriting panel. |
+| `src/components/session/TutorObjectLayer.tsx` | Draggable tutor object cards rendered from workspace state. |
+| `src/components/session/HandwritingPanel.tsx` | Student handwriting canvas; publishes `user_board` snapshots. |
 | `src/components/whiteboard/BoardItem.tsx` | Switch on `item.kind` → KaTeX / inline SVG plot / sanitized SVG. |
 | `src/components/whiteboard/useBoardChannel.ts` | Typed `useDataChannel` wrapper for one board topic. |

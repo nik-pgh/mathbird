@@ -310,7 +310,7 @@ export default function HandwritingPanel({
         width: size.width,
         height: size.height,
       }}
-      aria-label="AI-readable handwriting panel"
+      aria-label="Student handwriting card"
     >
       <div className="handwriting-panel-head">
         <span
@@ -320,7 +320,7 @@ export default function HandwritingPanel({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          AI reads this area
+          Student Card
         </span>
         <div
           className="handwriting-tools"

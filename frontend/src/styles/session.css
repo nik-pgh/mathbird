@@ -237,28 +237,48 @@
 }
 
 .tutor-object {
-  min-width: 220px;
-  max-width: min(380px, 42vw);
-  border: 1px solid rgba(212, 139, 228, 0.65);
+  position: absolute;
+  min-width: 168px;
+  max-width: min(340px, 42vw);
+  border: 1px solid rgba(212, 139, 228, 0.55);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow:
-    0 6px 0 var(--mb-lavender),
-    0 12px 28px rgba(32, 54, 47, 0.12);
+    0 4px 0 var(--mb-lavender),
+    0 10px 24px rgba(32, 54, 47, 0.1);
   overflow: hidden;
   pointer-events: auto;
 }
 
 .tutor-object-handle {
-  min-height: 36px;
-  padding: 9px 11px;
-  background: var(--mb-lavender-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 0;
+  padding: 4px 8px;
+  background: rgba(244, 232, 248, 0.92);
   color: #5b3565;
-  font-size: 11px;
-  font-weight: 800;
   cursor: grab;
   touch-action: none;
   user-select: none;
+}
+
+.tutor-object-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #5b3565;
+}
+
+.tutor-object-kind-pill {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(91, 53, 101, 0.12);
+  color: #6a4574;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .tutor-object-handle:active {
@@ -272,6 +292,8 @@
   border-radius: 0;
   background: #ffffff;
   box-shadow: none;
+  padding: 10px 12px;
+  font-size: 13.5px;
 }
 
 .ai-card {

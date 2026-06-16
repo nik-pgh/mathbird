@@ -36,8 +36,8 @@ mathbird/
         ├── pages/             # UploadPage.tsx, SessionPage.tsx
         ├── components/
         │   ├── PdfDropZone.tsx, Transcript.tsx
-        │   ├── session/       # SessionTopbar.tsx, VoiceComposer.tsx
-        │   └── whiteboard/    # AiBoard.tsx, UserBoard.tsx, BoardItem.tsx, useBoardChannel.ts
+        │   ├── session/       # SharedReasoningWorkspace, HandwritingPanel, TutorObjectLayer, …
+        │   └── whiteboard/    # BoardItem.tsx, useBoardChannel.ts
         └── styles/            # global.css, session.css
 ```
 
@@ -78,13 +78,13 @@ The agent worker **needs LiveKit Cloud credentials in `.env`** to start in `dev`
 ## How a conversation flows (mental model for changes)
 
 1. Frontend `POST /api/token` → FastAPI signs a JWT with the LiveKit API key/secret, returns `{token, url, room, identity}`.
-2. Frontend connects to LiveKit Cloud with that JWT and joins the room. `VoiceAgentPage` mounts `<AiBoard />` and `<UserBoard />` alongside the audio UI.
+2. Frontend connects to LiveKit Cloud with that JWT and joins the room. `SessionPage` mounts `SharedReasoningWorkspace` (tutor object cards + handwriting panel) alongside the audio UI.
 3. The agent worker is registered with LiveKit Cloud — when a participant joins, LiveKit dispatches `app.agent.main.entrypoint` into the room. The entrypoint installs a `user_board` data-channel listener, attaches a per-room `BoardState` to `AgentSession.userdata`, and starts a `WhiteboardAgent` that re-injects the latest student-board reading on every turn.
 4. Worker streams audio → STT → LLM → TTS → audio back into the room. The LLM can call function tools:
    - `search_documents` — RAG lookup through `get_retriever()`.
    - `read_user_board` — re-read the latest cached `BoardState` snapshot mid tool-chain.
    The AiBoard (the agent's whiteboard) is driven separately: `WhiteboardAgent.transcription_node` tees the agent's outgoing text stream, accumulates sentences, and a background worker calls the configured `BoardExtractor` (`null` or `openai`) which publishes `update_ai_board` items over the data channel per sentence. The LLM does NOT call `update_ai_board` directly.
-5. In parallel, the `UserBoard` periodically posts PNG snapshots on the `user_board` topic. The listener decodes, debounces, hands the bytes to the configured `BoardReader` (`null` or `openai_vision`), and writes the resulting text into `BoardState`.
+5. In parallel, the handwriting panel periodically posts PNG snapshots on the `user_board` topic. The listener decodes, debounces, hands the bytes to the configured `BoardReader` (`null` or `openai_vision`), and writes the resulting text into `BoardState`.
 
 You do **not** run a LiveKit server locally. The worker is a client that joins cloud rooms on demand.
 

@@ -124,11 +124,11 @@ function createBoardObject(
 }
 
 function defaultObjectPosition(index: number): Point {
-  const column = index % 3;
-  const row = Math.floor(index / 3);
+  const column = index % 2;
+  const row = Math.floor(index / 2);
   return {
-    x: 128 + column * 44,
-    y: 540 + row * 52,
+    x: 36 + column * 356,
+    y: 36 + row * 160,
   };
 }
 
