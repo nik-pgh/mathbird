@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useReducer, useRef } from "react";
 import { zoomAtPoint } from "../../lib/canvasViewport";
+import { textbookLargeClearance } from "../../lib/textbookLayout";
 import {
   AI_BOARD_TOPIC,
   type AiBoardUpdate,
@@ -101,7 +102,11 @@ export default function SharedReasoningWorkspace({
     const applyResponsiveDefault = () => {
       if (hasCustomizedHandwritingRef.current) return;
       const rect = board.getBoundingClientRect();
-      const layout = responsiveHandwritingLayout(rect.width, rect.height);
+      const layout = responsiveHandwritingLayout(
+        rect.width,
+        rect.height,
+        state.overlays.textbook,
+      );
       if (!layout) return;
       dispatch({ type: "move_handwriting", position: layout.position });
       dispatch({ type: "resize_handwriting", size: layout.size });
@@ -111,7 +116,7 @@ export default function SharedReasoningWorkspace({
     const observer = new ResizeObserver(applyResponsiveDefault);
     observer.observe(board);
     return () => observer.disconnect();
-  }, []);
+  }, [state.overlays.textbook]);
 
   return (
     <section className="shared-workspace">
@@ -170,12 +175,16 @@ export default function SharedReasoningWorkspace({
 function responsiveHandwritingLayout(
   boardWidth: number,
   boardHeight: number,
+  textbookMode: "large" | "small",
 ): { position: { x: number; y: number }; size: { width: number; height: number } } | null {
   if (boardWidth > 900 || boardWidth <= 0 || boardHeight <= 0) return null;
 
   const margin = boardWidth <= 560 ? 12 : 18;
-  const textbookHeight = Math.min(boardHeight * 0.3, boardWidth <= 560 ? 240 : 280);
-  const top = Math.round(margin + textbookHeight + (boardWidth <= 560 ? 20 : 24));
+  const textbookClearance =
+    textbookMode === "small"
+      ? 44 + 12
+      : textbookLargeClearance(boardWidth, boardHeight);
+  const top = Math.round(margin + textbookClearance + (boardWidth <= 560 ? 20 : 24));
   const transcriptClearance = 136;
   const maxHeight = Math.max(210, boardHeight - transcriptClearance - top);
   const desiredWidth = Math.min(520, boardWidth - margin * 2);
