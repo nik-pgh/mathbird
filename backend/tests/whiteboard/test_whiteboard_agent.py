@@ -15,6 +15,7 @@ import json
 import time
 from dataclasses import dataclass, field
 
+from livekit.agents import Agent
 from livekit.agents.llm import ChatContext, ChatMessage
 
 from app.agent.whiteboard import BoardCache, BoardState, SessionData
@@ -147,6 +148,26 @@ async def test_transcription_node_passes_text_through_unchanged() -> None:
         output.append(chunk)
 
     assert "".join(output) == "Hello world. "
+
+
+async def test_tts_node_speaks_math_without_mutating_transcription_text(monkeypatch) -> None:
+    agent, _, _ = _make_agent()
+
+    async def fake_parent_tts_node(self, text, model_settings):  # noqa: ANN001, ARG001
+        async for chunk in text:
+            yield chunk
+
+    monkeypatch.setattr(Agent, "tts_node", fake_parent_tts_node)
+
+    async def fake_input():
+        for chunk in ["Now $x", "^2 + 1 = 5$. "]:
+            yield chunk
+
+    output = []
+    async for chunk in agent.tts_node(fake_input(), model_settings=None):
+        output.append(chunk)
+
+    assert output == ["Now x squared plus 1 equals 5. "]
 
 
 async def test_extractor_called_on_sentence_boundary() -> None:

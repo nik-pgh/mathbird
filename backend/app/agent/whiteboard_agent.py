@@ -1,15 +1,16 @@
 """``Agent`` subclass that drives the AiBoard from the agent's spoken reply.
 
-Two responsibilities:
+Three responsibilities:
 
 1. Inject the latest reading of the *student's* board into every per-turn
    ChatContext via ``on_user_turn_completed``.
 2. Override ``transcription_node`` to tee the agent's outgoing text stream:
-   text segments pass through to TTS unchanged, while a side channel
+   text segments pass through to transcript/AiBoard unchanged, while a side channel
    accumulates segments into sentences and feeds a single background
    extractor worker. The worker calls the configured :class:`BoardExtractor`
    per sentence and publishes the resulting :class:`AiBoardUpdate` over the
    data channel.
+3. Override ``tts_node`` to verbalize math notation for speech only.
 
 The TTS path is never blocked by the extractor. State (the per-room
 :class:`BoardCache`) is shared between the worker and the next extractor
@@ -26,6 +27,7 @@ from typing import Any
 from livekit.agents import Agent
 from livekit.agents.llm import ChatContext, ChatMessage
 
+from app.agent.math_speech import spoken_math_stream
 from app.agent.whiteboard.cache import BoardCache
 from app.agent.whiteboard.extractor.base import BoardExtractor
 from app.agent.whiteboard.messages import AiBoardUpdate
@@ -114,6 +116,13 @@ class WhiteboardAgent(Agent):
         self._buffer = ""
         if tail:
             self._enqueue_sentence(tail)
+
+    def tts_node(  # type: ignore[override]
+        self,
+        text: AsyncIterable[str],
+        model_settings: Any,
+    ) -> Any:
+        return super().tts_node(spoken_math_stream(text), model_settings)
 
     def _enqueue_sentence(self, sentence: str) -> None:
         try:
