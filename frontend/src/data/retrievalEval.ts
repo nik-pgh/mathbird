@@ -1,3 +1,5 @@
+import rawReport from "./retrievalEval.generated.json";
+
 export interface EvalMetrics {
   hitAt1: number;
   hitAt3: number;
@@ -11,6 +13,7 @@ export interface EvalCaseResult {
   caseId: string;
   queryType: string;
   label: string;
+  query: string;
   bestRank: number | null;
   reciprocalRank: number;
   hitAt1: boolean;
@@ -20,6 +23,10 @@ export interface EvalCaseResult {
 }
 
 export interface EvalTarget {
+  targetId: string;
+  label: string;
+  comparisonAxis: string;
+  metadata: Record<string, unknown>;
   provider: string;
   model: string;
   collectionName: string;
@@ -29,6 +36,10 @@ export interface EvalTarget {
 }
 
 export interface EvalFailure {
+  targetId: string;
+  label: string;
+  comparisonAxis: string;
+  metadata: Record<string, unknown>;
   provider: string;
   model: string;
   error: string;
@@ -36,6 +47,7 @@ export interface EvalFailure {
 
 export interface RetrievalEvalReport {
   schemaVersion: number;
+  comparisonAxis: string;
   createdAt: string;
   goldenPath: string;
   topK: number;
@@ -43,274 +55,137 @@ export interface RetrievalEvalReport {
   failures: EvalFailure[];
 }
 
-const caseLabels = [
-  ["goodfellow-ch2-001", "definition", "Scalars, vectors, matrices, tensors"],
-  ["goodfellow-ch2-002", "definition", "Vector definition and indexing"],
-  ["goodfellow-ch2-003", "definition", "Tensor axes and coordinates"],
-  ["goodfellow-ch2-004", "figure", "Figure 2.1 transpose"],
-  ["goodfellow-ch2-005", "concept", "Broadcasting vector addition"],
-  ["goodfellow-ch2-006", "formula", "Matrix product dimensions"],
-  ["goodfellow-ch2-007", "formula", "Matrix product summation"],
-  ["goodfellow-ch2-008", "concept", "Multiplication properties"],
-  ["goodfellow-ch2-009", "figure", "Figure 2.2 identity matrix"],
-  ["goodfellow-ch2-010", "student_style", "Inverse as theoretical tool"],
-  ["goodfellow-ch2-011", "definition", "Span of vectors"],
-  ["goodfellow-ch2-012", "concept", "Linear dependence and solutions"],
-  ["goodfellow-ch2-013", "formula", "Lp norm and norm properties"],
-  ["goodfellow-ch2-014", "concept", "L1 norm sparsity proxy"],
-  ["goodfellow-ch2-015", "definition", "Frobenius norm"],
-  ["goodfellow-ch2-016", "concept", "Orthogonal matrix inverse"],
-  ["goodfellow-ch2-017", "definition", "Eigenvector and eigenvalue"],
-  ["goodfellow-ch2-018", "formula", "Symmetric eigendecomposition"],
-  ["goodfellow-ch2-019", "definition", "Singular value decomposition"],
-  ["goodfellow-ch2-020", "student_style", "PCA encoding"],
-] as const;
+type RawRecord = Record<string, unknown>;
 
-type CompactCase = readonly [
-  bestRank: number,
-  reciprocalRank: number,
-  contentMatchRatio: number,
-];
-
-function casesFrom(compact: readonly CompactCase[]): EvalCaseResult[] {
-  return caseLabels.map(([caseId, queryType, label], index) => {
-    const [bestRank, reciprocalRank, contentMatchRatio] = compact[index];
-    return {
-      caseId,
-      queryType,
-      label,
-      bestRank,
-      reciprocalRank,
-      hitAt1: bestRank === 1,
-      hitAt3: bestRank <= 3,
-      hitAt5: bestRank <= 5,
-      contentMatchRatio,
-    };
-  });
+function asRecord(value: unknown): RawRecord {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as RawRecord)
+    : {};
 }
 
-export const retrievalEvalReport = {
-  schemaVersion: 1,
-  createdAt: "20260615T234014Z",
-  goldenPath: "evals/golden/goodfellow_ch2_retrieval.jsonl",
-  topK: 5,
-  targets: [
-    {
-      provider: "openai",
-      model: "text-embedding-3-small",
-      collectionName: "mathbird_openai_text_embedding_3_small",
-      caseCount: 20,
-      metrics: {
-        hitAt1: 0.9,
-        hitAt3: 1,
-        hitAt5: 1,
-        mrr: 0.9416666666666668,
-        avgContentMatch: 0.7708333333333333,
-        avgLatencyMs: 390.8487894979771,
-      },
-      cases: casesFrom([
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 0.5],
-        [2, 0.5, 1],
-        [1, 1, 0.6],
-        [1, 1, 0.4],
-        [1, 1, 1],
-        [1, 1, 0.75],
-        [1, 1, 1],
-        [1, 1, 0.6],
-        [1, 1, 0.6],
-        [3, 0.3333333333333333, 0.2],
-        [1, 1, 0.6666666666666666],
-        [1, 1, 0.6666666666666666],
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 0.8333333333333334],
-      ]),
-    },
-    {
-      provider: "openai",
-      model: "text-embedding-3-large",
-      collectionName: "mathbird_openai_text_embedding_3_large",
-      caseCount: 20,
-      metrics: {
-        hitAt1: 0.9,
-        hitAt3: 1,
-        hitAt5: 1,
-        mrr: 0.9333333333333332,
-        avgContentMatch: 0.7791666666666668,
-        avgLatencyMs: 365.2729334018659,
-      },
-      cases: casesFrom([
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 0.5],
-        [1, 1, 1],
-        [3, 0.3333333333333333, 0.6],
-        [1, 1, 0.4],
-        [1, 1, 1],
-        [1, 1, 0.75],
-        [3, 0.3333333333333333, 1],
-        [1, 1, 0.4],
-        [1, 1, 0.6],
-        [1, 1, 0.4],
-        [1, 1, 0.6666666666666666],
-        [1, 1, 0.8333333333333334],
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 0.8333333333333334],
-      ]),
-    },
-    {
-      provider: "cohere",
-      model: "embed-english-v3.0",
-      collectionName: "mathbird_cohere_embed_english_v3_0",
-      caseCount: 20,
-      metrics: {
-        hitAt1: 0.9,
-        hitAt3: 1,
-        hitAt5: 1,
-        mrr: 0.9416666666666668,
-        avgContentMatch: 0.7058333333333333,
-        avgLatencyMs: 174.4593749404885,
-      },
-      cases: casesFrom([
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 0.5],
-        [1, 1, 0.2],
-        [1, 1, 0.4],
-        [1, 1, 0.6],
-        [1, 1, 1],
-        [1, 1, 0.75],
-        [2, 0.5, 1],
-        [1, 1, 0.4],
-        [1, 1, 0.6],
-        [3, 0.3333333333333333, 0.2],
-        [1, 1, 0.6666666666666666],
-        [1, 1, 0.5],
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 0.5],
-      ]),
-    },
-    {
-      provider: "cohere",
-      model: "embed-v4.0",
-      collectionName: "mathbird_cohere_embed_v4_0",
-      caseCount: 20,
-      metrics: {
-        hitAt1: 1,
-        hitAt3: 1,
-        hitAt5: 1,
-        mrr: 1,
-        avgContentMatch: 0.7891666666666668,
-        avgLatencyMs: 212.900410455768,
-      },
-      cases: casesFrom([
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 0.5],
-        [1, 1, 1],
-        [1, 1, 0.6],
-        [1, 1, 0.6],
-        [1, 1, 1],
-        [1, 1, 0.75],
-        [1, 1, 1],
-        [1, 1, 0.4],
-        [1, 1, 0.6],
-        [1, 1, 0.4],
-        [1, 1, 0.6666666666666666],
-        [1, 1, 0.8333333333333334],
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 0.8333333333333334],
-      ]),
-    },
-    {
-      provider: "google",
-      model: "gemini-embedding-001",
-      collectionName: "mathbird_google_gemini_embedding_001",
-      caseCount: 20,
-      metrics: {
-        hitAt1: 0.95,
-        hitAt3: 1,
-        hitAt5: 1,
-        mrr: 0.975,
-        avgContentMatch: 0.8025,
-        avgLatencyMs: 288.2434397470206,
-      },
-      cases: casesFrom([
-        [2, 0.5, 0.8],
-        [1, 1, 0.8],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 0.5],
-        [1, 1, 1],
-        [1, 1, 0.6],
-        [1, 1, 0.6],
-        [1, 1, 1],
-        [1, 1, 0.75],
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 0.6],
-        [1, 1, 0.8],
-        [1, 1, 0.6666666666666666],
-        [1, 1, 0.5],
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 0.8333333333333334],
-      ]),
-    },
-    {
-      provider: "mistral",
-      model: "mistral-embed",
-      collectionName: "mathbird_mistral_mistral_embed",
-      caseCount: 20,
-      metrics: {
-        hitAt1: 1,
-        hitAt3: 1,
-        hitAt5: 1,
-        mrr: 1,
-        avgContentMatch: 0.7991666666666667,
-        avgLatencyMs: 402.82500630710274,
-      },
-      cases: casesFrom([
-        [1, 1, 0.8],
-        [1, 1, 0.8],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 0.5],
-        [1, 1, 1],
-        [1, 1, 0.6],
-        [1, 1, 0.6],
-        [1, 1, 1],
-        [1, 1, 0.75],
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 0.6],
-        [1, 1, 0.4],
-        [1, 1, 0.6666666666666666],
-        [1, 1, 0.8333333333333334],
-        [1, 1, 1],
-        [1, 1, 0.8],
-        [1, 1, 0.8333333333333334],
-      ]),
-    },
-  ],
-  failures: [],
-} satisfies RetrievalEvalReport;
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function asNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function asBool(value: unknown): boolean {
+  return value === true;
+}
+
+function asNullableRank(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function pick<T>(record: RawRecord, snakeKey: string, camelKey: string, fallback: T): unknown {
+  return record[snakeKey] ?? record[camelKey] ?? fallback;
+}
+
+function normalizeMetrics(raw: unknown): EvalMetrics {
+  const metrics = asRecord(raw);
+  return {
+    hitAt1: asNumber(pick(metrics, "hit_at_1", "hitAt1", 0)),
+    hitAt3: asNumber(pick(metrics, "hit_at_3", "hitAt3", 0)),
+    hitAt5: asNumber(pick(metrics, "hit_at_5", "hitAt5", 0)),
+    mrr: asNumber(metrics.mrr),
+    avgContentMatch: asNumber(
+      pick(metrics, "avg_content_match", "avgContentMatch", 0),
+    ),
+    avgLatencyMs: asNumber(pick(metrics, "avg_latency_ms", "avgLatencyMs", 0)),
+  };
+}
+
+function fallbackCaseLabel(caseId: string, query: string): string {
+  if (query) return query;
+  return caseId || "Untitled case";
+}
+
+function normalizeCase(raw: unknown): EvalCaseResult {
+  const item = asRecord(raw);
+  const caseId = asString(pick(item, "case_id", "caseId", ""));
+  const query = asString(item.query);
+  return {
+    caseId,
+    queryType: asString(pick(item, "query_type", "queryType", "unknown"), "unknown"),
+    label: asString(item.label, fallbackCaseLabel(caseId, query)),
+    query,
+    bestRank: asNullableRank(pick(item, "best_rank", "bestRank", null)),
+    reciprocalRank: asNumber(pick(item, "reciprocal_rank", "reciprocalRank", 0)),
+    hitAt1: asBool(pick(item, "hit_at_1", "hitAt1", false)),
+    hitAt3: asBool(pick(item, "hit_at_3", "hitAt3", false)),
+    hitAt5: asBool(pick(item, "hit_at_5", "hitAt5", false)),
+    contentMatchRatio: asNumber(
+      pick(item, "content_match_ratio", "contentMatchRatio", 0),
+    ),
+  };
+}
+
+function normalizeTarget(raw: unknown): EvalTarget {
+  const target = asRecord(raw);
+  const provider = asString(target.provider);
+  const model = asString(target.model);
+  const label = asString(target.label, model || provider || "Target");
+  return {
+    targetId: asString(
+      pick(target, "target_id", "targetId", ""),
+      `${provider}:${model}`,
+    ),
+    label,
+    comparisonAxis: asString(
+      pick(target, "comparison_axis", "comparisonAxis", "embedding_model"),
+      "embedding_model",
+    ),
+    metadata: asRecord(target.metadata),
+    provider,
+    model,
+    collectionName: asString(pick(target, "collection_name", "collectionName", "")),
+    caseCount: asNumber(pick(target, "case_count", "caseCount", 0)),
+    metrics: normalizeMetrics(target.metrics),
+    cases: asArray(target.cases).map(normalizeCase),
+  };
+}
+
+function normalizeFailure(raw: unknown): EvalFailure {
+  const failure = asRecord(raw);
+  const provider = asString(failure.provider);
+  const model = asString(failure.model);
+  return {
+    targetId: asString(
+      pick(failure, "target_id", "targetId", ""),
+      `${provider}:${model}`,
+    ),
+    label: asString(failure.label, model || provider || "Target"),
+    comparisonAxis: asString(
+      pick(failure, "comparison_axis", "comparisonAxis", "embedding_model"),
+      "embedding_model",
+    ),
+    metadata: asRecord(failure.metadata),
+    provider,
+    model,
+    error: asString(failure.error),
+  };
+}
+
+function normalizeReport(raw: unknown): RetrievalEvalReport {
+  const report = asRecord(raw);
+  return {
+    schemaVersion: asNumber(pick(report, "schema_version", "schemaVersion", 1), 1),
+    comparisonAxis: asString(
+      pick(report, "comparison_axis", "comparisonAxis", "embedding_model"),
+      "embedding_model",
+    ),
+    createdAt: asString(pick(report, "created_at", "createdAt", "")),
+    goldenPath: asString(pick(report, "golden_path", "goldenPath", "")),
+    topK: asNumber(pick(report, "top_k", "topK", 0)),
+    targets: asArray(report.targets).map(normalizeTarget),
+    failures: asArray(report.failures).map(normalizeFailure),
+  };
+}
+
+export const retrievalEvalReport = normalizeReport(rawReport);

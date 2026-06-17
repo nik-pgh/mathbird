@@ -20,8 +20,22 @@ export interface CaseSummary {
   }>;
 }
 
-export function targetKey(target: Pick<EvalTarget, "provider" | "model">): string {
-  return `${target.provider}/${target.model}`;
+export function targetKey(target: Pick<EvalTarget, "targetId" | "provider" | "model">): string {
+  return target.targetId || `${target.provider}/${target.model}`;
+}
+
+export function targetLabel(target: Pick<EvalTarget, "label" | "model">): string {
+  return target.label || target.model;
+}
+
+export function targetDetail(target: Pick<EvalTarget, "provider" | "model">): string {
+  return `${target.provider} / ${target.model}`;
+}
+
+export function comparisonTitle(axis: string): string {
+  if (axis === "chunk_policy") return "Chunking policy comparison";
+  if (axis === "embedding_model") return "Embedding model comparison";
+  return "Retrieval target comparison";
 }
 
 export function rankTargets(targets: readonly EvalTarget[]): EvalTarget[] {

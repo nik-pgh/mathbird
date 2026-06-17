@@ -4,8 +4,11 @@ import {
   formatLatency,
   formatPercent,
   formatScore,
+  comparisonTitle,
   rankTargets,
+  targetDetail,
   targetKey,
+  targetLabel,
 } from "../../lib/evalMetrics";
 
 interface Props {
@@ -14,13 +17,15 @@ interface Props {
 
 export default function ModelComparisonTable({ targets }: Props) {
   const ranked = rankTargets(targets);
-  const maxLatency = Math.max(...ranked.map((target) => target.metrics.avgLatencyMs));
+  const maxLatency = Math.max(1, ...ranked.map((target) => target.metrics.avgLatencyMs));
+  const axis = ranked[0]?.comparisonAxis ?? "embedding_model";
+  const targetHeading = axis === "chunk_policy" ? "Policy" : "Target";
 
   return (
     <section className="eval-panel eval-ranking">
       <div className="eval-section-header">
         <div>
-          <h2>Model ranking</h2>
+          <h2>{comparisonTitle(axis)}</h2>
           <p>Sorted by Hit@3, MRR, Hit@5, then latency.</p>
         </div>
       </div>
@@ -30,7 +35,7 @@ export default function ModelComparisonTable({ targets }: Props) {
           <thead>
             <tr>
               <th>Rank</th>
-              <th>Model</th>
+              <th>{targetHeading}</th>
               <th>Hit@1</th>
               <th>Hit@3</th>
               <th>MRR</th>
@@ -44,8 +49,8 @@ export default function ModelComparisonTable({ targets }: Props) {
                 <td className="eval-rank-cell">{index + 1}</td>
                 <td>
                   <div className="eval-model-cell">
-                    <strong>{target.model}</strong>
-                    <span>{target.provider}</span>
+                    <strong>{targetLabel(target)}</strong>
+                    <span>{targetDetail(target)}</span>
                     <code>{target.collectionName}</code>
                   </div>
                 </td>
@@ -64,8 +69,8 @@ export default function ModelComparisonTable({ targets }: Props) {
         {ranked.map((target) => (
           <article className="eval-model-card" key={targetKey(target)}>
             <div className="eval-model-card-heading">
-              <strong>{target.model}</strong>
-              <span>{target.provider}</span>
+              <strong>{targetLabel(target)}</strong>
+              <span>{targetDetail(target)}</span>
             </div>
             <MetricBar
               label="Hit@1"

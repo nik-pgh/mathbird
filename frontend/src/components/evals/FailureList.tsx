@@ -1,4 +1,5 @@
 import { EvalFailure } from "../../data/retrievalEval";
+import { targetDetail, targetKey, targetLabel } from "../../lib/evalMetrics";
 
 interface Props {
   failures: readonly EvalFailure[];
@@ -32,11 +33,11 @@ export default function FailureList({ failures }: Props) {
         {failures.map((failure) => (
           <article
             className="eval-failure-row"
-            key={`${failure.provider}/${failure.model}`}
+            key={targetKey(failure)}
           >
             <div>
-              <strong>{failure.model}</strong>
-              <span>{failure.provider}</span>
+              <strong>{targetLabel(failure)}</strong>
+              <span>{targetDetail(failure)}</span>
             </div>
             <code>{failure.error}</code>
           </article>

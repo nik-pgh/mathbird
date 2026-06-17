@@ -1,5 +1,5 @@
 import { EvalTarget, RetrievalEvalReport } from "../../data/retrievalEval";
-import { caseSummaries, targetKey } from "../../lib/evalMetrics";
+import { caseSummaries, targetKey, targetLabel } from "../../lib/evalMetrics";
 
 interface Props {
   report: RetrievalEvalReport;
@@ -26,7 +26,7 @@ export default function CaseOutcomeMatrix({ report, targets }: Props) {
               <th>Type</th>
               <th>Question focus</th>
               {targets.map((target) => (
-                <th key={targetKey(target)}>{target.model}</th>
+                <th key={targetKey(target)}>{targetLabel(target)}</th>
               ))}
             </tr>
           </thead>

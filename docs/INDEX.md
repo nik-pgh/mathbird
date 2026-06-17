@@ -27,6 +27,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
 | `backend/evals/golden/goodfellow_ch2_retrieval.jsonl` | 20-row golden retrieval set for Goodfellow chapter 2. |
 | `backend/scripts/eval_retrieval.py` | CLI to compare retrieval quality across embedding collections. |
+| `backend/scripts/eval_chunking.py` | CLI to parse once, index multiple chunking policies, evaluate them, and optionally update the frontend dashboard JSON. |
 
 ### `backend/app/` — shared package
 
@@ -85,7 +86,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `rag/parsing.py` | Normalized textbook parse models, retrieval request/result models, and parser protocol. |
 | `rag/llamaparse_parser.py` | Llama Cloud/LlamaParse adapter that parses PDF textbooks into normalized documents. |
 | `rag/normalizer.py` | Converts LlamaParse structured items into page-aware textbook blocks. |
-| `rag/indexing.py` | Converts normalized blocks into LlamaIndex nodes with Qdrant metadata. |
+| `rag/indexing.py` | Converts normalized blocks into LlamaIndex nodes with Qdrant metadata; includes built-in chunking policy registry for evals. |
 | `rag/query_parser.py` | Detects page/problem/example references in student queries. |
 | `rag/formatter.py` | Converts internal retrieved records into cited `RetrievedChunk` results. |
 | `rag/llamaindex_qdrant.py` | Concrete LlamaIndex + Qdrant retriever implementation. |
@@ -101,6 +102,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `frontend/tsconfig*.json` | TypeScript project refs. |
 | `frontend/.env.local` | (gitignored) — `VITE_API_BASE_URL`, `VITE_LIVEKIT_URL`. |
 | `frontend/.env.example` | Template for above. |
+| `frontend/src/data/retrievalEval.generated.json` | Generated retrieval/chunking eval report consumed by the dashboard. Update via eval scripts' `--frontend-output`. |
 
 ### `frontend/src/`
 
@@ -110,6 +112,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `src/App.tsx` | `react-router-dom` shell — `/` → Upload, `/session` → Session. |
 | `src/vite-env.d.ts` | Vite/TS environment types. |
 | `src/lib/api.ts` | **Only place that calls `fetch()`.** `uploadPdf`, `listDocuments`, `requestToken`. |
+| `src/data/retrievalEval.ts` | Normalizes generated backend eval JSON into dashboard-friendly TypeScript types. |
 | `src/lib/useTypewriter.ts` | Hook used by the transcript bubbles. |
 | `src/pages/UploadPage.tsx` | Landing page — `<PdfDropZone>` + uploaded-doc list. |
 | `src/pages/SessionPage.tsx` | Wraps `<LiveKitRoom>` + `useVoiceAssistant` + visualizer + transcript. |
