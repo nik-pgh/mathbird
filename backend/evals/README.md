@@ -26,7 +26,7 @@ content terms?"
 Backend eval data and CLIs:
 
 - `backend/evals/golden/goodfellow_ch2_retrieval.jsonl`
-  - 20-case golden retrieval set for Goodfellow chapter 2.
+  - 40-case golden retrieval set for Goodfellow chapter 2.
 - `backend/evals/results/`
   - Timestamped JSON and Markdown reports produced by eval scripts.
 - `backend/scripts/eval_retrieval.py`
@@ -107,7 +107,7 @@ Default embedding targets live in
 Chunking comparison freezes parser, embedding provider/model, golden set, and
 `top_k`. Only node construction varies.
 
-Data flow:
+Rebuild-and-evaluate data flow:
 
 1. Parse the PDF once with LlamaParse.
 2. For each chunk policy in `DEFAULT_CHUNK_POLICIES`, convert the same
@@ -117,7 +117,8 @@ Data flow:
 5. Write JSON/Markdown reports.
 6. Optionally copy the JSON report into the frontend dashboard data file.
 
-CLI:
+Use this when the PDF, parser, chunking policy implementation, embedding
+provider, or embedding model changed:
 
 ```bash
 cd backend
@@ -131,13 +132,33 @@ uv run python -m scripts.eval_chunking \
   --frontend-output ../frontend/src/data/retrievalEval.generated.json
 ```
 
+Evaluate-existing data flow:
+
+1. Resolve each policy's existing Qdrant collection name.
+2. Evaluate the golden cases against those collections.
+3. Write JSON/Markdown reports.
+4. Optionally copy the JSON report into the frontend dashboard data file.
+
+Use this when only the golden set, scoring logic, `top_k`, or dashboard output
+changed:
+
+```bash
+cd backend
+uv run python -m scripts.eval_chunking \
+  --golden evals/golden/goodfellow_ch2_retrieval.jsonl \
+  --provider cohere \
+  --model embed-v4.0 \
+  --top-k 5 \
+  --evaluate-existing \
+  --frontend-output ../frontend/src/data/retrievalEval.generated.json
+```
+
 To evaluate a subset:
 
 ```bash
 cd backend
 uv run python -m scripts.eval_chunking \
-  --pdf ../materials/deep_learning_ian_goodfellow_chapter_2.pdf \
-  --doc-id goodfellow-ch2 \
+  --evaluate-existing \
   --policy block \
   --policy page_section_window_512
 ```
@@ -283,7 +304,7 @@ Each target includes:
   "provider": "cohere",
   "model": "embed-v4.0",
   "collection_name": "mathbird_chunk_block_cohere_embed_v4_0",
-  "case_count": 20,
+  "case_count": 40,
   "metrics": {},
   "cases": []
 }
@@ -408,8 +429,10 @@ The eval script is querying a collection that has not been indexed yet.
 For embedding comparison, ingest the PDF into the target embedding collection
 before running `eval_retrieval`.
 
-For chunking comparison, `eval_chunking` indexes each policy collection itself.
-Check Qdrant connectivity and provider API keys.
+For chunking comparison, `eval_chunking` indexes each policy collection itself
+unless `--evaluate-existing` is set. With `--evaluate-existing`, the expected
+policy collections must already exist. Check Qdrant connectivity, collection
+names, and provider API keys.
 
 ### `LLAMAPARSE_API_KEY is required`
 

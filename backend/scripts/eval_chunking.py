@@ -2,6 +2,16 @@
 
 Run from backend/::
 
+    # Evaluate existing chunk-policy collections, for example after changing
+    # the golden set only:
+    uv run python -m scripts.eval_chunking \\
+        --golden evals/golden/goodfellow_ch2_retrieval.jsonl \\
+        --provider cohere \\
+        --model embed-v4.0 \\
+        --evaluate-existing \\
+        --frontend-output ../frontend/src/data/retrievalEval.generated.json
+
+    # Rebuild chunk-policy collections, then evaluate:
     uv run python -m scripts.eval_chunking \\
         --pdf ../materials/deep_learning_ian_goodfellow_chapter_2.pdf \\
         --doc-id goodfellow-ch2 \\
@@ -79,6 +89,27 @@ async def _index_policy(
         await close_qdrant_client(stack.qdrant_client)
 
 
+def _policy_metadata(
+    *,
+    policy: ChunkPolicy,
+    provider: EmbeddingProvider,
+    model: str,
+    node_count: int | None = None,
+    evaluation_mode: str,
+) -> dict[str, object]:
+    metadata: dict[str, object] = {
+        "chunk_policy": policy.name,
+        "chunk_policy_label": policy.label,
+        "chunk_policy_description": policy.description,
+        "embedding_provider": provider,
+        "embedding_model": model,
+        "evaluation_mode": evaluation_mode,
+    }
+    if node_count is not None:
+        metadata["node_count"] = node_count
+    return metadata
+
+
 async def evaluate_chunk_policies(
     *,
     pdf_path: str,
@@ -115,14 +146,13 @@ async def evaluate_chunk_policies(
                     target_id=f"chunk:{policy.name}",
                     label=policy.label,
                     comparison_axis="chunk_policy",
-                    metadata={
-                        "chunk_policy": policy.name,
-                        "chunk_policy_label": policy.label,
-                        "chunk_policy_description": policy.description,
-                        "embedding_provider": provider,
-                        "embedding_model": model,
-                        "node_count": node_count,
-                    },
+                    metadata=_policy_metadata(
+                        policy=policy,
+                        provider=provider,
+                        model=model,
+                        node_count=node_count,
+                        evaluation_mode="reindex",
+                    ),
                 )
             )
         except Exception as exc:
@@ -137,6 +167,67 @@ async def evaluate_chunk_policies(
                     label=policy.label,
                     comparison_axis="chunk_policy",
                     metadata={"chunk_policy": policy.name},
+                )
+            )
+
+    return reports, failures
+
+
+async def evaluate_existing_chunk_policies(
+    *,
+    golden_path: str,
+    provider: EmbeddingProvider,
+    model: str,
+    top_k: int,
+    policies: Sequence[ChunkPolicy],
+) -> tuple[list, list[TargetFailure]]:
+    cases = load_golden_cases(golden_path)
+    base_settings = get_settings()
+    reports = []
+    failures: list[TargetFailure] = []
+
+    for index, policy in enumerate(policies, start=1):
+        collection_name = chunk_collection_name(policy, provider, model)
+        print(
+            f"[{index}/{len(policies)}] chunk policy {policy.name} "
+            f"(existing collection {collection_name})",
+            flush=True,
+        )
+        try:
+            reports.append(
+                await evaluate_target(
+                    cases,
+                    base_settings=base_settings,
+                    provider=provider,
+                    model=model,
+                    top_k=top_k,
+                    collection_name=collection_name,
+                    target_id=f"chunk:{policy.name}",
+                    label=policy.label,
+                    comparison_axis="chunk_policy",
+                    metadata=_policy_metadata(
+                        policy=policy,
+                        provider=provider,
+                        model=model,
+                        evaluation_mode="existing_collection",
+                    ),
+                )
+            )
+        except Exception as exc:
+            error = str(exc) or exc.__class__.__name__
+            print(f"FAIL {policy.name}: {error}", flush=True)
+            failures.append(
+                TargetFailure(
+                    provider=provider,
+                    model=model,
+                    error=error,
+                    target_id=f"chunk:{policy.name}",
+                    label=policy.label,
+                    comparison_axis="chunk_policy",
+                    metadata={
+                        "chunk_policy": policy.name,
+                        "evaluation_mode": "existing_collection",
+                    },
                 )
             )
 
@@ -158,15 +249,28 @@ async def _amain(args: argparse.Namespace) -> int:
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    reports, failures = await evaluate_chunk_policies(
-        pdf_path=args.pdf,
-        doc_id=args.doc_id,
-        golden_path=args.golden,
-        provider=args.provider,
-        model=args.model,
-        top_k=args.top_k,
-        policies=policies,
-    )
+    if args.evaluate_existing:
+        reports, failures = await evaluate_existing_chunk_policies(
+            golden_path=args.golden,
+            provider=args.provider,
+            model=args.model,
+            top_k=args.top_k,
+            policies=policies,
+        )
+    else:
+        if not args.pdf:
+            raise ValueError("--pdf is required unless --evaluate-existing is set")
+        if not args.doc_id:
+            raise ValueError("--doc-id is required unless --evaluate-existing is set")
+        reports, failures = await evaluate_chunk_policies(
+            pdf_path=args.pdf,
+            doc_id=args.doc_id,
+            golden_path=args.golden,
+            provider=args.provider,
+            model=args.model,
+            top_k=args.top_k,
+            policies=policies,
+        )
 
     cases = load_golden_cases(args.golden)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -205,9 +309,13 @@ async def _amain(args: argparse.Namespace) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--pdf", required=True, help="PDF to parse and index for each chunk policy."
+        "--pdf",
+        help="PDF to parse and index for each chunk policy. Required unless --evaluate-existing.",
     )
-    parser.add_argument("--doc-id", required=True, help="Document id used by the golden cases.")
+    parser.add_argument(
+        "--doc-id",
+        help="Document id used while indexing. Required unless --evaluate-existing.",
+    )
     parser.add_argument(
         "--golden",
         default="evals/golden/goodfellow_ch2_retrieval.jsonl",
@@ -216,6 +324,11 @@ def main() -> None:
     parser.add_argument("--provider", type=_parse_provider, default="cohere")
     parser.add_argument("--model", default="embed-v4.0")
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument(
+        "--evaluate-existing",
+        action="store_true",
+        help="Skip parsing/indexing and evaluate existing chunk-policy Qdrant collections.",
+    )
     parser.add_argument("--output-dir", default="evals/results")
     parser.add_argument(
         "--policy",
