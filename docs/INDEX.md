@@ -25,6 +25,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/uploads/` | (gitignored) — default `STORAGE_LOCAL_DIR`. |
 | `backend/tests/` | Pytest suite, grouped by seam (`tests/rag/`, `tests/whiteboard/`). |
 | `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
+| `backend/evals/README.md` | Agent-facing guide to the retrieval evaluation pipeline, reports, chunking policies, dashboard wiring, and extension workflow. |
 | `backend/evals/golden/goodfellow_ch2_retrieval.jsonl` | 20-row golden retrieval set for Goodfellow chapter 2. |
 | `backend/scripts/eval_retrieval.py` | CLI to compare retrieval quality across embedding collections. |
 | `backend/scripts/eval_chunking.py` | CLI to parse once, index multiple chunking policies, evaluate them, and optionally update the frontend dashboard JSON. |
