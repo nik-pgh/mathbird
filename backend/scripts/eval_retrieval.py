@@ -79,7 +79,8 @@ async def _amain(args: argparse.Namespace) -> int:
     md_path = output_dir / f"retrieval_eval_{stamp}.md"
 
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "comparison_axis": "embedding_model",
         "created_at": stamp,
         "golden_path": str(golden_path),
         "top_k": args.top_k,
@@ -97,6 +98,11 @@ async def _amain(args: argparse.Namespace) -> int:
     )
     print(f"Wrote {json_path}")
     print(f"Wrote {md_path}")
+    if args.frontend_output:
+        frontend_path = Path(args.frontend_output)
+        frontend_path.parent.mkdir(parents=True, exist_ok=True)
+        frontend_path.write_text(json.dumps(payload, indent=2) + "\n")
+        print(f"Wrote {frontend_path}")
     return 1 if failures else 0
 
 
@@ -115,6 +121,13 @@ def main() -> None:
         type=_parse_target,
         metavar="PROVIDER:MODEL",
         help="Evaluate one embedding target; repeat to compare a subset.",
+    )
+    parser.add_argument(
+        "--frontend-output",
+        help=(
+            "Optional path for the dashboard JSON, e.g. "
+            "../frontend/src/data/retrievalEval.generated.json."
+        ),
     )
     args = parser.parse_args()
     raise SystemExit(asyncio.run(_amain(args)))

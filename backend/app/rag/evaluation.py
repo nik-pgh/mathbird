@@ -180,6 +180,10 @@ class TargetReport:
     avg_content_match: float
     avg_latency_ms: float
     scores: tuple[CaseScore, ...]
+    target_id: str = ""
+    label: str = ""
+    comparison_axis: str = "embedding_model"
+    metadata: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -187,6 +191,10 @@ class TargetFailure:
     provider: str
     model: str
     error: str
+    target_id: str = ""
+    label: str = ""
+    comparison_axis: str = "embedding_model"
+    metadata: dict[str, Any] | None = None
 
 
 def _mean(values: tuple[float, ...]) -> float:
@@ -200,6 +208,10 @@ def aggregate_scores(
     collection_name: str,
     scores: list[CaseScore],
     latency_ms: tuple[float, ...],
+    target_id: str = "",
+    label: str = "",
+    comparison_axis: str = "embedding_model",
+    metadata: dict[str, Any] | None = None,
 ) -> TargetReport:
     return TargetReport(
         provider=provider,
@@ -213,6 +225,10 @@ def aggregate_scores(
         avg_content_match=_mean(tuple(score.content_match_ratio for score in scores)),
         avg_latency_ms=_mean(latency_ms),
         scores=tuple(scores),
+        target_id=target_id or f"{provider}:{model}",
+        label=label or model,
+        comparison_axis=comparison_axis,
+        metadata=dict(metadata or {}),
     )
 
 
@@ -223,11 +239,16 @@ async def evaluate_target(
     provider: EmbeddingProvider,
     model: str,
     top_k: int,
+    collection_name: str = "auto",
+    target_id: str = "",
+    label: str = "",
+    comparison_axis: str = "embedding_model",
+    metadata: dict[str, Any] | None = None,
 ) -> TargetReport:
     target_settings = base_settings.model_copy(
         update={
             "rag_provider": "llamaindex_qdrant",
-            "qdrant_collection": "auto",
+            "qdrant_collection": collection_name,
             "embedding_provider": provider,
             "embedding_model": model,
         }
@@ -252,6 +273,10 @@ async def evaluate_target(
             collection_name=stack.collection_name,
             scores=scores,
             latency_ms=tuple(latencies),
+            target_id=target_id,
+            label=label,
+            comparison_axis=comparison_axis,
+            metadata=metadata,
         )
     finally:
         await close_qdrant_client(stack.qdrant_client)
@@ -290,12 +315,14 @@ def render_markdown_report(
         f"- Golden set: `{golden_path}`",
         f"- Top K: `{top_k}`",
         "",
-        "| Provider | Model | Collection | Hit@1 | Hit@3 | Hit@5 | MRR | Content | Latency |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| Target | Provider | Model | Collection | Hit@1 | Hit@3 | Hit@5 | "
+        "MRR | Content | Latency |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for report in ranked:
         lines.append(
             "| "
+            f"{_markdown_table_cell(report.label or report.model)} | "
             f"{report.provider} | "
             f"{report.model} | "
             f"{report.collection_name} | "
@@ -331,6 +358,10 @@ def failure_to_dict(failure: TargetFailure) -> dict[str, Any]:
         "provider": failure.provider,
         "model": failure.model,
         "error": failure.error,
+        "target_id": failure.target_id or f"{failure.provider}:{failure.model}",
+        "label": failure.label or failure.model,
+        "comparison_axis": failure.comparison_axis,
+        "metadata": dict(failure.metadata or {}),
     }
 
 
@@ -374,6 +405,10 @@ def report_to_dict(
         return payload
 
     return {
+        "target_id": report.target_id or f"{report.provider}:{report.model}",
+        "label": report.label or report.model,
+        "comparison_axis": report.comparison_axis,
+        "metadata": dict(report.metadata or {}),
         "provider": report.provider,
         "model": report.model,
         "collection_name": report.collection_name,

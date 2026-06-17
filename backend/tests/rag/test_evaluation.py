@@ -27,8 +27,7 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
 
 
 MULTILINE_FAILURE_ERROR = (
-    "Unexpected Response: 404 (Not Found)\n"
-    'Raw response content: {"status": "<missing | bad>"}'
+    'Unexpected Response: 404 (Not Found)\nRaw response content: {"status": "<missing | bad>"}'
 )
 
 
@@ -260,6 +259,29 @@ def test_aggregate_scores_computes_target_metrics() -> None:
     assert report.avg_latency_ms == 200.0
 
 
+def test_aggregate_scores_accepts_chunk_target_metadata() -> None:
+    scores = [
+        score_case(_case(), [RetrievedChunk("Frobenius norm L2 norm", "book.pdf, page 10", 0.9)])
+    ]
+
+    report = aggregate_scores(
+        provider="cohere",
+        model="embed-v4.0",
+        collection_name="mathbird_chunk_block_cohere_embed_v4_0",
+        scores=scores,
+        latency_ms=(100.0,),
+        target_id="chunk:block",
+        label="Block",
+        comparison_axis="chunk_policy",
+        metadata={"chunk_policy": "block", "node_count": 42},
+    )
+
+    assert report.target_id == "chunk:block"
+    assert report.label == "Block"
+    assert report.comparison_axis == "chunk_policy"
+    assert report.metadata == {"chunk_policy": "block", "node_count": 42}
+
+
 def test_render_markdown_report_orders_by_hit_at_3_then_mrr() -> None:
     weaker = TargetReport(
         provider="cohere",
@@ -290,11 +312,12 @@ def test_render_markdown_report_orders_by_hit_at_3_then_mrr() -> None:
 
     markdown = render_markdown_report([weaker, stronger], golden_path="golden.jsonl", top_k=5)
 
-    assert markdown.index("| openai | text-embedding-3-large |") < markdown.index(
-        "| cohere | embed-v4.0 |"
-    )
+    assert markdown.index(
+        "| text-embedding-3-large | openai | text-embedding-3-large |"
+    ) < markdown.index("| embed-v4.0 | cohere | embed-v4.0 |")
     assert (
-        "| Provider | Model | Collection | Hit@1 | Hit@3 | Hit@5 | MRR | Content | Latency |"
+        "| Target | Provider | Model | Collection | Hit@1 | Hit@3 | Hit@5 | "
+        "MRR | Content | Latency |"
         in markdown
     )
 
@@ -312,6 +335,10 @@ def test_failure_to_dict_serializes_target_failure() -> None:
         "provider": "voyage",
         "model": "voyage-3-lite",
         "error": MULTILINE_FAILURE_ERROR,
+        "target_id": "voyage:voyage-3-lite",
+        "label": "voyage-3-lite",
+        "comparison_axis": "embedding_model",
+        "metadata": {},
     }
 
 
@@ -342,15 +369,14 @@ def test_render_markdown_report_includes_failures_after_success_table() -> None:
         top_k=5,
     )
 
-    success_row = "| openai | text-embedding-3-small |"
+    success_row = "| text-embedding-3-small | openai | text-embedding-3-small |"
     failure_header = "## Failed Targets"
     assert success_row in markdown
     assert failure_header in markdown
     assert markdown.index(success_row) < markdown.index(failure_header)
     assert (
         "| voyage | voyage-3-lite | Unexpected Response: 404 (Not Found)<br>"
-        'Raw response content: {"status": "&lt;missing \\| bad&gt;"} |'
-        in markdown
+        'Raw response content: {"status": "&lt;missing \\| bad&gt;"} |' in markdown
     )
 
 
@@ -406,6 +432,7 @@ async def test_eval_retrieval_cli_continues_after_target_failure(
                 ("openai", "text-embedding-3-small"),
                 ("voyage", "voyage-3-lite"),
             ),
+            frontend_output=None,
         )
     )
 
@@ -414,12 +441,17 @@ async def test_eval_retrieval_cli_continues_after_target_failure(
         capsys.readouterr().out
     )
     payload = json.loads(next(output_dir.glob("retrieval_eval_*.json")).read_text())
+    assert payload["comparison_axis"] == "embedding_model"
     assert payload["targets"][0]["provider"] == "openai"
     assert payload["failures"] == [
         {
             "provider": "voyage",
             "model": "voyage-3-lite",
             "error": "Collection mathbird_voyage_voyage_3_lite not found",
+            "target_id": "voyage:voyage-3-lite",
+            "label": "voyage-3-lite",
+            "comparison_axis": "embedding_model",
+            "metadata": {},
         }
     ]
     markdown = next(output_dir.glob("retrieval_eval_*.md")).read_text()
@@ -455,6 +487,7 @@ async def test_eval_retrieval_cli_requires_top_k_at_least_5(tmp_path: Path) -> N
                 output_dir=str(output_dir),
                 top_k=3,
                 target=(("openai", "text-embedding-3-small"),),
+                frontend_output=None,
             )
         )
 
@@ -538,3 +571,46 @@ def test_report_to_dict_serializes_case_scores() -> None:
     assert data["cases"][0]["expected"]["pages"] == [10, 17]
     assert data["cases"][0]["expected"]["must_contain"] == ["Frobenius norm", "L2 norm"]
     assert data["cases"][0]["returned_sources"] == ["book.pdf, page 10"]
+
+
+def test_report_to_dict_serializes_target_metadata_for_dashboard() -> None:
+    case = _case()
+    report = aggregate_scores(
+        provider="cohere",
+        model="embed-v4.0",
+        collection_name="mathbird_chunk_page_section_512_cohere_embed_v4_0",
+        scores=[
+            score_case(
+                case,
+                [
+                    RetrievedChunk(
+                        "The Frobenius norm is analogous to the L2 norm.",
+                        "book.pdf, page 10",
+                        0.7,
+                    )
+                ],
+            )
+        ],
+        latency_ms=(10.0,),
+        target_id="chunk:page_section_window_512",
+        label="Page-section window",
+        comparison_axis="chunk_policy",
+        metadata={
+            "chunk_policy": "page_section_window_512",
+            "embedding_provider": "cohere",
+            "embedding_model": "embed-v4.0",
+            "node_count": 120,
+        },
+    )
+
+    data = report_to_dict(report, cases=[case])
+
+    assert data["target_id"] == "chunk:page_section_window_512"
+    assert data["label"] == "Page-section window"
+    assert data["comparison_axis"] == "chunk_policy"
+    assert data["metadata"] == {
+        "chunk_policy": "page_section_window_512",
+        "embedding_provider": "cohere",
+        "embedding_model": "embed-v4.0",
+        "node_count": 120,
+    }
