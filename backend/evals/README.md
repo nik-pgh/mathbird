@@ -122,7 +122,7 @@ CLI:
 ```bash
 cd backend
 uv run python -m scripts.eval_chunking \
-  --pdf materials/deep_learning_ian_goodfellow_chapter_2.pdf \
+  --pdf ../materials/deep_learning_ian_goodfellow_chapter_2.pdf \
   --doc-id goodfellow-ch2 \
   --golden evals/golden/goodfellow_ch2_retrieval.jsonl \
   --provider cohere \
@@ -136,7 +136,7 @@ To evaluate a subset:
 ```bash
 cd backend
 uv run python -m scripts.eval_chunking \
-  --pdf materials/deep_learning_ian_goodfellow_chapter_2.pdf \
+  --pdf ../materials/deep_learning_ian_goodfellow_chapter_2.pdf \
   --doc-id goodfellow-ch2 \
   --policy block \
   --policy page_section_window_512
@@ -478,4 +478,3 @@ Before changing eval behavior:
 7. If dashboard JSON or UI changed, run frontend lint/build.
 8. Update this README and `docs/INDEX.md` when adding new eval files or major
    workflow changes.
-

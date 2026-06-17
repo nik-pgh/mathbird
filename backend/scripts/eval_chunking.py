@@ -3,7 +3,7 @@
 Run from backend/::
 
     uv run python -m scripts.eval_chunking \\
-        --pdf materials/deep_learning_ian_goodfellow_chapter_2.pdf \\
+        --pdf ../materials/deep_learning_ian_goodfellow_chapter_2.pdf \\
         --doc-id goodfellow-ch2 \\
         --golden evals/golden/goodfellow_ch2_retrieval.jsonl \\
         --provider cohere \\
