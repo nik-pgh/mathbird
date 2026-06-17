@@ -63,6 +63,7 @@ async def test_eval_chunking_cli_writes_dashboard_payload(
 
     async def fake_evaluate_chunk_policies(**kwargs):
         assert kwargs["policies"][0].name == "block"
+        assert "policy_delay_seconds" not in kwargs
         return [report], []
 
     monkeypatch.setattr(eval_chunking, "evaluate_chunk_policies", fake_evaluate_chunk_policies)

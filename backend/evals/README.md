@@ -415,6 +415,26 @@ Check Qdrant connectivity and provider API keys.
 
 Only chunking eval parses the PDF directly. Set `LLAMAPARSE_API_KEY`.
 
+### Cohere `429` trial key rate limit
+
+Cohere trial keys are limited to 100 API calls per minute. The mitigation lives
+in the embedding provider configuration, not the eval CLI. Keep these env vars
+conservative when running chunking comparisons:
+
+```dotenv
+EMBEDDING_BATCH_SIZE=8
+EMBEDDING_NUM_WORKERS=1
+EMBEDDING_REQUESTS_PER_MINUTE=4
+```
+
+`EMBEDDING_BATCH_SIZE` reduces total API calls by sending larger batches where
+the provider wrapper supports it, but keep it modest for Cohere trial keys
+because chunk policies such as `block_neighbor_1` duplicate text into each
+embedding input. `EMBEDDING_REQUESTS_PER_MINUTE` attaches a provider-level
+sliding-window limiter so LlamaIndex does not fire every embedding batch at
+once. If a run still fails, wait a minute and rerun only failed policies with
+repeated `--policy` arguments.
+
 ### `top_k must be at least 5`
 
 Golden scoring reports Hit@5, so eval scripts require `--top-k >= 5`.

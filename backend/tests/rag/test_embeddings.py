@@ -33,12 +33,23 @@ def test_build_embed_model_cohere() -> None:
         embedding_provider="cohere",
         embedding_model="embed-v4.0",
         cohere_api_key="cohere-test",
+        embedding_batch_size=8,
+        embedding_num_workers=1,
+        embedding_requests_per_minute=4,
     )
 
     with patch("llama_index.embeddings.cohere.CohereEmbedding") as cls:
         build_embed_model(settings)
 
-    cls.assert_called_once_with(model_name="embed-v4.0", cohere_api_key="cohere-test")
+    rate_limiter = cls.call_args.kwargs["rate_limiter"]
+    assert rate_limiter.requests_per_minute == 4
+    cls.assert_called_once_with(
+        model_name="embed-v4.0",
+        cohere_api_key="cohere-test",
+        embed_batch_size=8,
+        num_workers=1,
+        rate_limiter=rate_limiter,
+    )
 
 
 def test_build_embed_model_cohere_requires_api_key() -> None:

@@ -39,9 +39,22 @@ def build_embed_model(settings: Settings) -> Any:
     if provider == "cohere":
         if not settings.cohere_api_key:
             raise RuntimeError("COHERE_API_KEY is required when EMBEDDING_PROVIDER=cohere.")
+        from llama_index.core.rate_limiter import SlidingWindowRateLimiter
         from llama_index.embeddings.cohere import CohereEmbedding
 
-        return CohereEmbedding(model_name=model, cohere_api_key=settings.cohere_api_key)
+        rate_limiter = None
+        if settings.embedding_requests_per_minute > 0:
+            rate_limiter = SlidingWindowRateLimiter(
+                requests_per_minute=settings.embedding_requests_per_minute
+            )
+
+        return CohereEmbedding(
+            model_name=model,
+            cohere_api_key=settings.cohere_api_key,
+            embed_batch_size=settings.embedding_batch_size,
+            num_workers=settings.embedding_num_workers,
+            rate_limiter=rate_limiter,
+        )
 
     if provider == "voyage":
         if not settings.voyage_api_key:

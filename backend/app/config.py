@@ -93,6 +93,9 @@ class Settings(BaseSettings):
     # Embeddings (see app/rag/embeddings.py — one collection per model/dimension)
     embedding_provider: EmbeddingProvider = "openai"
     embedding_model: str = "text-embedding-3-small"
+    embedding_batch_size: int = 8
+    embedding_num_workers: int = 1
+    embedding_requests_per_minute: int = 4
     cohere_api_key: str = ""
     voyage_api_key: str = ""
     google_api_key: str = ""
