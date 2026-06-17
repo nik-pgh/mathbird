@@ -57,17 +57,27 @@ export function caseSummaries(
   report: RetrievalEvalReport,
   targets: readonly EvalTarget[] = report.targets,
 ): CaseSummary[] {
-  const firstTarget = targets[0];
-  if (!firstTarget) return [];
+  const baseTarget = report.targets[0];
+  if (!baseTarget) return [];
 
-  return firstTarget.cases.map((baseCase, index) => ({
+  const resultsByTarget = new Map(
+    targets.map((target) => [
+      targetKey(target),
+      new Map(target.cases.map((item) => [item.caseId, item])),
+    ]),
+  );
+
+  return baseTarget.cases.map((baseCase) => ({
     caseId: baseCase.caseId,
     queryType: baseCase.queryType,
     label: baseCase.label,
     results: targets.map((target) => {
-      const result: EvalCaseResult | undefined = target.cases[index];
+      const key = targetKey(target);
+      const result: EvalCaseResult | undefined = resultsByTarget
+        .get(key)
+        ?.get(baseCase.caseId);
       return {
-        targetKey: targetKey(target),
+        targetKey: key,
         bestRank: result?.bestRank ?? null,
         hitAt1: result?.hitAt1 ?? false,
         hitAt3: result?.hitAt3 ?? false,
