@@ -55,6 +55,9 @@ class FakeStorage:
     async def delete(self, key):
         self.deleted_keys.append(key)
 
+    async def list(self):
+        return [self.stored]
+
 
 def pdf_upload(data: bytes = b"%PDF-1.7\n") -> UploadFile:
     return UploadFile(
@@ -64,7 +67,7 @@ def pdf_upload(data: bytes = b"%PDF-1.7\n") -> UploadFile:
     )
 
 
-async def test_upload_document_ingests_local_file_uri_without_opening_storage(
+async def test_upload_document_stores_pdf_without_ingesting(
     tmp_path,
     monkeypatch,
 ) -> None:
@@ -86,12 +89,41 @@ async def test_upload_document_ingests_local_file_uri_without_opening_storage(
     response = await documents.upload_document(pdf_upload())
 
     assert response.uri == local_pdf.as_uri()
+    assert response.status == "uploaded"
+    assert retriever.ingested_paths == []
+    assert storage.opened_keys == []
+
+
+async def test_ingest_document_uses_local_file_uri_without_opening_storage(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    local_pdf = tmp_path / "stored book.pdf"
+    local_pdf.write_bytes(b"%PDF-1.7\nlocal")
+    storage = FakeStorage(
+        stored=StoredObject(
+            key="doc-1/book.pdf",
+            uri=local_pdf.as_uri(),
+            size=local_pdf.stat().st_size,
+            content_type="application/pdf",
+        ),
+        data=b"unused",
+    )
+    retriever = FakeRetriever()
+    monkeypatch.setattr(documents, "get_storage", lambda: storage)
+    monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
+
+    response = await documents.ingest_document("doc-1")
+
+    assert response.uri == local_pdf.as_uri()
+    assert response.status == "indexed"
     assert retriever.ingested_paths == [str(local_pdf)]
+    assert retriever.ingested_doc_ids == ["doc-1"]
     assert retriever.path_existed_during_ingest
     assert storage.opened_keys == []
 
 
-async def test_upload_document_copies_non_file_storage_to_temp_pdf_for_ingestion(
+async def test_ingest_document_copies_non_file_storage_to_temp_pdf_for_ingestion(
     monkeypatch,
 ) -> None:
     pdf_bytes = b"%PDF-1.7\nfrom s3"
@@ -108,17 +140,18 @@ async def test_upload_document_copies_non_file_storage_to_temp_pdf_for_ingestion
     monkeypatch.setattr(documents, "get_storage", lambda: storage)
     monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
 
-    response = await documents.upload_document(pdf_upload(pdf_bytes))
+    response = await documents.ingest_document("doc-1")
 
     temp_path = Path(retriever.ingested_paths[0])
     assert response.uri == "s3://mathbird/doc-1/book.pdf"
+    assert response.status == "indexed"
     assert temp_path.name == "book.pdf"
     assert retriever.path_existed_during_ingest
     assert not temp_path.exists()
     assert storage.opened_keys == ["doc-1/book.pdf"]
 
 
-async def test_upload_document_sanitizes_encoded_separators_in_temp_filename(
+async def test_ingest_document_sanitizes_encoded_separators_in_temp_filename(
     monkeypatch,
 ) -> None:
     pdf_bytes = b"%PDF-1.7\nencoded"
@@ -135,7 +168,7 @@ async def test_upload_document_sanitizes_encoded_separators_in_temp_filename(
     monkeypatch.setattr(documents, "get_storage", lambda: storage)
     monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
 
-    await documents.upload_document(pdf_upload(pdf_bytes))
+    await documents.ingest_document("doc-1")
 
     temp_path = Path(retriever.ingested_paths[0])
     assert temp_path.name == "escape.pdf"
@@ -143,7 +176,7 @@ async def test_upload_document_sanitizes_encoded_separators_in_temp_filename(
     assert not temp_path.exists()
 
 
-async def test_upload_document_deletes_stored_pdf_when_ingestion_fails(monkeypatch) -> None:
+async def test_ingest_document_preserves_stored_pdf_when_ingestion_fails(monkeypatch) -> None:
     storage = FakeStorage(
         stored=StoredObject(
             key="doc-1/book.pdf",
@@ -158,7 +191,7 @@ async def test_upload_document_deletes_stored_pdf_when_ingestion_fails(monkeypat
     monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
 
     with pytest.raises(HTTPException) as exc_info:
-        await documents.upload_document(pdf_upload())
+        await documents.ingest_document("doc-1")
 
     assert exc_info.value.status_code == 502
-    assert storage.deleted_keys == ["doc-1/book.pdf"]
+    assert storage.deleted_keys == []

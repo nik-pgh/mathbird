@@ -7,7 +7,7 @@ def test_board_reader_defaults_to_null(monkeypatch) -> None:
     monkeypatch.delenv("BOARD_READER_INTERVAL_SECONDS", raising=False)
     monkeypatch.delenv("BOARD_READER_MAX_IMAGE_DIM", raising=False)
 
-    settings = Settings()
+    settings = Settings(_env_file=None)
 
     assert settings.board_reader == "null"
     assert settings.board_reader_model == "gpt-4o-mini"

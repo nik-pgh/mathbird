@@ -6,7 +6,7 @@ import pytest
 
 from app.agent.whiteboard.extractor.factory import get_board_extractor
 from app.agent.whiteboard.extractor.null import NullExtractor
-from app.config import get_settings
+from app.config import Settings, get_settings
 
 
 def _clear_caches() -> None:
@@ -16,6 +16,10 @@ def _clear_caches() -> None:
 
 def test_factory_defaults_to_null(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("BOARD_EXTRACTOR", raising=False)
+    monkeypatch.setattr(
+        "app.agent.whiteboard.extractor.factory.get_settings",
+        lambda: Settings(_env_file=None),
+    )
     _clear_caches()
     ex = get_board_extractor()
     assert isinstance(ex, NullExtractor)

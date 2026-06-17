@@ -8,10 +8,10 @@ from app.rag.retriever import RetrievedChunk
 
 class FakeRetriever:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, int]] = []
+        self.calls: list[tuple[str, int, tuple[str, ...]]] = []
 
-    async def retrieve(self, query: str, *, top_k: int = 4):
-        self.calls.append((query, top_k))
+    async def retrieve(self, query: str, *, top_k: int = 4, doc_ids: tuple[str, ...] = ()):
+        self.calls.append((query, top_k, doc_ids))
         return [RetrievedChunk(text="A useful chunk.", source="book.pdf, page 20")]
 
 
@@ -22,13 +22,19 @@ async def test_search_documents_uses_settings_top_k(monkeypatch) -> None:
 
     result = await tools.search_documents(None, "explain example 3")
 
-    assert retriever.calls == [("explain example 3", 7)]
+    assert retriever.calls == [("explain example 3", 7, ())]
     assert "[book.pdf, page 20]\nA useful chunk." in result
 
 
 async def test_search_documents_returns_no_documents_notice_when_empty(monkeypatch) -> None:
     class EmptyRetriever:
-        async def retrieve(self, query: str, *, top_k: int = 4):
+        async def retrieve(
+            self,
+            query: str,
+            *,
+            top_k: int = 4,
+            doc_ids: tuple[str, ...] = (),
+        ):
             return []
 
     monkeypatch.setattr(tools, "get_retriever", EmptyRetriever)
@@ -41,7 +47,13 @@ async def test_search_documents_returns_no_documents_notice_when_empty(monkeypat
 
 async def test_search_documents_concatenates_chunks_with_sources(monkeypatch) -> None:
     class TwoChunkRetriever:
-        async def retrieve(self, query: str, *, top_k: int = 4):
+        async def retrieve(
+            self,
+            query: str,
+            *,
+            top_k: int = 4,
+            doc_ids: tuple[str, ...] = (),
+        ):
             return [
                 RetrievedChunk(text="First chunk text.", source="a.pdf, page 1"),
                 RetrievedChunk(text="Second chunk text.", source="a.pdf, page 2"),
