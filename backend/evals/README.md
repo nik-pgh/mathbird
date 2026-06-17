@@ -56,8 +56,10 @@ Backend RAG/eval internals:
 
 Frontend dashboard:
 
-- `frontend/src/data/retrievalEval.generated.json`
-  - Generated backend eval report consumed by the dashboard.
+- `frontend/src/data/embeddingEval.generated.json`
+  - Generated embedding comparison report consumed by the dashboard.
+- `frontend/src/data/chunkingEval.generated.json`
+  - Generated chunking comparison report consumed by the dashboard.
 - `frontend/src/data/retrievalEval.ts`
   - Normalizes backend snake_case JSON into dashboard-friendly TypeScript types.
 - `frontend/src/pages/EvalDashboardPage.tsx`
@@ -86,7 +88,7 @@ cd backend
 uv run python -m scripts.eval_retrieval \
   --golden evals/golden/goodfellow_ch2_retrieval.jsonl \
   --top-k 5 \
-  --frontend-output ../frontend/src/data/retrievalEval.generated.json
+  --frontend-output ../frontend/src/data/embeddingEval.generated.json
 ```
 
 To evaluate a subset:
@@ -129,7 +131,7 @@ uv run python -m scripts.eval_chunking \
   --provider cohere \
   --model embed-v4.0 \
   --top-k 5 \
-  --frontend-output ../frontend/src/data/retrievalEval.generated.json
+  --frontend-output ../frontend/src/data/chunkingEval.generated.json
 ```
 
 Evaluate-existing data flow:
@@ -150,7 +152,7 @@ uv run python -m scripts.eval_chunking \
   --model embed-v4.0 \
   --top-k 5 \
   --evaluate-existing \
-  --frontend-output ../frontend/src/data/retrievalEval.generated.json
+  --frontend-output ../frontend/src/data/chunkingEval.generated.json
 ```
 
 To evaluate a subset:
@@ -315,16 +317,22 @@ fixtures. Prefer backend snake_case in generated files.
 
 ## Frontend Dashboard Integration
 
-The dashboard reads only:
+The dashboard reads two generated report files:
 
 ```text
-frontend/src/data/retrievalEval.generated.json
+frontend/src/data/embeddingEval.generated.json
+frontend/src/data/chunkingEval.generated.json
 ```
 
-To update `/evals`, run either eval CLI with:
+To update `/evals`, write each eval axis to its matching generated file:
 
 ```bash
---frontend-output ../frontend/src/data/retrievalEval.generated.json
+uv run python -m scripts.eval_retrieval \
+  --frontend-output ../frontend/src/data/embeddingEval.generated.json
+
+uv run python -m scripts.eval_chunking \
+  --evaluate-existing \
+  --frontend-output ../frontend/src/data/chunkingEval.generated.json
 ```
 
 The dashboard is intentionally generic:
@@ -332,7 +340,7 @@ The dashboard is intentionally generic:
 - Embedding reports display model labels.
 - Chunking reports display policy labels.
 - Other future axes can work if they populate `target_id`, `label`,
-  `comparison_axis`, and `metadata`.
+  `comparison_axis`, and `metadata`, then get added to `retrievalEval.ts`.
 
 After updating the generated JSON, run:
 
@@ -464,8 +472,9 @@ Golden scoring reports Hit@5, so eval scripts require `--top-k >= 5`.
 
 ### Dashboard still shows old results
 
-The frontend reads `frontend/src/data/retrievalEval.generated.json`. Re-run the
-eval script with `--frontend-output` or replace that file explicitly.
+The frontend reads `frontend/src/data/embeddingEval.generated.json` and
+`frontend/src/data/chunkingEval.generated.json`. Re-run the relevant eval script
+with `--frontend-output` or replace the matching generated file explicitly.
 
 ### Tests pass locally only with `PYTHONPATH=.`
 

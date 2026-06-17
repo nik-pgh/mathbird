@@ -9,7 +9,7 @@ Run from backend/::
         --provider cohere \\
         --model embed-v4.0 \\
         --evaluate-existing \\
-        --frontend-output ../frontend/src/data/retrievalEval.generated.json
+        --frontend-output ../frontend/src/data/chunkingEval.generated.json
 
     # Rebuild chunk-policy collections, then evaluate:
     uv run python -m scripts.eval_chunking \\
@@ -18,7 +18,7 @@ Run from backend/::
         --golden evals/golden/goodfellow_ch2_retrieval.jsonl \\
         --provider cohere \\
         --model embed-v4.0 \\
-        --frontend-output ../frontend/src/data/retrievalEval.generated.json
+        --frontend-output ../frontend/src/data/chunkingEval.generated.json
 """
 
 from __future__ import annotations
@@ -339,7 +339,7 @@ def main() -> None:
         "--frontend-output",
         help=(
             "Optional path for the dashboard JSON, e.g. "
-            "../frontend/src/data/retrievalEval.generated.json."
+            "../frontend/src/data/chunkingEval.generated.json."
         ),
     )
     raise SystemExit(asyncio.run(_amain(parser.parse_args())))

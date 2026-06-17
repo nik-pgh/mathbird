@@ -29,7 +29,7 @@ async def test_eval_chunking_cli_writes_dashboard_payload(
 ) -> None:
     golden_path = tmp_path / "golden.jsonl"
     output_dir = tmp_path / "results"
-    frontend_output = tmp_path / "frontend" / "retrievalEval.generated.json"
+    frontend_output = tmp_path / "frontend" / "chunkingEval.generated.json"
     _write_jsonl(
         golden_path,
         [

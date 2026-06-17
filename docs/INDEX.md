@@ -103,7 +103,8 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `frontend/tsconfig*.json` | TypeScript project refs. |
 | `frontend/.env.local` | (gitignored) — `VITE_API_BASE_URL`, `VITE_LIVEKIT_URL`. |
 | `frontend/.env.example` | Template for above. |
-| `frontend/src/data/retrievalEval.generated.json` | Generated retrieval/chunking eval report consumed by the dashboard. Update via eval scripts' `--frontend-output`. |
+| `frontend/src/data/embeddingEval.generated.json` | Generated embedding comparison report consumed by the eval dashboard. Update via `scripts.eval_retrieval --frontend-output`. |
+| `frontend/src/data/chunkingEval.generated.json` | Generated chunking comparison report consumed by the eval dashboard. Update via `scripts.eval_chunking --frontend-output`. |
 
 ### `frontend/src/`
 

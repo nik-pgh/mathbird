@@ -1,4 +1,5 @@
-import rawReport from "./retrievalEval.generated.json";
+import rawChunkingReport from "./chunkingEval.generated.json";
+import rawEmbeddingReport from "./embeddingEval.generated.json";
 
 export interface EvalMetrics {
   hitAt1: number;
@@ -53,6 +54,12 @@ export interface RetrievalEvalReport {
   topK: number;
   targets: EvalTarget[];
   failures: EvalFailure[];
+}
+
+export interface RetrievalEvalReportTab {
+  id: string;
+  label: string;
+  report: RetrievalEvalReport;
 }
 
 type RawRecord = Record<string, unknown>;
@@ -188,4 +195,17 @@ function normalizeReport(raw: unknown): RetrievalEvalReport {
   };
 }
 
-export const retrievalEvalReport = normalizeReport(rawReport);
+export const retrievalEvalReports: RetrievalEvalReportTab[] = [
+  {
+    id: "embedding",
+    label: "Embedding Experiments",
+    report: normalizeReport(rawEmbeddingReport),
+  },
+  {
+    id: "chunking",
+    label: "Chunking Experiments",
+    report: normalizeReport(rawChunkingReport),
+  },
+];
+
+export const retrievalEvalReport = retrievalEvalReports[0].report;

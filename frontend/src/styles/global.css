@@ -508,6 +508,45 @@ main {
   border-bottom: 1px solid #d8dee4;
 }
 
+.eval-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #d8dee4;
+}
+
+.eval-tab-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: #57606a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.eval-tab-button:hover {
+  color: #24292f;
+  background: #f6f8fa;
+}
+
+.eval-tab-button[aria-selected="true"] {
+  margin-bottom: -1px;
+  border-color: #d8dee4;
+  background: #ffffff;
+  color: #24292f;
+}
+
+.eval-tab-button:focus-visible {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+}
+
 .eval-hero > div {
   min-width: 0;
 }

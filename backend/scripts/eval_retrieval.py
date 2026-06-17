@@ -4,7 +4,8 @@ Run from backend/::
 
     uv run python -m scripts.eval_retrieval \\
         --golden evals/golden/goodfellow_ch2_retrieval.jsonl \\
-        --top-k 5
+        --top-k 5 \\
+        --frontend-output ../frontend/src/data/embeddingEval.generated.json
 """
 
 from __future__ import annotations
@@ -126,7 +127,7 @@ def main() -> None:
         "--frontend-output",
         help=(
             "Optional path for the dashboard JSON, e.g. "
-            "../frontend/src/data/retrievalEval.generated.json."
+            "../frontend/src/data/embeddingEval.generated.json."
         ),
     )
     args = parser.parse_args()
