@@ -53,15 +53,18 @@ export function rankTargets(targets: readonly EvalTarget[]): EvalTarget[] {
   });
 }
 
-export function caseSummaries(report: RetrievalEvalReport): CaseSummary[] {
-  const firstTarget = report.targets[0];
+export function caseSummaries(
+  report: RetrievalEvalReport,
+  targets: readonly EvalTarget[] = report.targets,
+): CaseSummary[] {
+  const firstTarget = targets[0];
   if (!firstTarget) return [];
 
   return firstTarget.cases.map((baseCase, index) => ({
     caseId: baseCase.caseId,
     queryType: baseCase.queryType,
     label: baseCase.label,
-    results: report.targets.map((target) => {
+    results: targets.map((target) => {
       const result: EvalCaseResult | undefined = target.cases[index];
       return {
         targetKey: targetKey(target),

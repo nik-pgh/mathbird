@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function CaseOutcomeMatrix({ report, targets }: Props) {
-  const cases = caseSummaries(report);
+  const cases = caseSummaries(report, targets);
 
   return (
     <section className="eval-panel eval-case-matrix">
