@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DOMPurify from "dompurify";
 import type {
   AiBoardDiagram,
@@ -184,12 +184,60 @@ function ShapeItem({ item }: { item: AiBoardShape }) {
 }
 
 function DiagramItem({ item }: { item: AiBoardDiagram }) {
+  const [html, setHtml] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHtml(null);
+    setFailed(false);
+
+    const renderId = `diagram-${item.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
+    void import("mermaid")
+      .then(async ({ default: mermaid }) => {
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "strict",
+          theme: "neutral",
+        });
+        const result = await mermaid.render(renderId, item.source);
+        if (!cancelled) setHtml(result.svg);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id, item.source]);
+
+  if (failed) {
+    return (
+      <div className="ai-card board-item-diagram invalid">
+        {item.label ?? "Invalid diagram"}
+      </div>
+    );
+  }
+
   return (
     <div className="ai-card board-item-diagram">
-      <strong>{item.label || "Diagram"}</strong>
-      <pre>
-        <code>{item.source}</code>
-      </pre>
+      {item.label ? (
+        <div className="board-item-diagram-label">{item.label}</div>
+      ) : null}
+      {html ? (
+        <div
+          className="board-item-diagram-svg"
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(html, {
+              USE_PROFILES: { svg: true, svgFilters: true },
+            }),
+          }}
+        />
+      ) : (
+        <div className="board-item-diagram-loading">Rendering diagram</div>
+      )}
     </div>
   );
 }
