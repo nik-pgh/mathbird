@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useReducer, useRef } from "react";
+import { SquarePen } from "lucide-react";
 import { zoomAtPoint } from "../../lib/canvasViewport";
 import {
   AI_BOARD_TOPIC,
@@ -55,6 +56,10 @@ export default function SharedReasoningWorkspace({
 
   const moveObject = useCallback((id: string, position: { x: number; y: number }) => {
     dispatch({ type: "move_object", id, position });
+  }, []);
+
+  const activateObject = useCallback((id: string) => {
+    dispatch({ type: "activate_object", id });
   }, []);
 
   const setViewport = useCallback((viewport: typeof state.viewport) => {
@@ -160,8 +165,9 @@ export default function SharedReasoningWorkspace({
             type="button"
             onClick={addStudentCard}
             aria-label="Add student card"
+            title="Add student card"
           >
-            Student Card
+            <SquarePen size={17} aria-hidden="true" />
           </button>
         </div>
         <TextbookOverlay
@@ -184,7 +190,11 @@ export default function SharedReasoningWorkspace({
           viewport={state.viewport}
           onViewportChange={setViewport}
         >
-          <TutorObjectLayer objects={state.objects} onMoveObject={moveObject} />
+          <TutorObjectLayer
+            objects={state.objects}
+            onMoveObject={moveObject}
+            onActivateObject={activateObject}
+          />
           {state.studentCards.map((card) => (
             <HandwritingPanel
               key={card.id}

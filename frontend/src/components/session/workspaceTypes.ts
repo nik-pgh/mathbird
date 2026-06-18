@@ -17,6 +17,7 @@ type BoardObjectByKind = {
     item: Item;
     position: Point;
     size?: Size;
+    collapsed?: boolean;
   };
 };
 
@@ -57,6 +58,7 @@ export type WorkspaceAction =
   | { type: "ai_clear" }
   | { type: "ai_upsert"; items: AiBoardItem[] }
   | { type: "move_object"; id: string; position: Point }
+  | { type: "activate_object"; id: string }
   | { type: "add_student_card"; boardSize: Size }
   | { type: "move_student_card"; id: string; position: Point }
   | { type: "resize_student_card"; id: string; size: Size }

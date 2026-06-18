@@ -55,14 +55,17 @@
   position: absolute;
   top: 14px;
   right: 14px;
-  z-index: 4;
+  z-index: 6;
   display: flex;
   gap: 8px;
 }
 
 .board-top-actions button {
-  min-height: 36px;
-  padding: 0 12px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-height: 38px;
+  padding: 0;
   border: 1px solid rgba(41, 72, 62, 0.22);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
@@ -117,7 +120,6 @@
 }
 
 .handwriting-panel,
-.tutor-object,
 .textbook-overlay,
 .transcript-overlay {
   position: absolute;
@@ -263,14 +265,45 @@
   overflow: visible;
 }
 
-.tutor-object {
+.tutor-focus-rail {
   position: absolute;
   display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.tutor-object-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: min(420px, calc(100vw - 48px));
+  pointer-events: auto;
+}
+
+.tutor-object-collapsed {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid rgba(212, 139, 228, 0.48);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #65406f;
+  box-shadow: 0 4px 12px rgba(32, 54, 47, 0.08);
+  font-size: 10px;
+  font-weight: 750;
+  backdrop-filter: blur(8px);
+}
+
+.tutor-object-collapsed:hover {
+  border-color: rgba(91, 53, 101, 0.46);
+  background: #ffffff;
+}
+
+.tutor-object {
+  display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  height: 180px;
   width: 340px;
   min-width: 0;
-  min-height: 0;
+  min-height: 136px;
   max-width: none;
   border: 1px solid rgba(212, 139, 228, 0.55);
   border-radius: 8px;
@@ -282,19 +315,23 @@
   pointer-events: auto;
 }
 
+.tutor-object-expanded {
+  max-height: min(420px, calc(100vh - 210px));
+}
+
 .tutor-object-plot {
   width: 360px;
-  height: 250px;
+  min-height: 250px;
 }
 
 .tutor-object-shape {
   width: 340px;
-  height: 240px;
+  min-height: 240px;
 }
 
 .tutor-object-diagram {
   width: 380px;
-  height: 260px;
+  min-height: 260px;
 }
 
 .tutor-object-handle {

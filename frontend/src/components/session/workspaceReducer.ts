@@ -26,10 +26,7 @@ const DEFAULT_VIEWPORT: ViewportState = {
   zoom: 1,
 };
 
-const DEFAULT_BOARD_SIZE: Size = {
-  width: 900,
-  height: 600,
-};
+const DEFAULT_TUTOR_POSITION: Point = { x: 36, y: 36 };
 
 export const initialWorkspaceState: WorkspaceState = {
   objects: [],
@@ -56,6 +53,14 @@ export function workspaceReducer(
         objects: state.objects.map((obj) =>
           obj.id === action.id ? { ...obj, position: action.position } : obj,
         ),
+      };
+    case "activate_object":
+      return {
+        ...state,
+        objects: state.objects.map((obj) => ({
+          ...obj,
+          collapsed: obj.id !== action.id,
+        })),
       };
     case "add_student_card": {
       const nextNumber = nextStudentCardNumber(state.studentCards);
@@ -136,23 +141,24 @@ export function workspaceReducer(
 }
 
 function upsertBoardObjects(state: WorkspaceState, items: AiBoardItem[]): BoardObject[] {
-  const next = new Map(state.objects.map((obj) => [obj.id, obj]));
-  for (const item of items) {
-    const existing = next.get(item.id);
+  if (items.length === 0) return state.objects;
+
+  const incomingIds = new Set(items.map((item) => item.id));
+  const activeId = items[items.length - 1]?.id;
+  const existingById = new Map(state.objects.map((obj) => [obj.id, obj]));
+  const activePosition = currentTutorFocusPosition(state.objects);
+  const retained = state.objects
+    .filter((obj) => !incomingIds.has(obj.id))
+    .map((obj) => ({ ...obj, collapsed: true }));
+
+  const incoming = items.map((item) => {
+    const existing = existingById.get(item.id);
     const size = existing?.size ?? tutorCardSizeForKind(item.kind);
-    const position = existing?.position ?? findOpenBoardPosition({
-      size,
-      occupied: occupiedRects({ ...state, objects: Array.from(next.values()) }),
-      viewport: {
-        x: 0,
-        y: 0,
-        width: DEFAULT_BOARD_SIZE.width,
-        height: DEFAULT_BOARD_SIZE.height,
-      },
-    });
-    next.set(item.id, createBoardObject(item, position, size));
-  }
-  return Array.from(next.values());
+    const position = existing?.position ?? activePosition;
+    return createBoardObject(item, position, size, item.id !== activeId);
+  });
+
+  return [...retained, ...incoming];
 }
 
 function createStudentCard(
@@ -199,17 +205,23 @@ function createBoardObject(
   item: AiBoardItem,
   position: Point,
   size: Size,
+  collapsed = false,
 ): BoardObject {
   switch (item.kind) {
     case "text":
-      return { id: item.id, kind: item.kind, item, position, size };
+      return { id: item.id, kind: item.kind, item, position, size, collapsed };
     case "plot":
-      return { id: item.id, kind: item.kind, item, position, size };
+      return { id: item.id, kind: item.kind, item, position, size, collapsed };
     case "shape":
-      return { id: item.id, kind: item.kind, item, position, size };
+      return { id: item.id, kind: item.kind, item, position, size, collapsed };
     case "diagram":
-      return { id: item.id, kind: item.kind, item, position, size };
+      return { id: item.id, kind: item.kind, item, position, size, collapsed };
   }
+}
+
+function currentTutorFocusPosition(objects: BoardObject[]): Point {
+  const active = objects.find((obj) => !obj.collapsed);
+  return active?.position ?? objects.at(-1)?.position ?? DEFAULT_TUTOR_POSITION;
 }
 
 function clampPanelSize(size: Size): Size {

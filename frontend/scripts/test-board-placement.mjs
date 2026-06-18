@@ -105,11 +105,8 @@ const withTutorObject = workspaceReducer(initialWorkspaceState, {
 });
 const tutorObject = withTutorObject.objects[0];
 assert.deepEqual(plain(tutorObject.size), { width: 340, height: 180 });
-assert.deepEqual(plain(tutorObject.position), { x: 772, y: 36 });
-assertNoOverlap(
-  rectAt(tutorObject.position, tutorObject.size),
-  initialWorkspaceState.studentCards.map((card) => rectAt(card.position, card.size)),
-);
+assert.deepEqual(plain(tutorObject.position), { x: 36, y: 36 });
+assert.equal(tutorObject.collapsed, false);
 
 const movedTutorObject = { ...tutorObject, position: { x: 420, y: 240 }, size: { width: 410, height: 210 } };
 const afterExistingUpsert = workspaceReducer(
@@ -118,6 +115,7 @@ const afterExistingUpsert = workspaceReducer(
 );
 assert.deepEqual(plain(afterExistingUpsert.objects[0].position), { x: 420, y: 240 });
 assert.deepEqual(plain(afterExistingUpsert.objects[0].size), { width: 410, height: 210 });
+assert.equal(afterExistingUpsert.objects[0].collapsed, false);
 
 const shapeItem = { kind: "shape", id: "tutor-shape-1", svg: "<svg></svg>" };
 const withSecondTutorObject = workspaceReducer(
@@ -125,19 +123,39 @@ const withSecondTutorObject = workspaceReducer(
   { type: "ai_upsert", items: [shapeItem] },
 );
 const shapeObject = withSecondTutorObject.objects.find((object) => object.id === shapeItem.id);
-assertNoOverlap(
-  rectAt(shapeObject.position, shapeObject.size),
-  withSecondTutorObject.objects
-    .filter((object) => object.id !== shapeItem.id)
-    .map((object) => rectAt(object.position, object.size)),
-);
+const collapsedTextObject = withSecondTutorObject.objects.find((object) => object.id === textItem.id);
+assert.deepEqual(plain(shapeObject.position), { x: 420, y: 240 });
+assert.deepEqual(plain(shapeObject.size), { width: 340, height: 240 });
+assert.equal(shapeObject.collapsed, false);
+assert.equal(collapsedTextObject.collapsed, true);
+
+const afterActivation = workspaceReducer(withSecondTutorObject, {
+  type: "activate_object",
+  id: textItem.id,
+});
+assert.equal(afterActivation.objects.find((object) => object.id === textItem.id).collapsed, false);
+assert.equal(afterActivation.objects.find((object) => object.id === shapeItem.id).collapsed, true);
 
 const tutorLayerPath = new URL("../src/components/session/TutorObjectLayer.tsx", import.meta.url);
 const tutorLayerSource = fs.readFileSync(tutorLayerPath, "utf8");
-assert.match(tutorLayerSource, /height:\s*object\.size\?\.height/);
+assert.match(tutorLayerSource, /tutor-object-collapsed/);
+assert.match(tutorLayerSource, /onActivateObject/);
+assert.doesNotMatch(tutorLayerSource, /height:\s*object\.size\?\.height/);
+
+const workspaceTypesPath = new URL("../src/components/session/workspaceTypes.ts", import.meta.url);
+const workspaceTypesSource = fs.readFileSync(workspaceTypesPath, "utf8");
+assert.match(workspaceTypesSource, /collapsed\?:\s*boolean/);
+assert.match(workspaceTypesSource, /activate_object/);
+
+const workspacePath = new URL("../src/components/session/SharedReasoningWorkspace.tsx", import.meta.url);
+const workspaceSource = fs.readFileSync(workspacePath, "utf8");
+assert.match(workspaceSource, /SquarePen/);
+assert.match(workspaceSource, /aria-label="Add student card"/);
+assert.doesNotMatch(workspaceSource, />\s*Student Card\s*<\/button>/);
 
 const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
 const sessionCss = fs.readFileSync(sessionCssPath, "utf8");
-assert.match(sessionCss, /\.tutor-object\s*\{[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto minmax\(0,\s*1fr\);[^}]*height:\s*180px;/s);
+assert.match(sessionCss, /\.tutor-focus-rail/s);
+assert.match(sessionCss, /\.tutor-object-expanded\s*\{[^}]*max-height:/s);
 assert.match(sessionCss, /\.tutor-object-body\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*auto;/s);
-assert.match(sessionCss, /\.tutor-object \.ai-card\s*\{[^}]*min-height:\s*100%;[^}]*box-sizing:\s*border-box;/s);
+assert.doesNotMatch(sessionCss, /\.tutor-object\s*\{[^}]*height:\s*180px;/s);
