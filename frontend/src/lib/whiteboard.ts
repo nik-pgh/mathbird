@@ -51,6 +51,8 @@ export interface UserBoardSnapshot {
   png_b64: string;
   captured_at_ms: number;
   is_empty: boolean;
+  card_id?: string;
+  card_label?: string | null;
 }
 
 const encoder = new TextEncoder();

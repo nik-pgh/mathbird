@@ -1,9 +1,15 @@
 import type { AiBoardItem } from "../../lib/whiteboard";
+import {
+  findOpenBoardPosition,
+  tutorCardSizeForKind,
+  type BoardRect,
+} from "../../lib/boardPlacement";
 import type {
   BoardObject,
   HandwritingPanelState,
   Point,
   Size,
+  StudentCardState,
   ViewportState,
   WorkspaceAction,
   WorkspaceState,
@@ -22,7 +28,7 @@ const DEFAULT_VIEWPORT: ViewportState = {
 
 export const initialWorkspaceState: WorkspaceState = {
   objects: [],
-  handwriting: DEFAULT_HANDWRITING,
+  studentCards: [createStudentCard(1, DEFAULT_HANDWRITING)],
   viewport: DEFAULT_VIEWPORT,
   overlays: {
     textbook: "small",
@@ -46,23 +52,50 @@ export function workspaceReducer(
           obj.id === action.id ? { ...obj, position: action.position } : obj,
         ),
       };
-    case "move_handwriting":
-      if (pointsEqual(state.handwriting.position, action.position)) return state;
+    case "add_student_card": {
+      const nextNumber = nextStudentCardNumber(state.studentCards);
+      const size = DEFAULT_HANDWRITING.size;
+      const position = findOpenBoardPosition({
+        size,
+        occupied: occupiedRects(state),
+        viewport: {
+          x: 0,
+          y: 0,
+          width: action.boardSize.width,
+          height: action.boardSize.height,
+        },
+      });
       return {
         ...state,
-        handwriting: { ...state.handwriting, position: action.position },
+        studentCards: [
+          ...state.studentCards,
+          createStudentCard(nextNumber, { position, size, isCapturing: false }),
+        ],
       };
-    case "resize_handwriting":
-      if (sizesEqual(state.handwriting.size, clampPanelSize(action.size))) {
+    }
+    case "move_student_card": {
+      const existing = state.studentCards.find((card) => card.id === action.id);
+      if (!existing || pointsEqual(existing.position, action.position)) return state;
+      return {
+        ...state,
+        studentCards: state.studentCards.map((card) =>
+          card.id === action.id ? { ...card, position: action.position } : card,
+        ),
+      };
+    }
+    case "resize_student_card": {
+      const size = clampPanelSize(action.size);
+      const existing = state.studentCards.find((card) => card.id === action.id);
+      if (!existing || sizesEqual(existing.size, size)) {
         return state;
       }
       return {
         ...state,
-        handwriting: {
-          ...state.handwriting,
-          size: clampPanelSize(action.size),
-        },
+        studentCards: state.studentCards.map((card) =>
+          card.id === action.id ? { ...card, size } : card,
+        ),
       };
+    }
     case "set_textbook":
       return {
         ...state,
@@ -76,12 +109,16 @@ export function workspaceReducer(
           transcriptOpen: !state.overlays.transcriptOpen,
         },
       };
-    case "set_capturing":
-      if (state.handwriting.isCapturing === action.value) return state;
+    case "set_student_card_capturing": {
+      const existing = state.studentCards.find((card) => card.id === action.id);
+      if (!existing || existing.isCapturing === action.value) return state;
       return {
         ...state,
-        handwriting: { ...state.handwriting, isCapturing: action.value },
+        studentCards: state.studentCards.map((card) =>
+          card.id === action.id ? { ...card, isCapturing: action.value } : card,
+        ),
       };
+    }
     case "set_viewport":
       return { ...state, viewport: action.viewport };
     case "reset_viewport":
@@ -103,6 +140,46 @@ function upsertBoardObjects(
     next.set(item.id, createBoardObject(item, existing, next.size));
   }
   return Array.from(next.values());
+}
+
+function createStudentCard(
+  number: number,
+  state: HandwritingPanelState,
+): StudentCardState {
+  return {
+    id: `student-card-${number}`,
+    label: `Student Card ${number}`,
+    position: state.position,
+    size: state.size,
+    isCapturing: state.isCapturing,
+  };
+}
+
+function nextStudentCardNumber(cards: StudentCardState[]): number {
+  const numbers = cards.map((card) => {
+    const match = /^student-card-(\d+)$/.exec(card.id);
+    return match ? Number(match[1]) : 0;
+  });
+  return Math.max(1, ...numbers) + 1;
+}
+
+function occupiedRects(state: WorkspaceState): BoardRect[] {
+  const studentRects = state.studentCards.map((card) => ({
+    x: card.position.x,
+    y: card.position.y,
+    width: card.size.width,
+    height: card.size.height,
+  }));
+  const objectRects = state.objects.map((object) => {
+    const size = object.size ?? tutorCardSizeForKind(object.kind);
+    return {
+      x: object.position.x,
+      y: object.position.y,
+      width: size.width,
+      height: size.height,
+    };
+  });
+  return [...studentRects, ...objectRects];
 }
 
 function createBoardObject(

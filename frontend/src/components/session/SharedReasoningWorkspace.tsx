@@ -37,6 +37,7 @@ export default function SharedReasoningWorkspace({
   );
   const boardRef = useRef<HTMLDivElement>(null);
   const hasCustomizedHandwritingRef = useRef(false);
+  const primaryStudentCard = state.studentCards[0];
 
   const onAiMessage = useCallback((msg: AiBoardUpdate) => {
     if (msg.op === "clear") {
@@ -58,18 +59,21 @@ export default function SharedReasoningWorkspace({
   }, []);
 
   const moveHandwriting = useCallback((position: { x: number; y: number }) => {
+    if (!primaryStudentCard) return;
     hasCustomizedHandwritingRef.current = true;
-    dispatch({ type: "move_handwriting", position });
-  }, []);
+    dispatch({ type: "move_student_card", id: primaryStudentCard.id, position });
+  }, [primaryStudentCard]);
 
   const resizeHandwriting = useCallback((size: { width: number; height: number }) => {
+    if (!primaryStudentCard) return;
     hasCustomizedHandwritingRef.current = true;
-    dispatch({ type: "resize_handwriting", size });
-  }, []);
+    dispatch({ type: "resize_student_card", id: primaryStudentCard.id, size });
+  }, [primaryStudentCard]);
 
   const setCaptureActive = useCallback((value: boolean) => {
-    dispatch({ type: "set_capturing", value });
-  }, []);
+    if (!primaryStudentCard) return;
+    dispatch({ type: "set_student_card_capturing", id: primaryStudentCard.id, value });
+  }, [primaryStudentCard]);
 
   const setViewport = useCallback((viewport: typeof state.viewport) => {
     dispatch({ type: "set_viewport", viewport });
@@ -102,8 +106,16 @@ export default function SharedReasoningWorkspace({
       const rect = board.getBoundingClientRect();
       const layout = defaultHandwritingLayout(rect.width, rect.height);
       if (!layout) return;
-      dispatch({ type: "move_handwriting", position: layout.position });
-      dispatch({ type: "resize_handwriting", size: layout.size });
+      dispatch({
+        type: "move_student_card",
+        id: "student-card-1",
+        position: layout.position,
+      });
+      dispatch({
+        type: "resize_student_card",
+        id: "student-card-1",
+        size: layout.size,
+      });
     };
 
     applyResponsiveDefault();
@@ -147,14 +159,16 @@ export default function SharedReasoningWorkspace({
           onViewportChange={setViewport}
         >
           <TutorObjectLayer objects={state.objects} onMoveObject={moveObject} />
-          <HandwritingPanel
-            position={state.handwriting.position}
-            size={state.handwriting.size}
-            isCapturing={state.handwriting.isCapturing}
-            onMove={moveHandwriting}
-            onResize={resizeHandwriting}
-            onCaptureStateChange={setCaptureActive}
-          />
+          {primaryStudentCard ? (
+            <HandwritingPanel
+              position={primaryStudentCard.position}
+              size={primaryStudentCard.size}
+              isCapturing={primaryStudentCard.isCapturing}
+              onMove={moveHandwriting}
+              onResize={resizeHandwriting}
+              onCaptureStateChange={setCaptureActive}
+            />
+          ) : null}
         </CanvasViewport>
       </div>
       <VoiceComposer

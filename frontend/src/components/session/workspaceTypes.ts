@@ -28,6 +28,14 @@ export interface HandwritingPanelState {
   isCapturing: boolean;
 }
 
+export interface StudentCardState {
+  id: string;
+  label: string;
+  position: Point;
+  size: Size;
+  isCapturing: boolean;
+}
+
 export interface ViewportState {
   pan: Point;
   zoom: number;
@@ -40,7 +48,7 @@ export interface WorkspaceOverlayState {
 
 export interface WorkspaceState {
   objects: BoardObject[];
-  handwriting: HandwritingPanelState;
+  studentCards: StudentCardState[];
   viewport: ViewportState;
   overlays: WorkspaceOverlayState;
 }
@@ -49,10 +57,11 @@ export type WorkspaceAction =
   | { type: "ai_clear" }
   | { type: "ai_upsert"; items: AiBoardItem[] }
   | { type: "move_object"; id: string; position: Point }
-  | { type: "move_handwriting"; position: Point }
-  | { type: "resize_handwriting"; size: Size }
+  | { type: "add_student_card"; boardSize: Size }
+  | { type: "move_student_card"; id: string; position: Point }
+  | { type: "resize_student_card"; id: string; size: Size }
+  | { type: "set_student_card_capturing"; id: string; value: boolean }
   | { type: "set_viewport"; viewport: ViewportState }
   | { type: "reset_viewport" }
   | { type: "set_textbook"; value: "large" | "small" }
-  | { type: "toggle_transcript" }
-  | { type: "set_capturing"; value: boolean };
+  | { type: "toggle_transcript" };
