@@ -156,7 +156,11 @@ export default function SharedReasoningWorkspace({
         }
       >
         <div className="board-top-actions">
-          <button type="button" onClick={addStudentCard}>
+          <button
+            type="button"
+            onClick={addStudentCard}
+            aria-label="Add student card"
+          >
             Student Card
           </button>
         </div>
@@ -189,11 +193,9 @@ export default function SharedReasoningWorkspace({
               position={card.position}
               size={card.size}
               isCapturing={card.isCapturing}
-              onMove={(position) => moveStudentCard(card.id, position)}
-              onResize={(size) => resizeStudentCard(card.id, size)}
-              onCaptureStateChange={(value) =>
-                setStudentCardCaptureActive(card.id, value)
-              }
+              onMove={moveStudentCard}
+              onResize={resizeStudentCard}
+              onCaptureStateChange={setStudentCardCaptureActive}
             />
           ))}
         </CanvasViewport>

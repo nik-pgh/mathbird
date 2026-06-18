@@ -16,9 +16,9 @@ interface Props {
   position: { x: number; y: number };
   size: { width: number; height: number };
   isCapturing: boolean;
-  onMove: (position: { x: number; y: number }) => void;
-  onResize: (size: { width: number; height: number }) => void;
-  onCaptureStateChange: (value: boolean) => void;
+  onMove: (cardId: string, position: { x: number; y: number }) => void;
+  onResize: (cardId: string, size: { width: number; height: number }) => void;
+  onCaptureStateChange: (cardId: string, value: boolean) => void;
 }
 
 const SNAPSHOT_INTERVAL_MS = 2000;
@@ -62,6 +62,7 @@ export default function HandwritingPanel({
   const resizeRef = useRef<ResizeState | null>(null);
   const snapshotTimerRef = useRef<number | null>(null);
   const snapshotVersionRef = useRef(0);
+  const onCaptureStateChangeRef = useRef(onCaptureStateChange);
   const strokesRef = useRef<Stroke[]>([]);
   const drawingRef = useRef<Stroke | null>(null);
   const drawingPointerRef = useRef<number | null>(null);
@@ -86,6 +87,10 @@ export default function HandwritingPanel({
   useEffect(() => {
     sizeRef.current = size;
   }, [size]);
+
+  useEffect(() => {
+    onCaptureStateChangeRef.current = onCaptureStateChange;
+  }, [onCaptureStateChange]);
 
   useEffect(() => {
     strokesRef.current = strokes;
@@ -115,7 +120,7 @@ export default function HandwritingPanel({
       snapshotTimerRef.current = null;
     }
 
-    onCaptureStateChange(true);
+    onCaptureStateChangeRef.current(cardId, true);
     try {
       await send({
         png_b64: "",
@@ -126,15 +131,15 @@ export default function HandwritingPanel({
       });
     } finally {
       if (snapshotVersionRef.current === version) {
-        onCaptureStateChange(false);
+        onCaptureStateChangeRef.current(cardId, false);
       }
     }
-  }, [cardId, label, onCaptureStateChange, send]);
+  }, [cardId, label, send]);
 
   const scheduleSnapshot = useCallback(() => {
     snapshotVersionRef.current += 1;
     const version = snapshotVersionRef.current;
-    onCaptureStateChange(true);
+    onCaptureStateChangeRef.current(cardId, true);
 
     if (snapshotTimerRef.current !== null) {
       window.clearTimeout(snapshotTimerRef.current);
@@ -159,11 +164,11 @@ export default function HandwritingPanel({
         });
       } finally {
         if (snapshotVersionRef.current === version) {
-          onCaptureStateChange(false);
+          onCaptureStateChangeRef.current(cardId, false);
         }
       }
     }, SNAPSHOT_INTERVAL_MS);
-  }, [cardId, label, onCaptureStateChange, send]);
+  }, [cardId, label, send]);
 
   useEffect(
     () => () => {
@@ -172,9 +177,9 @@ export default function HandwritingPanel({
         window.clearTimeout(snapshotTimerRef.current);
         snapshotTimerRef.current = null;
       }
-      onCaptureStateChange(false);
+      onCaptureStateChangeRef.current(cardId, false);
     },
-    [onCaptureStateChange],
+    [cardId],
   );
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -261,7 +266,7 @@ export default function HandwritingPanel({
     if (!drag || drag.pointerId !== e.pointerId) return;
 
     const world = clientToWorld(e.clientX, e.clientY);
-    onMove({
+    onMove(cardId, {
       x: drag.startPosition.x + (world.x - drag.startX),
       y: drag.startPosition.y + (world.y - drag.startY),
     });
@@ -295,7 +300,7 @@ export default function HandwritingPanel({
     const widthDelta = (e.clientX - resize.startX) / viewport.zoom;
     const heightDelta = (e.clientY - resize.startY) / viewport.zoom / 0.75;
     const edgeDelta = Math.max(widthDelta, heightDelta);
-    onResize({
+    onResize(cardId, {
       width: resize.startSize.width + edgeDelta,
       height: (resize.startSize.width + edgeDelta) * 0.75,
     });
