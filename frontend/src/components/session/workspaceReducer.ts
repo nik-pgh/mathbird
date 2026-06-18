@@ -26,6 +26,11 @@ const DEFAULT_VIEWPORT: ViewportState = {
   zoom: 1,
 };
 
+const DEFAULT_BOARD_SIZE: Size = {
+  width: 900,
+  height: 600,
+};
+
 export const initialWorkspaceState: WorkspaceState = {
   objects: [],
   studentCards: [createStudentCard(1, DEFAULT_HANDWRITING)],
@@ -44,7 +49,7 @@ export function workspaceReducer(
     case "ai_clear":
       return { ...state, objects: [] };
     case "ai_upsert":
-      return { ...state, objects: upsertBoardObjects(state.objects, action.items) };
+      return { ...state, objects: upsertBoardObjects(state, action.items) };
     case "move_object":
       return {
         ...state,
@@ -130,14 +135,22 @@ export function workspaceReducer(
   }
 }
 
-function upsertBoardObjects(
-  current: BoardObject[],
-  items: AiBoardItem[],
-): BoardObject[] {
-  const next = new Map(current.map((obj) => [obj.id, obj]));
+function upsertBoardObjects(state: WorkspaceState, items: AiBoardItem[]): BoardObject[] {
+  const next = new Map(state.objects.map((obj) => [obj.id, obj]));
   for (const item of items) {
     const existing = next.get(item.id);
-    next.set(item.id, createBoardObject(item, existing, next.size));
+    const size = existing?.size ?? tutorCardSizeForKind(item.kind);
+    const position = existing?.position ?? findOpenBoardPosition({
+      size,
+      occupied: occupiedRects({ ...state, objects: Array.from(next.values()) }),
+      viewport: {
+        x: 0,
+        y: 0,
+        width: DEFAULT_BOARD_SIZE.width,
+        height: DEFAULT_BOARD_SIZE.height,
+      },
+    });
+    next.set(item.id, createBoardObject(item, position, size));
   }
   return Array.from(next.values());
 }
@@ -184,12 +197,9 @@ function occupiedRects(state: WorkspaceState): BoardRect[] {
 
 function createBoardObject(
   item: AiBoardItem,
-  existing: BoardObject | undefined,
-  index: number,
+  position: Point,
+  size: Size,
 ): BoardObject {
-  const position = existing?.position ?? defaultObjectPosition(index);
-  const size = existing?.size;
-
   switch (item.kind) {
     case "text":
       return { id: item.id, kind: item.kind, item, position, size };
@@ -200,15 +210,6 @@ function createBoardObject(
     case "diagram":
       return { id: item.id, kind: item.kind, item, position, size };
   }
-}
-
-function defaultObjectPosition(index: number): Point {
-  const column = index % 2;
-  const row = Math.floor(index / 2);
-  return {
-    x: 36 + column * 356,
-    y: 36 + row * 160,
-  };
 }
 
 function clampPanelSize(size: Size): Size {

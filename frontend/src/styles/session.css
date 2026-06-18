@@ -265,8 +265,10 @@
 
 .tutor-object {
   position: absolute;
-  min-width: 168px;
-  max-width: min(340px, 42vw);
+  width: 340px;
+  min-width: 0;
+  min-height: 180px;
+  max-width: none;
   border: 1px solid rgba(212, 139, 228, 0.55);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.95);
@@ -275,6 +277,21 @@
     0 10px 24px rgba(32, 54, 47, 0.1);
   overflow: hidden;
   pointer-events: auto;
+}
+
+.tutor-object-plot {
+  width: 360px;
+  min-height: 250px;
+}
+
+.tutor-object-shape {
+  width: 340px;
+  min-height: 240px;
+}
+
+.tutor-object-diagram {
+  width: 380px;
+  min-height: 260px;
 }
 
 .tutor-object-handle {
@@ -321,6 +338,16 @@
   box-shadow: none;
   padding: 10px 12px;
   font-size: 13.5px;
+}
+
+.tutor-object-text .ai-card {
+  min-height: 130px;
+}
+
+.tutor-object-plot .ai-card,
+.tutor-object-shape .ai-card,
+.tutor-object-diagram .ai-card {
+  min-height: 190px;
 }
 
 .ai-card {
@@ -876,10 +903,6 @@
     left: 12px;
   }
 
-  .tutor-object {
-    max-width: min(340px, calc(100vw - 24px));
-  }
-
   .transcript-overlay {
     bottom: 12px;
     width: min(720px, calc(100% - 20px));
@@ -910,10 +933,6 @@
 
   .textbook-overlay-large {
     width: min(380px, calc(100vw - 24px), calc((100svh - 160px) / 1.294));
-  }
-
-  .tutor-object {
-    max-width: calc(100vw - 24px);
   }
 
   .transcript-overlay {

@@ -15,9 +15,9 @@ interface DragState {
 }
 
 const KIND_LABELS: Record<BoardObject["kind"], string> = {
-  text: "Equation",
+  text: "Text",
   plot: "Graph",
-  shape: "Diagram",
+  shape: "Sketch",
   diagram: "Diagram",
 };
 
@@ -37,6 +37,8 @@ export default function TutorObjectLayer({
           style={{
             left: object.position.x,
             top: object.position.y,
+            width: object.size?.width,
+            minHeight: object.size?.height,
           }}
           data-board-object-id={object.id}
           data-board-object-kind={object.kind}
@@ -45,50 +47,50 @@ export default function TutorObjectLayer({
             className="tutor-object-handle"
             aria-label={`Move tutor ${KIND_LABELS[object.kind].toLowerCase()} card`}
             onPointerDown={(event) => {
-                if (event.button !== 0) return;
-                const world = clientToWorld(event.clientX, event.clientY);
-                dragRef.current = {
-                  objectId: object.id,
-                  pointerId: event.pointerId,
-                  offset: {
-                    x: world.x - object.position.x,
-                    y: world.y - object.position.y,
-                  },
-                };
-                event.currentTarget.setPointerCapture(event.pointerId);
-              }}
-              onPointerMove={(event) => {
-                const drag = dragRef.current;
-                if (!drag || drag.pointerId !== event.pointerId) return;
-                const world = clientToWorld(event.clientX, event.clientY);
-                onMoveObject(drag.objectId, {
-                  x: world.x - drag.offset.x,
-                  y: world.y - drag.offset.y,
-                });
-              }}
-              onPointerUp={(event) => {
-                const drag = dragRef.current;
-                if (!drag || drag.pointerId !== event.pointerId) return;
-                if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                  event.currentTarget.releasePointerCapture(event.pointerId);
-                }
-                dragRef.current = null;
-              }}
-              onPointerCancel={(event) => {
-                const drag = dragRef.current;
-                if (!drag || drag.pointerId !== event.pointerId) return;
-                if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                  event.currentTarget.releasePointerCapture(event.pointerId);
-                }
-                dragRef.current = null;
-              }}
-              onLostPointerCapture={(event) => {
-                const drag = dragRef.current;
-                if (!drag || drag.pointerId !== event.pointerId) return;
-                dragRef.current = null;
-              }}
-            >
-              <span className="tutor-object-title">Tutor Card</span>
+              if (event.button !== 0) return;
+              const world = clientToWorld(event.clientX, event.clientY);
+              dragRef.current = {
+                objectId: object.id,
+                pointerId: event.pointerId,
+                offset: {
+                  x: world.x - object.position.x,
+                  y: world.y - object.position.y,
+                },
+              };
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              const drag = dragRef.current;
+              if (!drag || drag.pointerId !== event.pointerId) return;
+              const world = clientToWorld(event.clientX, event.clientY);
+              onMoveObject(drag.objectId, {
+                x: world.x - drag.offset.x,
+                y: world.y - drag.offset.y,
+              });
+            }}
+            onPointerUp={(event) => {
+              const drag = dragRef.current;
+              if (!drag || drag.pointerId !== event.pointerId) return;
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+              dragRef.current = null;
+            }}
+            onPointerCancel={(event) => {
+              const drag = dragRef.current;
+              if (!drag || drag.pointerId !== event.pointerId) return;
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+              dragRef.current = null;
+            }}
+            onLostPointerCapture={(event) => {
+              const drag = dragRef.current;
+              if (!drag || drag.pointerId !== event.pointerId) return;
+              dragRef.current = null;
+            }}
+          >
+            <span className="tutor-object-title">Tutor Card</span>
             <span className="tutor-object-kind-pill">
               {KIND_LABELS[object.kind]}
             </span>
