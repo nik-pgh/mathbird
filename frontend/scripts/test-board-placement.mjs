@@ -131,3 +131,13 @@ assertNoOverlap(
     .filter((object) => object.id !== shapeItem.id)
     .map((object) => rectAt(object.position, object.size)),
 );
+
+const tutorLayerPath = new URL("../src/components/session/TutorObjectLayer.tsx", import.meta.url);
+const tutorLayerSource = fs.readFileSync(tutorLayerPath, "utf8");
+assert.match(tutorLayerSource, /height:\s*object\.size\?\.height/);
+
+const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
+const sessionCss = fs.readFileSync(sessionCssPath, "utf8");
+assert.match(sessionCss, /\.tutor-object\s*\{[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto minmax\(0,\s*1fr\);[^}]*height:\s*180px;/s);
+assert.match(sessionCss, /\.tutor-object-body\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*auto;/s);
+assert.match(sessionCss, /\.tutor-object \.ai-card\s*\{[^}]*min-height:\s*100%;[^}]*box-sizing:\s*border-box;/s);

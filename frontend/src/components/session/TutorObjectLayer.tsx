@@ -38,7 +38,7 @@ export default function TutorObjectLayer({
             left: object.position.x,
             top: object.position.y,
             width: object.size?.width,
-            minHeight: object.size?.height,
+            height: object.size?.height,
           }}
           data-board-object-id={object.id}
           data-board-object-kind={object.kind}
