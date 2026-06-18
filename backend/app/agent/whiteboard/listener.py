@@ -81,7 +81,7 @@ def install_user_board_listener(
                     break
 
             if snap.is_empty:
-                state.record_empty()
+                state.record_empty(card_id=snap.card_id)
                 continue
 
             try:
@@ -97,9 +97,9 @@ def install_user_board_listener(
                 continue
 
             if text.strip():
-                state.record_reading(text)
+                state.record_reading(text, card_id=snap.card_id, card_label=snap.card_label)
             else:
-                state.record_empty()
+                state.record_empty(card_id=snap.card_id)
 
     task = asyncio.create_task(_debouncer(), name="user_board_debouncer")
     return UserBoardListenerHandle(task=task)

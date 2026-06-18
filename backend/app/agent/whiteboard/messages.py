@@ -76,4 +76,6 @@ class UserBoardSnapshot(BaseModel):
 
     png_b64: str = Field(description="Base64 PNG, ≤512px on the long edge.")
     captured_at_ms: int = Field(description="Client clock at capture time.")
-    is_empty: bool = Field(default=False, description="True iff the board has been cleared.")
+    is_empty: bool = Field(default=False, description="True iff this card has been cleared.")
+    card_id: str = Field(default="student-card-1", description="Stable student card id.")
+    card_label: str | None = Field(default=None, description="Human-readable student card label.")

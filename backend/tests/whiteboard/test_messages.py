@@ -81,3 +81,14 @@ def test_user_board_snapshot_round_trips() -> None:
     assert restored.png_b64 == "aGVsbG8="
     assert restored.captured_at_ms == 1700000000123
     assert restored.is_empty is False
+
+
+def test_user_board_snapshot_defaults_to_first_student_card() -> None:
+    snap = UserBoardSnapshot(
+        png_b64="aGVsbG8=",
+        captured_at_ms=1700000000123,
+        is_empty=False,
+    )
+
+    assert snap.card_id == "student-card-1"
+    assert snap.card_label is None
