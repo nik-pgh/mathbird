@@ -51,6 +51,33 @@
   cursor: grabbing;
 }
 
+.board-top-actions {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+}
+
+.board-top-actions button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(41, 72, 62, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--mb-green);
+  font-size: 12px;
+  font-weight: 750;
+  box-shadow: 0 6px 18px rgba(32, 54, 47, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.board-top-actions button:hover {
+  border-color: var(--mb-green);
+  background: #ffffff;
+}
+
 .canvas-controls {
   display: inline-flex;
   align-items: stretch;

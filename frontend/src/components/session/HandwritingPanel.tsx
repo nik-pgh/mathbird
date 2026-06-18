@@ -11,6 +11,8 @@ import {
 import { useCanvasViewportContext } from "./CanvasViewportContext";
 
 interface Props {
+  cardId: string;
+  label: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
   isCapturing: boolean;
@@ -44,6 +46,8 @@ type ResizeState = {
 };
 
 export default function HandwritingPanel({
+  cardId,
+  label,
   position,
   size,
   isCapturing,
@@ -117,13 +121,15 @@ export default function HandwritingPanel({
         png_b64: "",
         captured_at_ms: Date.now(),
         is_empty: true,
+        card_id: cardId,
+        card_label: label,
       });
     } finally {
       if (snapshotVersionRef.current === version) {
         onCaptureStateChange(false);
       }
     }
-  }, [onCaptureStateChange, send]);
+  }, [cardId, label, onCaptureStateChange, send]);
 
   const scheduleSnapshot = useCallback(() => {
     snapshotVersionRef.current += 1;
@@ -148,6 +154,8 @@ export default function HandwritingPanel({
           png_b64,
           captured_at_ms: Date.now(),
           is_empty: false,
+          card_id: cardId,
+          card_label: label,
         });
       } finally {
         if (snapshotVersionRef.current === version) {
@@ -155,7 +163,7 @@ export default function HandwritingPanel({
         }
       }
     }, SNAPSHOT_INTERVAL_MS);
-  }, [onCaptureStateChange, send]);
+  }, [cardId, label, onCaptureStateChange, send]);
 
   useEffect(
     () => () => {
@@ -310,7 +318,7 @@ export default function HandwritingPanel({
         width: size.width,
         height: size.height,
       }}
-      aria-label="Student handwriting card"
+      aria-label={`${label} handwriting card`}
     >
       <div className="handwriting-panel-head">
         <span
@@ -320,7 +328,7 @@ export default function HandwritingPanel({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          Student Card
+          {label}
         </span>
         <div
           className="handwriting-tools"

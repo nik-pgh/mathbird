@@ -37,7 +37,6 @@ export default function SharedReasoningWorkspace({
   );
   const boardRef = useRef<HTMLDivElement>(null);
   const hasCustomizedHandwritingRef = useRef(false);
-  const primaryStudentCard = state.studentCards[0];
 
   const onAiMessage = useCallback((msg: AiBoardUpdate) => {
     if (msg.op === "clear") {
@@ -58,25 +57,43 @@ export default function SharedReasoningWorkspace({
     dispatch({ type: "move_object", id, position });
   }, []);
 
-  const moveHandwriting = useCallback((position: { x: number; y: number }) => {
-    if (!primaryStudentCard) return;
-    hasCustomizedHandwritingRef.current = true;
-    dispatch({ type: "move_student_card", id: primaryStudentCard.id, position });
-  }, [primaryStudentCard]);
-
-  const resizeHandwriting = useCallback((size: { width: number; height: number }) => {
-    if (!primaryStudentCard) return;
-    hasCustomizedHandwritingRef.current = true;
-    dispatch({ type: "resize_student_card", id: primaryStudentCard.id, size });
-  }, [primaryStudentCard]);
-
-  const setCaptureActive = useCallback((value: boolean) => {
-    if (!primaryStudentCard) return;
-    dispatch({ type: "set_student_card_capturing", id: primaryStudentCard.id, value });
-  }, [primaryStudentCard]);
-
   const setViewport = useCallback((viewport: typeof state.viewport) => {
     dispatch({ type: "set_viewport", viewport });
+  }, []);
+
+  const addStudentCard = useCallback(() => {
+    const rect = boardRef.current?.getBoundingClientRect();
+    dispatch({
+      type: "add_student_card",
+      boardSize: {
+        width: rect?.width ?? 900,
+        height: rect?.height ?? 600,
+      },
+    });
+  }, []);
+
+  const moveStudentCard = useCallback(
+    (id: string, position: { x: number; y: number }) => {
+      if (id === "student-card-1") {
+        hasCustomizedHandwritingRef.current = true;
+      }
+      dispatch({ type: "move_student_card", id, position });
+    },
+    [],
+  );
+
+  const resizeStudentCard = useCallback(
+    (id: string, size: { width: number; height: number }) => {
+      if (id === "student-card-1") {
+        hasCustomizedHandwritingRef.current = true;
+      }
+      dispatch({ type: "resize_student_card", id, size });
+    },
+    [],
+  );
+
+  const setStudentCardCaptureActive = useCallback((id: string, value: boolean) => {
+    dispatch({ type: "set_student_card_capturing", id, value });
   }, []);
 
   const zoomFromCenter = useCallback(
@@ -138,6 +155,11 @@ export default function SharedReasoningWorkspace({
           } as React.CSSProperties
         }
       >
+        <div className="board-top-actions">
+          <button type="button" onClick={addStudentCard}>
+            Student Card
+          </button>
+        </div>
         <TextbookOverlay
           docId={activeDocId}
           title={filename}
@@ -159,16 +181,21 @@ export default function SharedReasoningWorkspace({
           onViewportChange={setViewport}
         >
           <TutorObjectLayer objects={state.objects} onMoveObject={moveObject} />
-          {primaryStudentCard ? (
+          {state.studentCards.map((card) => (
             <HandwritingPanel
-              position={primaryStudentCard.position}
-              size={primaryStudentCard.size}
-              isCapturing={primaryStudentCard.isCapturing}
-              onMove={moveHandwriting}
-              onResize={resizeHandwriting}
-              onCaptureStateChange={setCaptureActive}
+              key={card.id}
+              cardId={card.id}
+              label={card.label}
+              position={card.position}
+              size={card.size}
+              isCapturing={card.isCapturing}
+              onMove={(position) => moveStudentCard(card.id, position)}
+              onResize={(size) => resizeStudentCard(card.id, size)}
+              onCaptureStateChange={(value) =>
+                setStudentCardCaptureActive(card.id, value)
+              }
             />
-          ) : null}
+          ))}
         </CanvasViewport>
       </div>
       <VoiceComposer
