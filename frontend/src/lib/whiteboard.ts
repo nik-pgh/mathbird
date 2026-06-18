@@ -28,7 +28,19 @@ export interface AiBoardShape {
   svg: string;
 }
 
-export type AiBoardItem = AiBoardText | AiBoardPlot | AiBoardShape;
+export interface AiBoardDiagram {
+  kind: "diagram";
+  id: string;
+  syntax: "mermaid";
+  source: string;
+  label?: string | null;
+}
+
+export type AiBoardItem =
+  | AiBoardText
+  | AiBoardPlot
+  | AiBoardShape
+  | AiBoardDiagram;
 
 export interface AiBoardUpdate {
   op: "upsert" | "clear";

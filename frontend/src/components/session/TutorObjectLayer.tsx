@@ -18,6 +18,7 @@ const KIND_LABELS: Record<BoardObject["kind"], string> = {
   text: "Equation",
   plot: "Graph",
   shape: "Diagram",
+  diagram: "Diagram",
 };
 
 export default function TutorObjectLayer({

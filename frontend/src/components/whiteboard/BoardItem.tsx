@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import DOMPurify from "dompurify";
 import type {
+  AiBoardDiagram,
   AiBoardItem,
   AiBoardPlot,
   AiBoardShape,
@@ -12,6 +13,7 @@ export default function BoardItem({ item }: { item: AiBoardItem }) {
   if (item.kind === "text") return <TextItem item={item} />;
   if (item.kind === "plot") return <PlotItem item={item} />;
   if (item.kind === "shape") return <ShapeItem item={item} />;
+  if (item.kind === "diagram") return <DiagramItem item={item} />;
   return null;
 }
 
@@ -178,5 +180,16 @@ function ShapeItem({ item }: { item: AiBoardShape }) {
       className="ai-card board-item-shape"
       dangerouslySetInnerHTML={{ __html: safe }}
     />
+  );
+}
+
+function DiagramItem({ item }: { item: AiBoardDiagram }) {
+  return (
+    <div className="ai-card board-item-diagram">
+      <strong>{item.label || "Diagram"}</strong>
+      <pre>
+        <code>{item.source}</code>
+      </pre>
+    </div>
   );
 }

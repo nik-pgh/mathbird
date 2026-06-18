@@ -120,6 +120,8 @@ function createBoardObject(
       return { id: item.id, kind: item.kind, item, position, size };
     case "shape":
       return { id: item.id, kind: item.kind, item, position, size };
+    case "diagram":
+      return { id: item.id, kind: item.kind, item, position, size };
   }
 }
 
