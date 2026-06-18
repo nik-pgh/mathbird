@@ -54,8 +54,20 @@ class AiBoardShape(BaseModel):
     svg: str = Field(description="SVG fragment without <svg> wrapper; client sanitizes.")
 
 
+class AiBoardDiagram(BaseModel):
+    """A structured diagram rendered from Mermaid source on the client."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["diagram"]
+    id: str
+    syntax: Literal["mermaid"] = "mermaid"
+    source: str = Field(description="Compact Mermaid source, usually flowchart TD or flowchart LR.")
+    label: str | None = None
+
+
 AiBoardItem = Annotated[
-    AiBoardText | AiBoardPlot | AiBoardShape,
+    AiBoardText | AiBoardPlot | AiBoardShape | AiBoardDiagram,
     Field(discriminator="kind"),
 ]
 

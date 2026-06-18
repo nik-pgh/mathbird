@@ -16,6 +16,7 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel
 
 from app.agent.whiteboard.messages import (
+    AiBoardDiagram,
     AiBoardItem,
     AiBoardPlot,
     AiBoardShape,
@@ -32,7 +33,7 @@ logger = logging.getLogger("mathbird.agent.extractor")
 # ``anyOf`` for plain unions, which OpenAI accepts. Runtime validation
 # behaves the same because the ``Literal[...]`` constraints on ``kind``
 # uniquely identify each variant.
-_ExtractorItem = AiBoardText | AiBoardPlot | AiBoardShape
+_ExtractorItem = AiBoardText | AiBoardPlot | AiBoardShape | AiBoardDiagram
 
 
 class ExtractorResponse(BaseModel):
@@ -82,6 +83,26 @@ genuinely benefits from being visual:
   - The agent mentions a function name in passing without defining it
     (e.g., "do you remember the quadratic formula?").
 
+- diagram: a structured visual relationship that Mermaid can express well:
+  factor trees, flowcharts, step diagrams, boxes/arrows, relationship diagrams,
+  concept maps, and comparison trees. Use Mermaid source with syntax="mermaid".
+  Prefer "flowchart TD" or "flowchart LR". Labels must be short.
+    Example sentence: "draw a factor tree for 42"
+    → {"kind": "diagram", "id": "d1", "syntax": "mermaid",
+       "source": "flowchart TD\\n  n42[42] --> n2[2]\\n  n42 --> n21[21]",
+       "label": "Factor tree for 42"}
+
+- shape: a freeform SVG sketch for geometry, number lines, fraction bars,
+  area models, and visuals that need precise 2-D placement. Use simple SVG
+  primitives only and omit the outer <svg> wrapper.
+    Example sentence: "draw a number line from 0 to 6"
+    → {"kind": "shape", "id": "s1",
+       "svg": "<line x1='0' y1='50' x2='100' y2='50' stroke='currentColor'/>"}
+
+For explicit draw/show/diagram requests, use diagram or shape instead of text
+when the requested content can be visualized. Keep plot for functions and keep
+text for explanations, equations, and algebraic derivation steps.
+
 Do NOT emit ANY items for:
 
 - Socratic questions, even ones containing math:
@@ -128,6 +149,8 @@ geometry, or started a separate worked example.
 For new items, pick the next id in a stable sequence:
   text items: eq1, eq2, eq3, ...
   plot items: p1, p2, p3, ...
+  shape items: s1, s2, s3, ...
+  diagram items: d1, d2, d3, ...
 Inspect the current items list (passed in the user message) to determine
 which ids are already taken.
 
