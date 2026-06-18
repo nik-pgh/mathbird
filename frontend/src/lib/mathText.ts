@@ -92,7 +92,7 @@ function applyInlineMarkdown(
   lineBreaks: "preserve" | "collapse",
 ): string {
   if (lineBreaks === "collapse") {
-    return applyEmphasisAndCode(src.replace(/\s+/g, " ").trim());
+    return applyEmphasisAndCode(src.replace(/\s+/g, " "));
   }
   return applyEmphasisAndCode(
     src

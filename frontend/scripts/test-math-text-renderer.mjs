@@ -45,6 +45,12 @@ assert.doesNotMatch(compact, /<br\/>/);
 assert.match(compact, /One paragraph\. Next paragraph with/);
 assert.match(compact, /katex/);
 
+const spacedInline = renderMathTextToHtml("So for \\(54\\), we have \\(2 \\times 3^3\\).", {
+  lineBreaks: "collapse",
+});
+assert.match(spacedInline, /So for <span class="katex"/);
+assert.doesNotMatch(spacedInline, /for<span class="katex"/);
+
 const bareBreaks = renderMathTextToHtml("Prime factorization of 54 \\ 54=2×27 \\ 27=3×9");
 assert.match(bareBreaks, /Prime factorization of 54 <br\/> 54=2×27 <br\/> 27=3×9/);
 assert.doesNotMatch(bareBreaks, / \\ 54=/);
