@@ -12,7 +12,8 @@ This work changes both frontend board behavior and the backend user-board contra
 - Keep each student card the same kind of surface as the current Student Card: draggable, resizable, drawable, clearable, and OCR-readable.
 - Let the tutor see readings from all non-empty student cards, labeled by card.
 - Make tutor `text` items look and read as text cards, not equation cards.
-- Strengthen the board extractor so explicit diagram requests produce `shape` cards instead of text descriptions.
+- Strengthen the board extractor so explicit diagram requests produce visual cards instead of text descriptions.
+- Add Mermaid-backed tutor diagram cards for structured diagrams where Mermaid is a good fit.
 - Keep graph support through existing `plot` cards.
 - Place new tutor cards and new student cards in available board space when possible.
 - Stop tutor cards from shrinking when dragged far to the right.
@@ -29,7 +30,7 @@ This work changes both frontend board behavior and the backend user-board contra
 
 The whiteboard wire model already supports tutor `text`, `plot`, and `shape` items. The frontend renders those through `BoardItem`, but the object chrome labels `text` as "Equation", which makes normal explanation cards feel wrong.
 
-The OpenAI board extractor has detailed positive rules for text and plot, but it does not have a comparable shape/diagram section. As a result, when the tutor says "draw a diagram", the extractor can reasonably default to a text card because no strong instruction tells it to create a sanitized SVG fragment.
+The OpenAI board extractor has detailed positive rules for text and plot, but it does not have comparable diagram rules. As a result, when the tutor says "draw a diagram", the extractor can reasonably default to a text card because no strong instruction tells it to create a visual item.
 
 The frontend workspace has one `handwriting` state object. The backend `BoardState` also stores one latest `user_text`. Multiple student cards require changing both sides to track card ids.
 
@@ -45,7 +46,8 @@ Tutor cards use source-aware chrome:
 
 - `text`: title `Tutor Card`, kind pill `Text`
 - `plot`: title `Tutor Card`, kind pill `Graph`
-- `shape`: title `Tutor Card`, kind pill `Diagram`
+- `shape`: title `Tutor Card`, kind pill `Sketch`
+- `diagram`: title `Tutor Card`, kind pill `Diagram`
 
 Text cards should have a clean explanation-card style, not an equation-card feel. Math inside text still renders through KaTeX.
 
@@ -94,6 +96,19 @@ Student Card 2:
 
 Blank snapshots should clear only the matching card's reading, not every card.
 
+Tutor board items should add a new Mermaid-backed diagram variant:
+
+```py
+class AiBoardDiagram(BaseModel):
+    kind: Literal["diagram"]
+    id: str
+    syntax: Literal["mermaid"] = "mermaid"
+    source: str
+    label: str | None = None
+```
+
+Mirror this type in `frontend/src/lib/whiteboard.ts` and include it in the `AiBoardItem` union on both sides.
+
 ## Placement Design
 
 Introduce a pure placement helper that receives known occupied rectangles and returns a new position for a requested card size. It should scan deterministic candidate positions in world coordinates:
@@ -110,23 +125,33 @@ Tutor card default placement should preserve existing positions for upserts. Onl
 
 ## Agent Diagram Support
 
-Update the OpenAI board extractor prompt with a positive `shape` section:
+Use a hybrid visual model:
 
-- If the sentence explicitly asks to draw, sketch, show a diagram, make a number line, make a factor tree, show a triangle, show boxes/arrows, or visually compare parts, emit a `shape` item.
-- The `svg` field must be a simple sanitized SVG fragment without the `<svg>` wrapper.
-- Prefer simple primitives: `line`, `path`, `circle`, `rect`, `text`, `polyline`, and `polygon`.
-- Include text labels only when they are part of the visual, not as a paragraph explanation.
-- Use `shape`, not `text`, for "draw a diagram of..." requests.
+- `diagram` for structured Mermaid diagrams: factor trees, flowcharts, step diagrams, boxes/arrows, relationship diagrams, concept maps, and comparison trees.
+- `shape` for freeform SVG sketches: number lines, fraction bars, geometric figures, simple area models, and visuals that need precise 2D placement.
+- `plot` for function graphs.
+- `text` for explanations, formulas, and equations.
+
+Update the OpenAI board extractor prompt with positive `diagram` and `shape` sections:
+
+- If the sentence explicitly asks to draw a factor tree, flowchart, relationship diagram, step diagram, boxes/arrows, or concept map, emit a `diagram` item with Mermaid source.
+- Mermaid source must be compact and valid. Prefer `flowchart TD` or `flowchart LR`.
+- Mermaid labels should be short math-teaching labels, not full paragraphs.
+- If the sentence asks to draw a triangle, number line, fraction bar, area model, or geometric sketch, emit a `shape` item with a simple sanitized SVG fragment without the `<svg>` wrapper.
+- Prefer simple SVG primitives: `line`, `path`, `circle`, `rect`, `text`, `polyline`, and `polygon`.
+- Include labels only when they are part of the visual.
+- Use `diagram` or `shape`, not `text`, for "draw a diagram of..." requests unless the request is impossible to visualize.
 
 Add examples for common math visuals:
 
-- factor tree for prime factorization
-- number line for divisors or inequalities
-- fraction bar / partition diagram
-- triangle or rectangle with labeled sides
-- arrows showing a transformation
+- factor tree for prime factorization as Mermaid `flowchart TD`
+- boxes/arrows showing a transformation as Mermaid `flowchart LR`
+- comparison tree as Mermaid
+- number line for divisors or inequalities as SVG `shape`
+- fraction bar / partition sketch as SVG `shape`
+- triangle or rectangle with labeled sides as SVG `shape`
 
-Keep plot rules separate: function definitions still produce `plot` cards, not shape diagrams. Plain spoken explanations still produce `text` cards.
+Keep plot rules separate: function definitions still produce `plot` cards, not Mermaid diagrams or SVG shapes. Plain spoken explanations still produce `text` cards.
 
 ## Error Handling
 
@@ -138,6 +163,8 @@ If placement cannot find an open slot, the card should still appear using the fa
 
 If the extractor emits malformed SVG, existing frontend sanitization remains the last line of defense. The prompt should still discourage complex or unsafe SVG.
 
+If Mermaid fails to parse or render, the frontend should show a small invalid-diagram fallback that includes the label when available and does not crash the board.
+
 ## Testing
 
 Frontend tests:
@@ -145,16 +172,18 @@ Frontend tests:
 - Placement helper chooses an empty slot when existing rectangles occupy the default slot.
 - New student card action creates a distinct card id and uses placement.
 - Tutor object creation preserves existing positions on upsert.
-- Tutor text/graph/diagram labels map to `Text`, `Graph`, and `Diagram`.
+- Tutor text/graph/sketch/diagram labels map to `Text`, `Graph`, `Sketch`, and `Diagram`.
 - Card width rules are stable enough that position changes do not alter the configured width.
+- Mermaid diagram cards render valid Mermaid source and show a fallback for invalid source.
 
 Backend tests:
 
 - `UserBoardSnapshot` accepts missing card id as `student-card-1`.
+- `AiBoardDiagram` validates and is included in the board item union.
 - `BoardState` records, clears, and combines readings per student card.
 - Listener blank snapshot clears only the matching card.
 - `read_user_board` and `WhiteboardAgent` include combined card-labeled readings.
-- Extractor prompt includes shape/diagram rules and examples.
+- Extractor prompt includes Mermaid diagram rules, SVG shape rules, and examples for each.
 
 Verification:
 
@@ -172,5 +201,7 @@ Keep the existing `user_board` topic and `ai_board` topic. The protocol change i
 Avoid adding a new state library. The existing reducer pattern is appropriate; extend it rather than introducing global state.
 
 Avoid making the board extractor a general diagram generator. It should produce simple math-teaching diagrams only when the tutor's sentence clearly benefits from a visual object.
+
+Mermaid should be lazy-loaded on the frontend so ordinary sessions that only use text/plot cards do not pay the render cost.
 
 Keep card placement logic outside React components so it can be tested and reused by tutor cards and student cards.
