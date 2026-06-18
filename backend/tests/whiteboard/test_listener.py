@@ -191,3 +191,34 @@ async def test_listener_empty_snapshot_clears_only_matching_card() -> None:
         assert state.user_text == "Student Card 2:\nright"
     finally:
         await handle.aclose()
+
+
+async def test_listener_debounces_mixed_card_burst_per_card() -> None:
+    room = _FakeRoom()
+    state = BoardState()
+    state.record_reading("old left", card_id="student-card-1", card_label="Student Card 1")
+    state.record_reading("old right", card_id="student-card-2", card_label="Student Card 2")
+    reader = _RecordingReader("new right")
+
+    handle = install_user_board_listener(room=room, state=state, reader=reader, interval=0.05)
+    try:
+        room.emit(
+            "data_received",
+            _FakeDataPacket(
+                data=_snapshot(is_empty=True, card_id="student-card-1"),
+                topic=USER_BOARD_TOPIC,
+            ),
+        )
+        room.emit(
+            "data_received",
+            _FakeDataPacket(
+                data=_snapshot(card_id="student-card-2", card_label="Student Card 2"),
+                topic=USER_BOARD_TOPIC,
+            ),
+        )
+        await asyncio.sleep(0.15)
+
+        assert reader.calls == [b"png-bytes-here"]
+        assert state.user_text == "Student Card 2:\nnew right"
+    finally:
+        await handle.aclose()

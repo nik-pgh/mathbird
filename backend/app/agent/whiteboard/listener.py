@@ -6,8 +6,8 @@ listener:
 1. Registers a synchronous ``data_received`` handler that filters on the
    ``user_board`` topic and pushes the latest payload into a queue.
 2. Runs a background task that waits for ``interval`` seconds of quiet on
-   the queue, then drains it, picks the newest snapshot, and calls
-   ``reader.interpret(png_bytes)``.
+   the queue, then drains it and calls ``reader.interpret(png_bytes)`` for
+   the newest snapshot from each student card.
 3. Stores the result on :class:`BoardState`.
 
 ``is_empty=True`` snapshots short-circuit the reader entirely.
@@ -70,36 +70,42 @@ def install_user_board_listener(
 
     room.on("data_received", _on_data_received)
 
+    async def _process_snapshot(snap: UserBoardSnapshot) -> None:
+        if snap.is_empty:
+            state.record_empty(card_id=snap.card_id)
+            return
+
+        try:
+            png_bytes = base64.b64decode(snap.png_b64)
+        except Exception:
+            logger.exception("dropping snapshot with invalid base64")
+            return
+
+        try:
+            text = await reader.interpret(png_bytes)
+        except Exception:
+            logger.exception("board reader raised; leaving state untouched")
+            return
+
+        if text.strip():
+            state.record_reading(text, card_id=snap.card_id, card_label=snap.card_label)
+        else:
+            state.record_empty(card_id=snap.card_id)
+
     async def _debouncer() -> None:
         while True:
             snap = await pending.get()
+            latest_by_card = {snap.card_id: snap}
             # Coalesce a burst — wait for a quiet window after the latest packet.
             while True:
                 try:
                     snap = await asyncio.wait_for(pending.get(), timeout=interval)
                 except TimeoutError:
                     break
+                latest_by_card[snap.card_id] = snap
 
-            if snap.is_empty:
-                state.record_empty(card_id=snap.card_id)
-                continue
-
-            try:
-                png_bytes = base64.b64decode(snap.png_b64)
-            except Exception:
-                logger.exception("dropping snapshot with invalid base64")
-                continue
-
-            try:
-                text = await reader.interpret(png_bytes)
-            except Exception:
-                logger.exception("board reader raised; leaving state untouched")
-                continue
-
-            if text.strip():
-                state.record_reading(text, card_id=snap.card_id, card_label=snap.card_label)
-            else:
-                state.record_empty(card_id=snap.card_id)
+            for latest in latest_by_card.values():
+                await _process_snapshot(latest)
 
     task = asyncio.create_task(_debouncer(), name="user_board_debouncer")
     return UserBoardListenerHandle(task=task)
