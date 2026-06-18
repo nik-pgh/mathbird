@@ -347,6 +347,11 @@
   line-height: 1.35;
 }
 
+.board-item-diagram-invalid-message {
+  color: var(--mb-coral);
+  font-weight: 700;
+}
+
 .ai-card.board-item-diagram.invalid {
   min-width: 0;
   padding: 8px 10px;

@@ -9,6 +9,8 @@ import type {
 } from "../../lib/whiteboard";
 import { renderMathTextToHtml } from "../../lib/mathText";
 
+let diagramRenderCounter = 0;
+
 export default function BoardItem({ item }: { item: AiBoardItem }) {
   if (item.kind === "text") return <TextItem item={item} />;
   if (item.kind === "plot") return <PlotItem item={item} />;
@@ -188,11 +190,11 @@ function DiagramItem({ item }: { item: AiBoardDiagram }) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
     setHtml(null);
     setFailed(false);
 
-    const renderId = `diagram-${item.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+    const renderId = createMermaidRenderId(item.id);
 
     void import("mermaid")
       .then(async ({ default: mermaid }) => {
@@ -202,21 +204,26 @@ function DiagramItem({ item }: { item: AiBoardDiagram }) {
           theme: "neutral",
         });
         const result = await mermaid.render(renderId, item.source);
-        if (!cancelled) setHtml(result.svg);
+        if (active) setHtml(result.svg);
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (active) setFailed(true);
       });
 
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, [item.id, item.source]);
 
   if (failed) {
     return (
       <div className="ai-card board-item-diagram invalid">
-        {item.label ?? "Invalid diagram"}
+        {item.label ? (
+          <div className="board-item-diagram-label">{item.label}</div>
+        ) : null}
+        <div className="board-item-diagram-invalid-message">
+          Diagram failed to render
+        </div>
       </div>
     );
   }
@@ -236,8 +243,20 @@ function DiagramItem({ item }: { item: AiBoardDiagram }) {
           }}
         />
       ) : (
-        <div className="board-item-diagram-loading">Rendering diagram</div>
+        <div
+          className="board-item-diagram-loading"
+          role="status"
+          aria-live="polite"
+        >
+          Rendering diagram
+        </div>
       )}
     </div>
   );
+}
+
+function createMermaidRenderId(itemId: string): string {
+  const safeId = itemId.replace(/[^a-zA-Z0-9_-]/g, "-");
+  diagramRenderCounter += 1;
+  return `diagram-${safeId}-${Date.now()}-${diagramRenderCounter}`;
 }
