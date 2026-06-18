@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
+import DOMPurify from "dompurify";
 import {
   useLocalParticipant,
   useTrackTranscription,
   useVoiceAssistant,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import { renderMathTextToHtml } from "../lib/mathText";
 import { useTypewriter } from "../lib/useTypewriter";
 
 type Role = "user" | "agent";
@@ -79,6 +81,12 @@ function TranscriptLine({ line }: { line: Line }) {
   const isCaughtUp = animated.length >= line.text.length;
   const isInterim = !line.final || !isCaughtUp;
   const isUser = line.role === "user";
+  const tutorHtml = useMemo(() => {
+    if (isUser) return "";
+    return DOMPurify.sanitize(renderMathTextToHtml(animated, { lineBreaks: "collapse" }), {
+      USE_PROFILES: { html: true, mathMl: true, svg: true },
+    });
+  }, [animated, isUser]);
 
   return (
     <div className="msg">
@@ -89,7 +97,11 @@ function TranscriptLine({ line }: { line: Line }) {
         <div className="body">
           <div className="who">{isUser ? "You" : "Tutor"}</div>
           <div className={isInterim ? "interim" : ""}>
-            {animated}
+            {isUser ? (
+              animated
+            ) : (
+              <span dangerouslySetInnerHTML={{ __html: tutorHtml }} />
+            )}
             {isInterim && <span className="caret" />}
           </div>
         </div>

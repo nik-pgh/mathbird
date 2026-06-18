@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import katex from "katex";
 import DOMPurify from "dompurify";
 import type {
   AiBoardItem,
@@ -7,6 +6,7 @@ import type {
   AiBoardShape,
   AiBoardText,
 } from "../../lib/whiteboard";
+import { renderMathTextToHtml } from "../../lib/mathText";
 
 export default function BoardItem({ item }: { item: AiBoardItem }) {
   if (item.kind === "text") return <TextItem item={item} />;
@@ -17,7 +17,7 @@ export default function BoardItem({ item }: { item: AiBoardItem }) {
 
 function TextItem({ item }: { item: AiBoardText }) {
   const html = useMemo(
-    () => renderMarkdownWithMath(item.markdown),
+    () => renderMathTextToHtml(item.markdown),
     [item.markdown],
   );
   return (
@@ -31,48 +31,6 @@ function TextItem({ item }: { item: AiBoardText }) {
       />
     </div>
   );
-}
-
-function renderMarkdownWithMath(src: string): string {
-  const parts = src.split("$");
-  let out = "";
-  for (let i = 0; i < parts.length; i++) {
-    if (i % 2 === 0) {
-      out += applyInlineMarkdown(escapeHtml(parts[i]));
-    } else {
-      try {
-        out += katex.renderToString(parts[i], {
-          throwOnError: false,
-          output: "html",
-        });
-      } catch {
-        out += `<code>${escapeHtml(parts[i])}</code>`;
-      }
-    }
-  }
-  return out;
-}
-
-function applyInlineMarkdown(src: string): string {
-  // Operates on already-HTML-escaped text, so it's safe to inject tags.
-  // Order matters: line breaks first, then bold (**) before italic (*) so the
-  // inner emphasis pass does not consume the outer bold markers.
-  return src
-    .replace(/\\\\/g, "<br/>")
-    .replace(/\n/g, "<br/>")
-    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>")
-    .replace(/(?<!_)_([^_\n]+)_(?!_)/g, "<em>$1</em>")
-    .replace(/`([^`\n]+)`/g, "<code>$1</code>");
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 function PlotItem({ item }: { item: AiBoardPlot }) {

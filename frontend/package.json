@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "tsc -b --noEmit"
+    "lint": "tsc -b --noEmit",
+    "test:math": "node scripts/test-math-text-renderer.mjs"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.0",

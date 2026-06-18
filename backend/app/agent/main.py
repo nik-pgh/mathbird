@@ -12,14 +12,10 @@ from __future__ import annotations
 
 import logging
 
-# Phoenix instrumentation must patch the OpenAI/LlamaIndex client classes
-# BEFORE livekit.plugins.openai imports them, otherwise livekit captures
-# unpatched method references and the LLM/RAG calls bypass tracing. Keep
-# this import + call at the very top of the module, ahead of any livekit
-# or providers imports.
+# Phoenix instrumentation must run inside the per-room job process, not only
+# in the worker parent. Keep this import ahead of provider construction so
+# entrypoint can patch OpenAI/LlamaIndex before those clients are built.
 from app.observability import setup_phoenix
-
-setup_phoenix()
 
 import json  # noqa: E402
 
@@ -62,6 +58,7 @@ def _parse_active_doc_id(metadata: str | None) -> str | None:
 
 async def entrypoint(ctx: JobContext) -> None:
     """Called by the LiveKit worker once per room."""
+    setup_phoenix()
     settings = get_settings()
     logger.info(
         "agent joining room=%s providers=stt:%s llm:%s tts:%s vad:%s"

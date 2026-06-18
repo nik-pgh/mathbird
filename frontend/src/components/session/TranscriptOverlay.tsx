@@ -6,11 +6,16 @@ interface Props {
 }
 
 export default function TranscriptOverlay({ open, onToggle }: Props) {
+  const stopBoardWheel = (event: React.WheelEvent<HTMLElement>) => {
+    event.stopPropagation();
+  };
+
   return (
     <section
       className="transcript-overlay"
       aria-label="Transcript"
       hidden={!open}
+      onWheel={stopBoardWheel}
     >
       <header className="transcript-overlay-head">
         <span>Transcript</span>
