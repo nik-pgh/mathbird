@@ -12,6 +12,9 @@ export interface BoardSize {
 
 export type VisualKind = "text" | "plot" | "shape" | "diagram";
 
+const PLACEMENT_GAP = 14;
+const FALLBACK_EXPANSION_STEPS = 20;
+
 export function rectsOverlap(a: BoardRect, b: BoardRect, gap = 14): boolean {
   return !(
     a.x + a.width + gap <= b.x
@@ -53,12 +56,33 @@ export function findOpenBoardPosition({
   for (let y = viewport.y + margin; y <= maxY; y += stepY) {
     for (let x = viewport.x + margin; x <= maxX; x += stepX) {
       const candidate = { x, y, width: size.width, height: size.height };
-      if (!occupied.some((rect) => rectsOverlap(candidate, rect))) {
+      if (isOpen(candidate, occupied)) {
         return { x, y };
       }
     }
   }
 
-  const offset = occupied.length * 28;
-  return { x: viewport.x + margin + offset, y: viewport.y + margin + offset };
+  const expandedMaxX = maxX + stepX * FALLBACK_EXPANSION_STEPS;
+  const expandedMaxY = maxY + stepY * FALLBACK_EXPANSION_STEPS;
+  for (let y = viewport.y + margin; y <= expandedMaxY; y += stepY) {
+    for (let x = viewport.x + margin; x <= expandedMaxX; x += stepX) {
+      const candidate = { x, y, width: size.width, height: size.height };
+      if (isOpen(candidate, occupied)) {
+        return { x, y };
+      }
+    }
+  }
+
+  const occupiedRight = occupied.reduce(
+    (right, rect) => Math.max(right, rect.x + rect.width),
+    viewport.x + margin,
+  );
+  return {
+    x: occupiedRight + PLACEMENT_GAP,
+    y: viewport.y + margin,
+  };
+}
+
+function isOpen(candidate: BoardRect, occupied: BoardRect[]): boolean {
+  return !occupied.some((rect) => rectsOverlap(candidate, rect));
 }

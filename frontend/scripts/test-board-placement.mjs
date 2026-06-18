@@ -18,6 +18,16 @@ vm.runInNewContext(compiled, sandbox, { filename: "boardPlacement.ts" });
 
 const { findOpenBoardPosition, rectsOverlap, tutorCardSizeForKind } = sandbox.exports;
 const plain = (value) => JSON.parse(JSON.stringify(value));
+const rectAt = (position, size) => ({ ...plain(position), ...size });
+const assertNoOverlap = (candidate, occupied) => {
+  for (const rect of occupied) {
+    assert.equal(
+      rectsOverlap(candidate, rect),
+      false,
+      `expected ${JSON.stringify(candidate)} not to overlap ${JSON.stringify(rect)}`,
+    );
+  }
+};
 
 assert.equal(rectsOverlap({ x: 0, y: 0, width: 100, height: 100 }, { x: 99, y: 0, width: 100, height: 100 }), true);
 assert.equal(rectsOverlap({ x: 0, y: 0, width: 100, height: 100 }, { x: 120, y: 0, width: 100, height: 100 }), false);
@@ -34,7 +44,38 @@ const second = findOpenBoardPosition({
   occupied: [{ x: 36, y: 36, width: 320, height: 180 }],
   viewport: { x: 0, y: 0, width: 900, height: 600 },
 });
-assert.notDeepEqual(plain(second), { x: 36, y: 36 });
+assert.deepEqual(plain(second), { x: 384, y: 36 });
+assertNoOverlap(
+  rectAt(second, { width: 320, height: 180 }),
+  [{ x: 36, y: 36, width: 320, height: 180 }],
+);
+
+const defaultStudentSize = { width: 520, height: 390 };
+const defaultStudentOccupied = [{ x: 36, y: 36, ...defaultStudentSize }];
+const fallbackStudent = findOpenBoardPosition({
+  size: defaultStudentSize,
+  occupied: defaultStudentOccupied,
+  viewport: { x: 0, y: 0, width: 900, height: 600 },
+});
+assert.deepEqual(plain(fallbackStudent), { x: 584, y: 36 });
+assertNoOverlap(rectAt(fallbackStudent, defaultStudentSize), defaultStudentOccupied);
+
+const fullVisibleGridOccupied = [
+  { x: 36, y: 36, width: 320, height: 180 },
+  { x: 384, y: 36, width: 320, height: 180 },
+  { x: 36, y: 244, width: 320, height: 180 },
+  { x: 384, y: 244, width: 320, height: 180 },
+];
+const fallbackOutsideVisibleGrid = findOpenBoardPosition({
+  size: { width: 320, height: 180 },
+  occupied: fullVisibleGridOccupied,
+  viewport: { x: 0, y: 0, width: 900, height: 600 },
+});
+assert.deepEqual(plain(fallbackOutsideVisibleGrid), { x: 732, y: 36 });
+assertNoOverlap(
+  rectAt(fallbackOutsideVisibleGrid, { width: 320, height: 180 }),
+  fullVisibleGridOccupied,
+);
 
 assert.deepEqual(plain(tutorCardSizeForKind("text")), { width: 340, height: 180 });
 assert.deepEqual(plain(tutorCardSizeForKind("plot")), { width: 360, height: 250 });
