@@ -9,6 +9,7 @@ import {
 import {
   clientToWorld as toWorld,
   panBy,
+  shouldHandleCanvasWheelTarget,
   zoomAtPoint,
 } from "../../lib/canvasViewport";
 import type { ViewportState } from "./workspaceTypes";
@@ -78,6 +79,7 @@ export default function CanvasViewport({
     if (!board) return;
 
     const onWheel = (e: WheelEvent) => {
+      if (!shouldHandleCanvasWheelTarget(e.target)) return;
       e.preventDefault();
       const rect = board.getBoundingClientRect();
       const focalX = e.clientX - rect.left;

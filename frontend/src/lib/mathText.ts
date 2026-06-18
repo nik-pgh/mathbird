@@ -92,12 +92,13 @@ function applyInlineMarkdown(
   lineBreaks: "preserve" | "collapse",
 ): string {
   if (lineBreaks === "collapse") {
-    return applyEmphasisAndCode(src.replace(/\s+/g, " "));
+    return applyEmphasisAndCode(src.replace(/\\n/g, " ").replace(/\s+/g, " "));
   }
   return applyEmphasisAndCode(
     src
+      .replace(/\\n/g, "<br/>")
       .replace(/\\\\/g, "<br/>")
-      .replace(/(^|\s)\\(?=\s|$)/g, "$1<br/>")
+      .replace(/\\(?=\s|$)/g, "<br/>")
       .replace(/\n/g, "<br/>"),
   );
 }

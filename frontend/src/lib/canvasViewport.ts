@@ -3,6 +3,7 @@ import type { Point, ViewportState } from "../components/session/workspaceTypes"
 export const MIN_ZOOM = 0.25;
 export const MAX_ZOOM = 2.5;
 export const DEFAULT_ZOOM = 1;
+export const CANVAS_WHEEL_IGNORE_ATTR = "data-canvas-wheel-ignore";
 
 export function clampZoom(zoom: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
@@ -51,4 +52,10 @@ export function panBy(viewport: ViewportState, deltaX: number, deltaY: number): 
 
 export function formatZoomPercent(zoom: number): string {
   return `${Math.round(zoom * 100)}%`;
+}
+
+export function shouldHandleCanvasWheelTarget(target: EventTarget | null): boolean {
+  const maybeElement = target as { closest?: (selector: string) => unknown } | null;
+  if (typeof maybeElement?.closest !== "function") return true;
+  return !maybeElement.closest(`[${CANVAS_WHEEL_IGNORE_ATTR}]`);
 }

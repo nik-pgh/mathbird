@@ -55,6 +55,24 @@ const bareBreaks = renderMathTextToHtml("Prime factorization of 54 \\ 54=2×27 \
 assert.match(bareBreaks, /Prime factorization of 54 <br\/> 54=2×27 <br\/> 27=3×9/);
 assert.doesNotMatch(bareBreaks, / \\ 54=/);
 
+const attachedBareBreaks = renderMathTextToHtml(
+  "Divisors of 42\\ Since 42 is an even number, it is definitely divisible by 2.",
+);
+assert.match(
+  attachedBareBreaks,
+  /Divisors of 42<br\/> Since 42 is an even number/,
+);
+assert.doesNotMatch(attachedBareBreaks, /42\\ Since/);
+
+const escapedNewlines = renderMathTextToHtml(
+  "Factors of 42\\n\\nFinding the prime factorization will help.",
+);
+assert.match(
+  escapedNewlines,
+  /Factors of 42<br\/><br\/>Finding the prime factorization will help\./,
+);
+assert.doesNotMatch(escapedNewlines, /\\n/);
+
 const escaped = renderMathTextToHtml("<script>alert(1)</script> $2^3$");
 assert.doesNotMatch(escaped, /<script>/);
 assert.match(escaped, /&lt;script&gt;/);

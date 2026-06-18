@@ -1,4 +1,5 @@
 import Transcript from "../Transcript";
+import { CANVAS_WHEEL_IGNORE_ATTR } from "../../lib/canvasViewport";
 
 interface Props {
   open: boolean;
@@ -12,6 +13,7 @@ export default function TranscriptOverlay({ open, onToggle }: Props) {
 
   return (
     <section
+      {...{ [CANVAS_WHEEL_IGNORE_ATTR]: "" }}
       className="transcript-overlay"
       aria-label="Transcript"
       hidden={!open}
