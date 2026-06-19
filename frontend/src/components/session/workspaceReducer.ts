@@ -37,7 +37,7 @@ const DEFAULT_STICKY_NOTE_SIZE: Size = { width: 220, height: 160 };
 
 const DEFAULT_INK: InkState = {
   tool: "pen",
-  color: "#00a878",
+  color: "#213f35",
   activeTarget: { kind: "private_board" },
 };
 

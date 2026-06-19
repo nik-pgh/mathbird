@@ -367,9 +367,9 @@ assert.deepEqual(
 
 const withInkColor = workspaceReducer(resizedStickyNote, {
   type: "set_ink_color",
-  color: "#ff4f36",
+  color: "#ff775f",
 });
-assert.equal(withInkColor.ink.color, "#ff4f36");
+assert.equal(withInkColor.ink.color, "#ff775f");
 
 const withInkTool = workspaceReducer(withInkColor, {
   type: "set_ink_tool",
@@ -493,8 +493,8 @@ assert.ok(workspaceSource.indexOf("<PrivateBoardInkLayer") < workspaceSource.ind
 
 const boardInkToolbarPath = new URL("../src/components/session/BoardInkToolbar.tsx", import.meta.url);
 const boardInkToolbarSource = fs.readFileSync(boardInkToolbarPath, "utf8");
-assert.match(boardInkToolbarSource, /"#00a878"/);
-assert.match(boardInkToolbarSource, /"#ff4f36"/);
+assert.match(boardInkToolbarSource, /"#213f35"/);
+assert.match(boardInkToolbarSource, /"#ff775f"/);
 assert.match(boardInkToolbarSource, /"#2f6fed"/);
 assert.match(boardInkToolbarSource, /"#7c4dff"/);
 assert.match(boardInkToolbarSource, /Pencil/);
@@ -643,7 +643,7 @@ assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*flex-direction:\s*column;
 assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*flex-wrap:\s*nowrap;/s);
 assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*width:\s*var\(--board-tool-rail-width\);/s);
 assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*max-height:\s*calc\(100% - 184px\);/s);
-assert.match(sessionCss, /\.board-ink-toolbar button\.active\s*\{[^}]*background:\s*rgba\(46,\s*143,\s*163,\s*0\.12\);[^}]*color:\s*var\(--mb-green\);/s);
+assert.match(sessionCss, /\.board-ink-toolbar button\.active\s*\{[^}]*background:\s*rgba\(41,\s*72,\s*62,\s*0\.1\);[^}]*color:\s*var\(--mb-green\);/s);
 assert.match(sessionCss, /\.board-ink-divider\s*\{[^}]*width:\s*22px;[^}]*height:\s*1px;/s);
 assert.match(sessionCss, /\.ink-color-swatch\s*\{/s);
 assert.doesNotMatch(sessionCss, /\.textbook-overlay-head/);

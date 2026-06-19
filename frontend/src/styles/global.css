@@ -1,28 +1,26 @@
 /* ─── Tokens ──────────────────────────────────────────────────────────── */
 
 :root {
-  --mb-green: #2e8fa3;
-  --mb-green-soft: #e1f3f6;
-  --mb-student-green: #00a878;
-  --mb-student-green-soft: #d7f8eb;
-  --mb-coral: #ff4f36;
-  --mb-coral-soft: #ffe0da;
-  --mb-lavender: #8f45ff;
-  --mb-lavender-soft: #eadcff;
-  --mb-paper: #fcfcfb;
-  --mb-paper-deep: #eeeeec;
-  --mb-ink: #1d332c;
+  --mb-green: #29483e;
+  --mb-green-soft: #dcebe4;
+  --mb-coral: #ff775f;
+  --mb-coral-soft: #ffe3dc;
+  --mb-lavender: #d48be4;
+  --mb-lavender-soft: #f3def8;
+  --mb-paper: #fff8ed;
+  --mb-paper-deep: #f4e5cb;
+  --mb-ink: #20362f;
 
-  --bg: #fdfdfd;
-  --bg-soft: #f6f6f5;
-  --bg-pad: #fbfbfa;
+  --bg: #fffaf2;
+  --bg-soft: #fff4e4;
+  --bg-pad: #fff8ed;
 
-  --border: #dededb;
-  --border-strong: #c8c8c2;
+  --border: #eadcc7;
+  --border-strong: #d5c0a0;
 
   --text: var(--mb-ink);
-  --text-2: #5c6f67;
-  --text-3: #82928a;
+  --text-2: #65756f;
+  --text-3: #8d9b95;
 
   --accent-live: var(--mb-green);
   --accent-danger: var(--mb-coral);
@@ -180,7 +178,7 @@ button {
 }
 
 .topbar .btn.primary:hover {
-  background: var(--mb-green);
+  background: #2a2a2a;
 }
 
 .btn-label-short {
@@ -193,12 +191,10 @@ main {
   flex: 1;
   display: flex;
   justify-content: center;
-  min-width: 0;
 }
 
 .library-page {
   width: 100%;
-  min-width: 0;
   max-width: 720px;
   padding: 48px 24px 80px;
   display: flex;
@@ -217,11 +213,9 @@ main {
   margin: 0;
   color: var(--text-2);
   font-size: 14px;
-  overflow-wrap: anywhere;
 }
 
 .dropzone {
-  min-width: 0;
   border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius-lg);
   background: var(--bg-soft);
@@ -272,14 +266,12 @@ main {
   font-size: 14px;
   font-weight: 500;
   color: var(--text);
-  overflow-wrap: anywhere;
 }
 
 .dropzone-hint {
   margin: 0;
   font-size: 12px;
   color: var(--text-3);
-  overflow-wrap: anywhere;
 }
 
 .doc-list h2 {
