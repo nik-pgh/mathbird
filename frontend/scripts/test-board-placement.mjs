@@ -338,7 +338,9 @@ assert.match(workspaceSource, /onRename=\{renameStudentCard\}/);
 
 const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
 const sessionCss = fs.readFileSync(sessionCssPath, "utf8");
-assert.match(sessionCss, /\.tutor-focus-rail/s);
-assert.match(sessionCss, /\.tutor-object-expanded\s*\{[^}]*max-height:/s);
-assert.match(sessionCss, /\.tutor-object-body\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*auto;/s);
-assert.doesNotMatch(sessionCss, /\.tutor-object\s*\{[^}]*height:\s*180px;/s);
+assert.match(sessionCss, /\.tutor-object\s*\{[^}]*position:\s*absolute;/s);
+assert.match(sessionCss, /\.tutor-object-collapsed\s*\{[^}]*cursor:\s*pointer;/s);
+assert.match(sessionCss, /\.tutor-object-resize\s*\{[^}]*cursor:\s*nwse-resize;/s);
+assert.match(sessionCss, /\.handwriting-topic-input\s*\{/s);
+assert.doesNotMatch(sessionCss, /\.tutor-focus-rail/s);
+assert.doesNotMatch(sessionCss, /\.tutor-object-history/s);
