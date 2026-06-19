@@ -35,7 +35,7 @@ interface Props {
 
 const SNAPSHOT_INTERVAL_MS = 2000;
 const MAX_LONG_EDGE = 512;
-const CANVAS_BG = "#fffaf0";
+const CANVAS_BG = "#ffffff";
 
 type Point = [number, number, number];
 type Stroke = { tool: InkTool; color: InkColor; points: Point[] };

@@ -39,7 +39,7 @@ export interface StudentCardState {
 
 export type InkTool = "pen" | "eraser";
 
-export type InkColor = "#213f35" | "#ff775f" | "#2f6fed" | "#7c4dff";
+export type InkColor = "#2b6258" | "#ff775f" | "#2f6fed" | "#7c4dff";
 
 export type InkPoint = [number, number, number];
 
