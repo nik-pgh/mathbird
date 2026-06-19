@@ -110,6 +110,20 @@ def test_get_document_file_returns_pdf_bytes(isolated_storage: Path) -> None:  #
     assert res.content.startswith(b"%PDF-1.4")
 
 
+def test_get_document_file_quotes_download_filename_safely(
+    isolated_storage: Path,  # noqa: ARG001
+) -> None:
+    client = TestClient(app)
+    created = _upload_pdf(client, name='bad"name.pdf')
+    doc_id = created["doc_id"]
+
+    res = client.get(f"/api/documents/{doc_id}/file")
+
+    assert res.status_code == 200
+    assert 'filename="bad_name.pdf"' in res.headers["content-disposition"]
+    assert 'bad"name.pdf' not in res.headers["content-disposition"]
+
+
 def test_get_document_file_404_for_unknown_id(isolated_storage: Path) -> None:  # noqa: ARG001
     client = TestClient(app)
     res = client.get("/api/documents/does-not-exist/file")

@@ -54,8 +54,20 @@ class AiBoardShape(BaseModel):
     svg: str = Field(description="SVG fragment without <svg> wrapper; client sanitizes.")
 
 
+class AiBoardDiagram(BaseModel):
+    """A structured diagram rendered from Mermaid source on the client."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["diagram"]
+    id: str
+    syntax: Literal["mermaid"] = "mermaid"
+    source: str = Field(description="Compact Mermaid source, usually flowchart TD or flowchart LR.")
+    label: str | None = None
+
+
 AiBoardItem = Annotated[
-    AiBoardText | AiBoardPlot | AiBoardShape,
+    AiBoardText | AiBoardPlot | AiBoardShape | AiBoardDiagram,
     Field(discriminator="kind"),
 ]
 
@@ -76,4 +88,6 @@ class UserBoardSnapshot(BaseModel):
 
     png_b64: str = Field(description="Base64 PNG, ≤512px on the long edge.")
     captured_at_ms: int = Field(description="Client clock at capture time.")
-    is_empty: bool = Field(default=False, description="True iff the board has been cleared.")
+    is_empty: bool = Field(default=False, description="True iff this card has been cleared.")
+    card_id: str = Field(default="student-card-1", description="Stable student card id.")
+    card_label: str | None = Field(default=None, description="Human-readable student card label.")

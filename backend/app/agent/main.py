@@ -8,6 +8,7 @@ Connects to LiveKit Cloud using ``LIVEKIT_URL`` / ``LIVEKIT_API_KEY`` /
 ``Agent`` session for that room.
 """
 
+# ruff: noqa: I001
 from __future__ import annotations
 
 import logging

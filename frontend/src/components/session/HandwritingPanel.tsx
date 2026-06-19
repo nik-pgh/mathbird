@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Eraser, Pencil, Trash2, Undo2 } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { getStroke } from "perfect-freehand";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
 import {
@@ -9,25 +9,36 @@ import {
   encodeUserSnapshot,
 } from "../../lib/whiteboard";
 import { useCanvasViewportContext } from "./CanvasViewportContext";
+import type { InkColor, InkTool, InkTarget } from "./workspaceTypes";
+
+type InkCommand = {
+  id: number;
+  target: Extract<InkTarget, { kind: "student_card" }>;
+  action: "undo" | "clear";
+} | null;
 
 interface Props {
+  cardId: string;
+  label: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
   isCapturing: boolean;
-  onMove: (position: { x: number; y: number }) => void;
-  onResize: (size: { width: number; height: number }) => void;
-  onCaptureStateChange: (value: boolean) => void;
+  inkTool: InkTool;
+  inkColor: InkColor;
+  inkCommand: InkCommand;
+  onMove: (cardId: string, position: { x: number; y: number }) => void;
+  onResize: (cardId: string, size: { width: number; height: number }) => void;
+  onRename: (cardId: string, label: string) => void;
+  onCaptureStateChange: (cardId: string, value: boolean) => void;
+  onStrokeTargeted: (target: Extract<InkTarget, { kind: "student_card" }>) => void;
 }
 
 const SNAPSHOT_INTERVAL_MS = 2000;
 const MAX_LONG_EDGE = 512;
 const CANVAS_BG = "#fffaf0";
-const STROKE_COLOR = "#213f35";
-const TOOL_ICON_SIZE = 14;
 
-type Tool = "pen" | "eraser";
 type Point = [number, number, number];
-type Stroke = { tool: Tool; points: Point[] };
+type Stroke = { tool: InkTool; color: InkColor; points: Point[] };
 
 type DragState = {
   pointerId: number;
@@ -44,12 +55,19 @@ type ResizeState = {
 };
 
 export default function HandwritingPanel({
+  cardId,
+  label,
   position,
   size,
   isCapturing,
+  inkTool,
+  inkColor,
+  inkCommand,
   onMove,
   onResize,
+  onRename,
   onCaptureStateChange,
+  onStrokeTargeted,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const positionRef = useRef(position);
@@ -58,12 +76,14 @@ export default function HandwritingPanel({
   const resizeRef = useRef<ResizeState | null>(null);
   const snapshotTimerRef = useRef<number | null>(null);
   const snapshotVersionRef = useRef(0);
+  const lastInkCommandIdRef = useRef<number | null>(null);
+  const onCaptureStateChangeRef = useRef(onCaptureStateChange);
   const strokesRef = useRef<Stroke[]>([]);
   const drawingRef = useRef<Stroke | null>(null);
   const drawingPointerRef = useRef<number | null>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
-  const [tool, setTool] = useState<Tool>("pen");
   const [drawing, setDrawing] = useState<Stroke | null>(null);
+  const [draftLabel, setDraftLabel] = useState(label);
   const { isSpacePan, clientToWorld, viewport } = useCanvasViewportContext();
 
   const { send } = useBoardChannel<
@@ -82,6 +102,14 @@ export default function HandwritingPanel({
   useEffect(() => {
     sizeRef.current = size;
   }, [size]);
+
+  useEffect(() => {
+    setDraftLabel(label);
+  }, [label]);
+
+  useEffect(() => {
+    onCaptureStateChangeRef.current = onCaptureStateChange;
+  }, [onCaptureStateChange]);
 
   useEffect(() => {
     strokesRef.current = strokes;
@@ -111,24 +139,26 @@ export default function HandwritingPanel({
       snapshotTimerRef.current = null;
     }
 
-    onCaptureStateChange(true);
+    onCaptureStateChangeRef.current(cardId, true);
     try {
       await send({
         png_b64: "",
         captured_at_ms: Date.now(),
         is_empty: true,
+        card_id: cardId,
+        card_label: label,
       });
     } finally {
       if (snapshotVersionRef.current === version) {
-        onCaptureStateChange(false);
+        onCaptureStateChangeRef.current(cardId, false);
       }
     }
-  }, [onCaptureStateChange, send]);
+  }, [cardId, label, send]);
 
   const scheduleSnapshot = useCallback(() => {
     snapshotVersionRef.current += 1;
     const version = snapshotVersionRef.current;
-    onCaptureStateChange(true);
+    onCaptureStateChangeRef.current(cardId, true);
 
     if (snapshotTimerRef.current !== null) {
       window.clearTimeout(snapshotTimerRef.current);
@@ -148,14 +178,16 @@ export default function HandwritingPanel({
           png_b64,
           captured_at_ms: Date.now(),
           is_empty: false,
+          card_id: cardId,
+          card_label: label,
         });
       } finally {
         if (snapshotVersionRef.current === version) {
-          onCaptureStateChange(false);
+          onCaptureStateChangeRef.current(cardId, false);
         }
       }
     }, SNAPSHOT_INTERVAL_MS);
-  }, [onCaptureStateChange, send]);
+  }, [cardId, label, send]);
 
   useEffect(
     () => () => {
@@ -164,18 +196,19 @@ export default function HandwritingPanel({
         window.clearTimeout(snapshotTimerRef.current);
         snapshotTimerRef.current = null;
       }
-      onCaptureStateChange(false);
+      onCaptureStateChangeRef.current(cardId, false);
     },
-    [onCaptureStateChange],
+    [cardId],
   );
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.button !== 0 || isSpacePan) return;
     if (drawingPointerRef.current !== null) return;
 
-    const pt = pointerXY(e);
+    const pt = pointerXY(e.currentTarget, e.nativeEvent);
     const nextDrawing = {
-      tool,
+      tool: inkTool,
+      color: inkColor,
       points: [[pt.x, pt.y, e.pressure || 0.5]] as Point[],
     };
     drawingRef.current = nextDrawing;
@@ -189,13 +222,14 @@ export default function HandwritingPanel({
     const activeDrawing = drawingRef.current;
     if (!activeDrawing) return;
 
-    const pt = pointerXY(e);
+    const events = e.nativeEvent.getCoalescedEvents?.() ?? [e.nativeEvent];
+    const nextPoints = events.map((event) => {
+      const pt = pointerXY(e.currentTarget, event);
+      return [pt.x, pt.y, event.pressure || 0.5] as Point;
+    });
     const nextDrawing = {
       ...activeDrawing,
-      points: [
-        ...activeDrawing.points,
-        [pt.x, pt.y, e.pressure || 0.5] as Point,
-      ],
+      points: [...activeDrawing.points, ...nextPoints],
     };
     drawingRef.current = nextDrawing;
     setDrawing(nextDrawing);
@@ -214,10 +248,13 @@ export default function HandwritingPanel({
     drawingRef.current = null;
     drawingPointerRef.current = null;
     setDrawing(null);
+    onStrokeTargeted({ kind: "student_card", cardId });
     scheduleSnapshot();
   };
 
-  const undo = () => {
+  const undo = useCallback(() => {
+    if (strokesRef.current.length === 0) return;
+
     const next = strokesRef.current.slice(0, -1);
     strokesRef.current = next;
     setStrokes(next);
@@ -227,13 +264,29 @@ export default function HandwritingPanel({
     } else {
       scheduleSnapshot();
     }
-  };
+  }, [sendEmptySnapshot, scheduleSnapshot]);
 
-  const clear = async () => {
+  const clear = useCallback(async () => {
+    if (strokesRef.current.length === 0) return;
+
     strokesRef.current = [];
     setStrokes([]);
     await sendEmptySnapshot();
-  };
+  }, [sendEmptySnapshot]);
+
+  useEffect(() => {
+    if (!inkCommand) return;
+    if (inkCommand.target.kind !== "student_card") return;
+    if (inkCommand.target.cardId !== cardId) return;
+    if (lastInkCommandIdRef.current === inkCommand.id) return;
+
+    lastInkCommandIdRef.current = inkCommand.id;
+    if (inkCommand.action === "undo") {
+      undo();
+    } else {
+      void clear();
+    }
+  }, [cardId, clear, inkCommand, undo]);
 
   const onDragHandlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
     if (e.button !== 0 || isSpacePan) return;
@@ -253,7 +306,7 @@ export default function HandwritingPanel({
     if (!drag || drag.pointerId !== e.pointerId) return;
 
     const world = clientToWorld(e.clientX, e.clientY);
-    onMove({
+    onMove(cardId, {
       x: drag.startPosition.x + (world.x - drag.startX),
       y: drag.startPosition.y + (world.y - drag.startY),
     });
@@ -262,11 +315,10 @@ export default function HandwritingPanel({
   const endDrag = (e: React.PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     dragRef.current = null;
-  };
-
-  const stopToolbarPointer = (e: React.PointerEvent<HTMLElement>) => {
-    e.stopPropagation();
   };
 
   const onResizePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -287,7 +339,7 @@ export default function HandwritingPanel({
     const widthDelta = (e.clientX - resize.startX) / viewport.zoom;
     const heightDelta = (e.clientY - resize.startY) / viewport.zoom / 0.75;
     const edgeDelta = Math.max(widthDelta, heightDelta);
-    onResize({
+    onResize(cardId, {
       width: resize.startSize.width + edgeDelta,
       height: (resize.startSize.width + edgeDelta) * 0.75,
     });
@@ -296,10 +348,11 @@ export default function HandwritingPanel({
   const endResize = (e: React.PointerEvent<HTMLButtonElement>) => {
     const resize = resizeRef.current;
     if (!resize || resize.pointerId !== e.pointerId) return;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     resizeRef.current = null;
   };
-
-  const isEmpty = strokes.length === 0;
 
   return (
     <section
@@ -310,60 +363,32 @@ export default function HandwritingPanel({
         width: size.width,
         height: size.height,
       }}
-      aria-label="Student handwriting card"
+      aria-label={`${label} handwriting card`}
     >
       <div className="handwriting-panel-head">
-        <span
-          className="handwriting-panel-drag-handle"
+        <button
+          type="button"
+          className="handwriting-drag-grip handwriting-panel-drag-handle"
+          aria-label={`Move ${label}`}
+          title="Move card"
           onPointerDown={onDragHandlePointerDown}
           onPointerMove={onDragHandlePointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
+          onLostPointerCapture={() => {
+            dragRef.current = null;
+          }}
         >
-          Student Card
-        </span>
-        <div
-          className="handwriting-tools"
-          onPointerDown={stopToolbarPointer}
-          onPointerUp={stopToolbarPointer}
-        >
-          <button
-            type="button"
-            className={tool === "pen" ? "active" : ""}
-            onClick={() => setTool("pen")}
-            aria-label="Pen"
-            title="Pen"
-          >
-            <Pencil size={TOOL_ICON_SIZE} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className={tool === "eraser" ? "active" : ""}
-            onClick={() => setTool("eraser")}
-            aria-label="Eraser"
-            title="Eraser"
-          >
-            <Eraser size={TOOL_ICON_SIZE} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={undo}
-            disabled={isEmpty}
-            aria-label="Undo"
-            title="Undo"
-          >
-            <Undo2 size={TOOL_ICON_SIZE} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={clear}
-            disabled={isEmpty}
-            aria-label="Clear"
-            title="Clear"
-          >
-            <Trash2 size={TOOL_ICON_SIZE} aria-hidden="true" />
-          </button>
-        </div>
+          <GripVertical size={14} aria-hidden="true" />
+        </button>
+        <input
+          className="handwriting-topic-input"
+          value={draftLabel}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => setDraftLabel(event.currentTarget.value)}
+          onBlur={() => onRename(cardId, draftLabel)}
+          aria-label="Student card topic"
+        />
       </div>
       <div className="handwriting-surface">
         <canvas
@@ -385,28 +410,31 @@ export default function HandwritingPanel({
         onPointerMove={onResizePointerMove}
         onPointerUp={endResize}
         onPointerCancel={endResize}
+        onLostPointerCapture={() => {
+          resizeRef.current = null;
+        }}
       />
     </section>
   );
 }
 
-function pointerXY(e: React.PointerEvent<HTMLCanvasElement>) {
-  const rect = e.currentTarget.getBoundingClientRect();
-  const sx = e.currentTarget.width / rect.width;
-  const sy = e.currentTarget.height / rect.height;
+function pointerXY(canvas: HTMLCanvasElement, event: PointerEvent) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
   return {
-    x: (e.clientX - rect.left) * sx,
-    y: (e.clientY - rect.top) * sy,
+    x: (event.clientX - rect.left) * sx,
+    y: (event.clientY - rect.top) * sy,
   };
 }
 
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   if (stroke.points.length === 0) return;
   const outline = getStroke(stroke.points, {
-    size: stroke.tool === "eraser" ? 24 : 4,
+    size: stroke.tool === "eraser" ? 28 : 4.5,
     thinning: 0.5,
-    smoothing: 0.5,
-    streamline: 0.5,
+    smoothing: 0.65,
+    streamline: 0.55,
   });
   if (outline.length === 0) return;
 
@@ -416,7 +444,7 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
     ctx.lineTo(outline[i][0], outline[i][1]);
   }
   ctx.closePath();
-  ctx.fillStyle = stroke.tool === "eraser" ? CANVAS_BG : STROKE_COLOR;
+  ctx.fillStyle = stroke.tool === "eraser" ? CANVAS_BG : stroke.color;
   ctx.fill();
 }
 

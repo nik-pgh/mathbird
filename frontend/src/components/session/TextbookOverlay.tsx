@@ -1,10 +1,13 @@
+import { X } from "lucide-react";
 import { documentFileUrl } from "../../lib/api";
+import { CANVAS_WHEEL_IGNORE_ATTR } from "../../lib/canvasViewport";
+import type { TextbookDisplayMode } from "../../lib/pdfWorkspaceLayout";
 
 interface Props {
   docId: string | null;
   title: string | null;
-  mode: "large" | "small";
-  onToggle: () => void;
+  displayMode: TextbookDisplayMode;
+  onClose?: () => void;
 }
 
 function textbookEmbedUrl(docId: string): string {
@@ -15,37 +18,37 @@ function textbookEmbedUrl(docId: string): string {
 export default function TextbookOverlay({
   docId,
   title,
-  mode,
-  onToggle,
+  displayMode,
+  onClose,
 }: Props) {
-  if (!docId) return null;
-
-  if (mode === "small") {
-    return (
-      <button
-        type="button"
-        className="textbook-overlay textbook-overlay-small"
-        onClick={onToggle}
-        aria-label={`Open textbook${title ? `: ${title}` : ""}`}
-        title={title ?? "Open textbook"}
-      >
-        <DocIcon />
-      </button>
-    );
-  }
+  if (!docId || displayMode === "hidden" || displayMode === "collapsed") return null;
 
   const src = textbookEmbedUrl(docId);
+  const isOverlay = displayMode === "overlay";
+  const stopBoardWheel = (event: React.WheelEvent<HTMLElement>) => {
+    event.stopPropagation();
+  };
+
   return (
     <section
-      className="textbook-overlay textbook-overlay-large"
+      {...{ [CANVAS_WHEEL_IGNORE_ATTR]: "" }}
+      className={`textbook-overlay textbook-overlay-viewer ${
+        isOverlay ? "textbook-overlay-mobile" : "textbook-overlay-docked"
+      }`}
       aria-label="Textbook"
+      onWheel={stopBoardWheel}
     >
-      <header className="textbook-overlay-head">
-        <span>{title ?? "Textbook"}</span>
-        <button onClick={onToggle} aria-label="Minimize textbook">
-          Minimize
+      {isOverlay && onClose && (
+        <button
+          type="button"
+          className="textbook-overlay-close"
+          onClick={onClose}
+          aria-label="Close textbook"
+          title="Close textbook"
+        >
+          <X size={17} aria-hidden="true" />
         </button>
-      </header>
+      )}
       <div className="textbook-overlay-body">
         <iframe
           className="textbook-overlay-frame"
@@ -54,38 +57,5 @@ export default function TextbookOverlay({
         />
       </div>
     </section>
-  );
-}
-
-function DocIcon() {
-  return (
-    <svg
-      className="textbook-doc-icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="M8 3h7l4 4v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M15 3v4h4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9.5 12h5M9.5 15.5h5M9.5 19h3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }

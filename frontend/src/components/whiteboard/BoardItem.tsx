@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DOMPurify from "dompurify";
 import type {
+  AiBoardDiagram,
   AiBoardItem,
   AiBoardPlot,
   AiBoardShape,
@@ -8,10 +9,13 @@ import type {
 } from "../../lib/whiteboard";
 import { renderMathTextToHtml } from "../../lib/mathText";
 
+let diagramRenderCounter = 0;
+
 export default function BoardItem({ item }: { item: AiBoardItem }) {
   if (item.kind === "text") return <TextItem item={item} />;
   if (item.kind === "plot") return <PlotItem item={item} />;
   if (item.kind === "shape") return <ShapeItem item={item} />;
+  if (item.kind === "diagram") return <DiagramItem item={item} />;
   return null;
 }
 
@@ -179,4 +183,80 @@ function ShapeItem({ item }: { item: AiBoardShape }) {
       dangerouslySetInnerHTML={{ __html: safe }}
     />
   );
+}
+
+function DiagramItem({ item }: { item: AiBoardDiagram }) {
+  const [html, setHtml] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setHtml(null);
+    setFailed(false);
+
+    const renderId = createMermaidRenderId(item.id);
+
+    void import("mermaid")
+      .then(async ({ default: mermaid }) => {
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "strict",
+          theme: "neutral",
+        });
+        const result = await mermaid.render(renderId, item.source);
+        if (active) setHtml(result.svg);
+      })
+      .catch(() => {
+        if (active) setFailed(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [item.id, item.source]);
+
+  if (failed) {
+    return (
+      <div className="ai-card board-item-diagram invalid">
+        {item.label ? (
+          <div className="board-item-diagram-label">{item.label}</div>
+        ) : null}
+        <div className="board-item-diagram-invalid-message">
+          Diagram failed to render
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ai-card board-item-diagram">
+      {item.label ? (
+        <div className="board-item-diagram-label">{item.label}</div>
+      ) : null}
+      {html ? (
+        <div
+          className="board-item-diagram-svg"
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(html, {
+              USE_PROFILES: { svg: true, svgFilters: true },
+            }),
+          }}
+        />
+      ) : (
+        <div
+          className="board-item-diagram-loading"
+          role="status"
+          aria-live="polite"
+        >
+          Rendering diagram
+        </div>
+      )}
+    </div>
+  );
+}
+
+function createMermaidRenderId(itemId: string): string {
+  const safeId = itemId.replace(/[^a-zA-Z0-9_-]/g, "-");
+  diagramRenderCounter += 1;
+  return `diagram-${safeId}-${Date.now()}-${diagramRenderCounter}`;
 }

@@ -28,7 +28,19 @@ export interface AiBoardShape {
   svg: string;
 }
 
-export type AiBoardItem = AiBoardText | AiBoardPlot | AiBoardShape;
+export interface AiBoardDiagram {
+  kind: "diagram";
+  id: string;
+  syntax: "mermaid";
+  source: string;
+  label?: string | null;
+}
+
+export type AiBoardItem =
+  | AiBoardText
+  | AiBoardPlot
+  | AiBoardShape
+  | AiBoardDiagram;
 
 export interface AiBoardUpdate {
   op: "upsert" | "clear";
@@ -39,6 +51,8 @@ export interface UserBoardSnapshot {
   png_b64: string;
   captured_at_ms: number;
   is_empty: boolean;
+  card_id?: string;
+  card_label?: string | null;
 }
 
 const encoder = new TextEncoder();

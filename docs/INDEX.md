@@ -69,7 +69,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | --- | --- |
 | `api/main.py` | FastAPI app, CORS, mounts routers, `/health`. |
 | `api/routes/token.py` | `POST /api/token` — signs LiveKit JWT, returns `{token, url, room, identity}`. |
-| `api/routes/documents.py` | `POST /api/documents` stores PDFs, `POST /api/documents/{doc_id}/ingest` indexes them, `GET /api/documents` lists upload/index status. |
+| `api/routes/documents.py` | `POST /api/documents` stores PDFs, `POST /api/documents/{doc_id}/ingest` indexes them, `GET /api/documents` lists upload/index status, and `GET /api/documents/{doc_id}/file` streams PDFs to the session iframe. |
 
 ### `backend/app/storage/` — pluggable storage
 
@@ -98,7 +98,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 
 | Path | What it is |
 | --- | --- |
-| `frontend/package.json` | `dev` / `build` / `lint` (tsc-only) / `preview` scripts. |
+| `frontend/package.json` | `dev` / `build` / `lint` (tsc-only) / `test` / `preview` scripts. |
 | `frontend/vite.config.ts` | Vite config (React plugin). |
 | `frontend/tsconfig*.json` | TypeScript project refs. |
 | `frontend/.env.local` | (gitignored) — `VITE_API_BASE_URL`, `VITE_LIVEKIT_URL`. |
@@ -113,7 +113,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `src/main.tsx` | React entry — mounts `<App />` into the root. |
 | `src/App.tsx` | `react-router-dom` shell — `/` → Upload, `/session` → Session. |
 | `src/vite-env.d.ts` | Vite/TS environment types. |
-| `src/lib/api.ts` | **Only place that calls `fetch()`.** `uploadPdf`, `listDocuments`, `requestToken`. |
+| `src/lib/api.ts` | **Only place that calls `fetch()`.** `uploadPdf`, `ingestDocument`, `listDocuments`, `documentFileUrl`, `requestToken`. |
 | `src/data/retrievalEval.ts` | Normalizes generated backend eval JSON into dashboard-friendly TypeScript types. |
 | `src/lib/useTypewriter.ts` | Hook used by the transcript bubbles. |
 | `src/pages/UploadPage.tsx` | Landing page — `<PdfDropZone>` + uploaded-doc list. |

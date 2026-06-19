@@ -54,11 +54,19 @@ class _RecordingReader:
         return self.response
 
 
-def _snapshot(payload: bytes = b"png-bytes-here", *, is_empty: bool = False) -> bytes:
+def _snapshot(
+    payload: bytes = b"png-bytes-here",
+    *,
+    is_empty: bool = False,
+    card_id: str = "student-card-1",
+    card_label: str | None = None,
+) -> bytes:
     snap = UserBoardSnapshot(
         png_b64=base64.b64encode(payload).decode("ascii"),
         captured_at_ms=1700000000000,
         is_empty=is_empty,
+        card_id=card_id,
+        card_label=card_label,
     )
     return snap.model_dump_json().encode("utf-8")
 
@@ -78,7 +86,7 @@ async def test_listener_debounces_bursts_into_one_interpret_call() -> None:
         await asyncio.sleep(0.15)
 
         assert len(reader.calls) == 1
-        assert state.user_text == "x = 3"
+        assert state.user_text == "Student Card 1:\nx = 3"
         assert state.is_blank is False
     finally:
         await handle.aclose()
@@ -136,5 +144,81 @@ async def test_listener_swallows_malformed_payloads() -> None:
 
         assert reader.calls == []
         assert state.user_text == ""
+    finally:
+        await handle.aclose()
+
+
+async def test_listener_records_snapshot_under_card_id() -> None:
+    room = _FakeRoom()
+    state = BoardState()
+    reader = _RecordingReader("drawn work")
+
+    handle = install_user_board_listener(room=room, state=state, reader=reader, interval=0.05)
+    try:
+        room.emit(
+            "data_received",
+            _FakeDataPacket(
+                data=_snapshot(card_id="student-card-2", card_label="Student Card 2"),
+                topic=USER_BOARD_TOPIC,
+            ),
+        )
+        await asyncio.sleep(0.15)
+
+        assert state.user_text == "Student Card 2:\ndrawn work"
+    finally:
+        await handle.aclose()
+
+
+async def test_listener_empty_snapshot_clears_only_matching_card() -> None:
+    room = _FakeRoom()
+    state = BoardState()
+    state.record_reading("left", card_id="student-card-1", card_label="Student Card 1")
+    state.record_reading("right", card_id="student-card-2", card_label="Student Card 2")
+    reader = _RecordingReader("should not be called")
+
+    handle = install_user_board_listener(room=room, state=state, reader=reader, interval=0.05)
+    try:
+        room.emit(
+            "data_received",
+            _FakeDataPacket(
+                data=_snapshot(is_empty=True, card_id="student-card-1"),
+                topic=USER_BOARD_TOPIC,
+            ),
+        )
+        await asyncio.sleep(0.15)
+
+        assert reader.calls == []
+        assert state.user_text == "Student Card 2:\nright"
+    finally:
+        await handle.aclose()
+
+
+async def test_listener_debounces_mixed_card_burst_per_card() -> None:
+    room = _FakeRoom()
+    state = BoardState()
+    state.record_reading("old left", card_id="student-card-1", card_label="Student Card 1")
+    state.record_reading("old right", card_id="student-card-2", card_label="Student Card 2")
+    reader = _RecordingReader("new right")
+
+    handle = install_user_board_listener(room=room, state=state, reader=reader, interval=0.05)
+    try:
+        room.emit(
+            "data_received",
+            _FakeDataPacket(
+                data=_snapshot(is_empty=True, card_id="student-card-1"),
+                topic=USER_BOARD_TOPIC,
+            ),
+        )
+        room.emit(
+            "data_received",
+            _FakeDataPacket(
+                data=_snapshot(card_id="student-card-2", card_label="Student Card 2"),
+                topic=USER_BOARD_TOPIC,
+            ),
+        )
+        await asyncio.sleep(0.15)
+
+        assert reader.calls == [b"png-bytes-here"]
+        assert state.user_text == "Student Card 2:\nnew right"
     finally:
         await handle.aclose()

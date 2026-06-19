@@ -1,5 +1,15 @@
-import { useCallback, useLayoutEffect, useReducer, useRef } from "react";
+import { useCallback, useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  FileText,
+  FileX,
+  SquarePen,
+  StickyNote as StickyNoteIcon,
+} from "lucide-react";
 import { zoomAtPoint } from "../../lib/canvasViewport";
+import {
+  pdfDockWidth,
+  textbookDisplayMode,
+} from "../../lib/pdfWorkspaceLayout";
 import {
   AI_BOARD_TOPIC,
   type AiBoardUpdate,
@@ -7,8 +17,11 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
+import BoardInkToolbar from "./BoardInkToolbar";
 import CanvasViewport from "./CanvasViewport";
 import HandwritingPanel from "./HandwritingPanel";
+import PrivateBoardInkLayer from "./PrivateBoardInkLayer";
+import StickyNoteLayer from "./StickyNoteLayer";
 import TextbookOverlay from "./TextbookOverlay";
 import TranscriptOverlay from "./TranscriptOverlay";
 import TutorObjectLayer from "./TutorObjectLayer";
@@ -17,6 +30,23 @@ import {
   initialWorkspaceState,
   workspaceReducer,
 } from "./workspaceReducer";
+import type {
+  InkColor,
+  InkTarget,
+  InkTool,
+  PrivateBoardInkStroke,
+} from "./workspaceTypes";
+
+type InkCommand = {
+  id: number;
+  target: Extract<InkTarget, { kind: "student_card" }>;
+  action: "undo" | "clear";
+} | null;
+
+type WorkspaceSize = {
+  width: number;
+  height: number;
+};
 
 interface Props {
   status: "connecting" | "connected" | "disconnected";
@@ -35,16 +65,31 @@ export default function SharedReasoningWorkspace({
     workspaceReducer,
     initialWorkspaceState,
   );
+  const [inkCommand, setInkCommand] = useState<InkCommand>(null);
+  const [workspaceSize, setWorkspaceSize] = useState<WorkspaceSize>(() => ({
+    width: typeof window === "undefined" ? 0 : window.innerWidth,
+    height: typeof window === "undefined" ? 0 : window.innerHeight,
+  }));
+  const workspaceMainRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const hasCustomizedHandwritingRef = useRef(false);
+  const inkCommandIdRef = useRef(0);
+
+  const getBoardSize = useCallback(() => {
+    const rect = boardRef.current?.getBoundingClientRect();
+    return {
+      width: rect?.width ?? 900,
+      height: rect?.height ?? 640,
+    };
+  }, []);
 
   const onAiMessage = useCallback((msg: AiBoardUpdate) => {
     if (msg.op === "clear") {
       dispatch({ type: "ai_clear" });
       return;
     }
-    dispatch({ type: "ai_upsert", items: msg.items });
-  }, []);
+    dispatch({ type: "ai_upsert", items: msg.items, boardSize: getBoardSize() });
+  }, [getBoardSize]);
 
   useBoardChannel<typeof AI_BOARD_TOPIC, AiBoardUpdate>({
     topic: AI_BOARD_TOPIC,
@@ -57,23 +102,146 @@ export default function SharedReasoningWorkspace({
     dispatch({ type: "move_object", id, position });
   }, []);
 
-  const moveHandwriting = useCallback((position: { x: number; y: number }) => {
-    hasCustomizedHandwritingRef.current = true;
-    dispatch({ type: "move_handwriting", position });
-  }, []);
+  const resizeObject = useCallback(
+    (id: string, size: { width: number; height: number }) => {
+      dispatch({ type: "resize_object", id, size, boardSize: getBoardSize() });
+    },
+    [getBoardSize],
+  );
 
-  const resizeHandwriting = useCallback((size: { width: number; height: number }) => {
-    hasCustomizedHandwritingRef.current = true;
-    dispatch({ type: "resize_handwriting", size });
-  }, []);
+  const activateObject = useCallback((id: string) => {
+    dispatch({ type: "activate_object", id, boardSize: getBoardSize() });
+  }, [getBoardSize]);
 
-  const setCaptureActive = useCallback((value: boolean) => {
-    dispatch({ type: "set_capturing", value });
-  }, []);
+  const collapseObject = useCallback((id: string) => {
+    dispatch({ type: "collapse_object", id, boardSize: getBoardSize() });
+  }, [getBoardSize]);
 
   const setViewport = useCallback((viewport: typeof state.viewport) => {
     dispatch({ type: "set_viewport", viewport });
   }, []);
+
+  const addStudentCard = useCallback(() => {
+    const rect = boardRef.current?.getBoundingClientRect();
+    dispatch({
+      type: "add_student_card",
+      boardSize: {
+        width: rect?.width ?? 900,
+        height: rect?.height ?? 600,
+      },
+    });
+  }, []);
+
+  const addStickyNote = useCallback(() => {
+    dispatch({
+      type: "add_sticky_note",
+      boardSize: getBoardSize(),
+    });
+  }, [getBoardSize]);
+
+  const moveStudentCard = useCallback(
+    (id: string, position: { x: number; y: number }) => {
+      if (id === "student-card-1") {
+        hasCustomizedHandwritingRef.current = true;
+      }
+      dispatch({ type: "move_student_card", id, position });
+    },
+    [],
+  );
+
+  const resizeStudentCard = useCallback(
+    (id: string, size: { width: number; height: number }) => {
+      if (id === "student-card-1") {
+        hasCustomizedHandwritingRef.current = true;
+      }
+      dispatch({ type: "resize_student_card", id, size });
+    },
+    [],
+  );
+
+  const renameStudentCard = useCallback((id: string, label: string) => {
+    dispatch({ type: "rename_student_card", id, label });
+  }, []);
+
+  const setStudentCardCaptureActive = useCallback((id: string, value: boolean) => {
+    dispatch({ type: "set_student_card_capturing", id, value });
+  }, []);
+
+  const moveStickyNote = useCallback((id: string, position: { x: number; y: number }) => {
+    dispatch({ type: "move_sticky_note", id, position });
+  }, []);
+
+  const resizeStickyNote = useCallback((id: string, size: { width: number; height: number }) => {
+    dispatch({ type: "resize_sticky_note", id, size });
+  }, []);
+
+  const updateStickyNoteText = useCallback((id: string, text: string) => {
+    dispatch({ type: "update_sticky_note_text", id, text });
+  }, []);
+
+  const setInkTool = useCallback((tool: InkTool) => {
+    dispatch({ type: "set_ink_tool", tool });
+  }, []);
+
+  const setInkColor = useCallback((color: InkColor) => {
+    dispatch({ type: "set_ink_color", color });
+  }, []);
+
+  const commitPrivateBoardStroke = useCallback((stroke: PrivateBoardInkStroke) => {
+    dispatch({ type: "commit_private_board_stroke", stroke });
+  }, []);
+
+  const setActiveInkTarget = useCallback((target: InkTarget) => {
+    dispatch({ type: "set_active_ink_target", target });
+  }, []);
+
+  const undoActiveInk = useCallback(() => {
+    const activeTarget = state.ink.activeTarget;
+    if (activeTarget.kind === "student_card") {
+      inkCommandIdRef.current += 1;
+      setInkCommand({
+        id: inkCommandIdRef.current,
+        target: activeTarget,
+        action: "undo",
+      });
+      return;
+    }
+
+    if (activeTarget.kind === "private_board") {
+      dispatch({ type: "undo_active_ink" });
+    }
+  }, [state.ink.activeTarget]);
+
+  const clearActiveInk = useCallback(() => {
+    const activeTarget = state.ink.activeTarget;
+    if (activeTarget.kind === "student_card") {
+      inkCommandIdRef.current += 1;
+      setInkCommand({
+        id: inkCommandIdRef.current,
+        target: activeTarget,
+        action: "clear",
+      });
+      return;
+    }
+
+    if (activeTarget.kind === "private_board") {
+      dispatch({ type: "clear_active_ink" });
+    }
+  }, [state.ink.activeTarget]);
+
+  const canChangeActiveInk =
+    state.ink.activeTarget.kind === "student_card" ||
+    (state.ink.activeTarget.kind === "private_board" &&
+      state.privateBoardStrokes.length > 0);
+  const textbookMode = textbookDisplayMode({
+    hasDocument: Boolean(activeDocId),
+    textbook: state.overlays.textbook,
+    workspaceWidth: workspaceSize.width,
+  });
+  const dockWidth = pdfDockWidth(workspaceSize.width, workspaceSize.height);
+  const textbookToggleLabel = textbookMode === "collapsed"
+    ? `Open textbook${filename ? `: ${filename}` : ""}`
+    : `Close textbook${filename ? `: ${filename}` : ""}`;
 
   const zoomFromCenter = useCallback(
     (factor: number) => {
@@ -94,6 +262,21 @@ export default function SharedReasoningWorkspace({
   );
 
   useLayoutEffect(() => {
+    const workspaceMain = workspaceMainRef.current;
+    if (!workspaceMain) return;
+
+    const updateWorkspaceSize = () => {
+      const rect = workspaceMain.getBoundingClientRect();
+      setWorkspaceSize({ width: rect.width, height: rect.height });
+    };
+
+    updateWorkspaceSize();
+    const observer = new ResizeObserver(updateWorkspaceSize);
+    observer.observe(workspaceMain);
+    return () => observer.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
     const board = boardRef.current;
     if (!board) return;
 
@@ -102,8 +285,16 @@ export default function SharedReasoningWorkspace({
       const rect = board.getBoundingClientRect();
       const layout = defaultHandwritingLayout(rect.width, rect.height);
       if (!layout) return;
-      dispatch({ type: "move_handwriting", position: layout.position });
-      dispatch({ type: "resize_handwriting", size: layout.size });
+      dispatch({
+        type: "move_student_card",
+        id: "student-card-1",
+        position: layout.position,
+      });
+      dispatch({
+        type: "resize_student_card",
+        id: "student-card-1",
+        size: layout.size,
+      });
     };
 
     applyResponsiveDefault();
@@ -113,49 +304,143 @@ export default function SharedReasoningWorkspace({
   }, []);
 
   return (
-    <section className="shared-workspace">
-      <div
-        className="shared-board"
-        aria-label="Shared reasoning board"
-        ref={boardRef}
-        style={
-          {
-            "--canvas-pan-x": `${state.viewport.pan.x}px`,
-            "--canvas-pan-y": `${state.viewport.pan.y}px`,
-            "--canvas-zoom": String(state.viewport.zoom),
-          } as React.CSSProperties
-        }
-      >
-        <TextbookOverlay
-          docId={activeDocId}
-          title={filename}
-          mode={state.overlays.textbook}
-          onToggle={() =>
-            dispatch({
-              type: "set_textbook",
-              value: state.overlays.textbook === "large" ? "small" : "large",
-            })
-          }
-        />
-        <TranscriptOverlay
-          open={state.overlays.transcriptOpen}
-          onToggle={() => dispatch({ type: "toggle_transcript" })}
-        />
-        <CanvasViewport
-          boardRef={boardRef}
-          viewport={state.viewport}
-          onViewportChange={setViewport}
-        >
-          <TutorObjectLayer objects={state.objects} onMoveObject={moveObject} />
-          <HandwritingPanel
-            position={state.handwriting.position}
-            size={state.handwriting.size}
-            isCapturing={state.handwriting.isCapturing}
-            onMove={moveHandwriting}
-            onResize={resizeHandwriting}
-            onCaptureStateChange={setCaptureActive}
+    <section
+      className={
+        textbookMode === "docked"
+          ? "shared-workspace pdf-docked"
+          : "shared-workspace"
+      }
+      style={
+        {
+          "--pdf-dock-width": `${dockWidth}px`,
+        } as React.CSSProperties
+      }
+    >
+      <div className="shared-workspace-main" ref={workspaceMainRef}>
+        {textbookMode === "docked" && (
+          <TextbookOverlay
+            docId={activeDocId}
+            title={filename}
+            displayMode={textbookMode}
           />
-        </CanvasViewport>
+        )}
+        <div
+          className="shared-board"
+          aria-label="Shared reasoning board"
+          ref={boardRef}
+          style={
+            {
+              "--canvas-pan-x": `${state.viewport.pan.x}px`,
+              "--canvas-pan-y": `${state.viewport.pan.y}px`,
+              "--canvas-zoom": String(state.viewport.zoom),
+            } as React.CSSProperties
+          }
+        >
+          <div className="board-top-actions">
+            <button
+              type="button"
+              onClick={addStudentCard}
+              aria-label="Add student card"
+              title="Add student card"
+            >
+              <SquarePen size={17} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={addStickyNote}
+              aria-label="Add sticky note"
+              title="Add sticky note"
+            >
+              <StickyNoteIcon size={17} aria-hidden="true" />
+            </button>
+            {activeDocId && (
+              <button
+                type="button"
+                className={`textbook-control-button ${textbookMode !== "collapsed" ? "is-active" : ""}`.trim()}
+                onClick={() =>
+                  dispatch({
+                    type: "set_textbook",
+                    value: textbookMode === "collapsed" ? "large" : "small",
+                  })
+                }
+                aria-label={textbookToggleLabel}
+                title={textbookToggleLabel}
+                aria-pressed={textbookMode !== "collapsed"}
+              >
+                {textbookMode === "collapsed" ? (
+                  <FileText size={17} aria-hidden="true" />
+                ) : (
+                  <FileX size={17} aria-hidden="true" />
+                )}
+              </button>
+            )}
+          </div>
+          {textbookMode === "overlay" && (
+            <TextbookOverlay
+              docId={activeDocId}
+              title={filename}
+              displayMode={textbookMode}
+              onClose={() => dispatch({ type: "set_textbook", value: "small" })}
+            />
+          )}
+          <TranscriptOverlay
+            open={state.overlays.transcriptOpen}
+            onToggle={() => dispatch({ type: "toggle_transcript" })}
+          />
+          <BoardInkToolbar
+            tool={state.ink.tool}
+            color={state.ink.color}
+            canUndo={canChangeActiveInk}
+            canClear={canChangeActiveInk}
+            onToolChange={setInkTool}
+            onColorChange={setInkColor}
+            onUndo={undoActiveInk}
+            onClear={clearActiveInk}
+          />
+          <CanvasViewport
+            boardRef={boardRef}
+            viewport={state.viewport}
+            onViewportChange={setViewport}
+          >
+            <PrivateBoardInkLayer
+              strokes={state.privateBoardStrokes}
+              tool={state.ink.tool}
+              color={state.ink.color}
+              onCommitStroke={commitPrivateBoardStroke}
+            />
+            <TutorObjectLayer
+              objects={state.objects}
+              onMoveObject={moveObject}
+              onResizeObject={resizeObject}
+              onActivateObject={activateObject}
+              onCollapseObject={collapseObject}
+            />
+            <StickyNoteLayer
+              notes={state.stickyNotes}
+              onMoveNote={moveStickyNote}
+              onResizeNote={resizeStickyNote}
+              onTextChange={updateStickyNoteText}
+            />
+            {state.studentCards.map((card) => (
+              <HandwritingPanel
+                key={card.id}
+                cardId={card.id}
+                label={card.label}
+                position={card.position}
+                size={card.size}
+                isCapturing={card.isCapturing}
+                inkTool={state.ink.tool}
+                inkColor={state.ink.color}
+                inkCommand={inkCommand}
+                onMove={moveStudentCard}
+                onResize={resizeStudentCard}
+                onRename={renameStudentCard}
+                onCaptureStateChange={setStudentCardCaptureActive}
+                onStrokeTargeted={setActiveInkTarget}
+              />
+            ))}
+          </CanvasViewport>
+        </div>
       </div>
       <VoiceComposer
         status={status}

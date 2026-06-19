@@ -19,7 +19,7 @@ from app.agent.whiteboard.extractor.openai import (
     ExtractorResponse,
     OpenAIBoardExtractor,
 )
-from app.agent.whiteboard.messages import AiBoardPlot, AiBoardText
+from app.agent.whiteboard.messages import AiBoardDiagram, AiBoardPlot, AiBoardText
 
 
 @dataclass
@@ -181,6 +181,46 @@ async def test_extract_plot_kind() -> None:
 
     assert isinstance(items[0], AiBoardPlot)
     assert items[0].expression == "x**2"
+
+
+async def test_extract_diagram_kind() -> None:
+    expected = ExtractorResponse(
+        items=[
+            AiBoardDiagram(
+                kind="diagram",
+                id="d1",
+                syntax="mermaid",
+                source="flowchart TD\n  A[42] --> B[2]\n  A --> C[21]",
+                label="Factor tree",
+            )
+        ]
+    )
+    ex = _make_extractor(expected)
+
+    items = await ex.extract(
+        sentence="Draw a factor tree for 42.",
+        current_items=[],
+        last_sentence=None,
+    )
+
+    assert isinstance(items[0], AiBoardDiagram)
+    assert items[0].syntax == "mermaid"
+
+
+async def test_extractor_prompt_contains_mermaid_and_shape_rules() -> None:
+    ex = _make_extractor(ExtractorResponse(items=[]))
+
+    await ex.extract(
+        sentence="Draw a factor tree for 42.",
+        current_items=[],
+        last_sentence=None,
+    )
+
+    system = ex._client.beta.chat.completions.calls[0]["messages"][0]["content"]
+    assert "Mermaid" in system
+    assert "flowchart TD" in system
+    assert "number line" in system
+    assert "shape" in system
 
 
 def test_extractor_response_schema_uses_AiBoardItem_discriminator() -> None:

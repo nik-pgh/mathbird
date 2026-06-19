@@ -8,8 +8,11 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "tsc -b --noEmit",
+    "test": "npm run test:math && npm run test:canvas && npm run test:board && npm run test:pdf-layout",
     "test:math": "node scripts/test-math-text-renderer.mjs",
-    "test:canvas": "node scripts/test-canvas-viewport.mjs"
+    "test:canvas": "node scripts/test-canvas-viewport.mjs",
+    "test:board": "node scripts/test-board-placement.mjs",
+    "test:pdf-layout": "node scripts/test-pdf-workspace-layout.mjs"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.0",
@@ -17,6 +20,7 @@
     "katex": "^0.16.47",
     "livekit-client": "^2.13.0",
     "lucide-react": "^1.20.0",
+    "mermaid": "^11.15.0",
     "perfect-freehand": "^1.2.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

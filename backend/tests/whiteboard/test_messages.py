@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from app.agent.whiteboard.messages import (
     AI_BOARD_TOPIC,
     USER_BOARD_TOPIC,
+    AiBoardDiagram,
     AiBoardPlot,
     AiBoardShape,
     AiBoardText,
@@ -24,16 +25,24 @@ def test_ai_board_update_round_trips_mixed_items() -> None:
             AiBoardText(kind="text", id="t1", markdown="Solve $2x + 3 = 9$."),
             AiBoardPlot(kind="plot", id="p1", expression="x**2 - 4", x_min=-3, x_max=3),
             AiBoardShape(kind="shape", id="s1", svg='<circle cx="10" cy="10" r="5"/>'),
+            AiBoardDiagram(
+                kind="diagram",
+                id="d1",
+                syntax="mermaid",
+                source="flowchart TD\n  A[42] --> B[2]\n  A --> C[21]",
+                label="Factor tree",
+            ),
         ],
     )
 
     dumped = update.model_dump_json()
     restored = AiBoardUpdate.model_validate_json(dumped)
 
-    assert len(restored.items) == 3
+    assert len(restored.items) == 4
     assert restored.items[0].kind == "text"
     assert restored.items[1].kind == "plot"
     assert restored.items[2].kind == "shape"
+    assert restored.items[3].kind == "diagram"
 
 
 def test_ai_board_item_requires_kind_field_in_json() -> None:
@@ -81,3 +90,14 @@ def test_user_board_snapshot_round_trips() -> None:
     assert restored.png_b64 == "aGVsbG8="
     assert restored.captured_at_ms == 1700000000123
     assert restored.is_empty is False
+
+
+def test_user_board_snapshot_defaults_to_first_student_card() -> None:
+    snap = UserBoardSnapshot(
+        png_b64="aGVsbG8=",
+        captured_at_ms=1700000000123,
+        is_empty=False,
+    )
+
+    assert snap.card_id == "student-card-1"
+    assert snap.card_label is None

@@ -24,6 +24,7 @@ from .listener import UserBoardListenerHandle, install_user_board_listener
 from .messages import (
     AI_BOARD_TOPIC,
     USER_BOARD_TOPIC,
+    AiBoardDiagram,
     AiBoardItem,
     AiBoardPlot,
     AiBoardShape,
@@ -48,6 +49,7 @@ class SessionData:
 __all__ = [
     "AI_BOARD_TOPIC",
     "USER_BOARD_TOPIC",
+    "AiBoardDiagram",
     "AiBoardItem",
     "AiBoardPlot",
     "AiBoardShape",

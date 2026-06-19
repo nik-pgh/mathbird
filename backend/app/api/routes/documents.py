@@ -22,7 +22,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 from urllib.request import url2pathname
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -121,6 +121,16 @@ def _filename_from_storage_key(key: str) -> str:
     return filename or "document.pdf"
 
 
+def _content_disposition(filename: str) -> str:
+    fallback = "".join(
+        ch if 0x20 <= ord(ch) < 0x7F and ch not in {'"', "\\", ";"} else "_"
+        for ch in filename
+    ).strip()
+    fallback = fallback or "document.pdf"
+    encoded = quote(filename, safe="")
+    return f'inline; filename="{fallback}"; filename*=UTF-8\'\'{encoded}'
+
+
 def _sidecar_key(doc_id: str) -> str:
     return f"{doc_id}/{_SIDECAR_NAME}"
 
@@ -217,12 +227,13 @@ async def get_document_file(doc_id: str):
         raise HTTPException(status_code=404, detail="Document not found.")
 
     filename = _filename_from_storage_key(stored.key)
+    content_disposition = _content_disposition(filename)
 
     if stored.uri.startswith("file://"):
         return FileResponse(
             _path_from_file_uri(stored.uri),
             media_type="application/pdf",
-            headers={"Content-Disposition": f'inline; filename="{filename}"'},
+            headers={"Content-Disposition": content_disposition},
         )
 
     async def _iter() -> AsyncIterator[bytes]:
@@ -236,5 +247,5 @@ async def get_document_file(doc_id: str):
     return StreamingResponse(
         _iter(),
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        headers={"Content-Disposition": content_disposition},
     )
