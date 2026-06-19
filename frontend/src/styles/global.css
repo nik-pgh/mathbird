@@ -7,16 +7,16 @@
   --mb-coral-soft: #ffe3dc;
   --mb-lavender: #d48be4;
   --mb-lavender-soft: #f3def8;
-  --mb-paper: #fff8ed;
-  --mb-paper-deep: #f4e5cb;
+  --mb-paper: #fbfaf6;
+  --mb-paper-deep: #ece6dc;
   --mb-ink: #20362f;
 
-  --bg: #fffaf2;
-  --bg-soft: #fff4e4;
-  --bg-pad: #fff8ed;
+  --bg: #fdfbf7;
+  --bg-soft: #f7f4ee;
+  --bg-pad: #fbfaf6;
 
-  --border: #eadcc7;
-  --border-strong: #d5c0a0;
+  --border: #e1ddd5;
+  --border-strong: #c9c2b7;
 
   --text: var(--mb-ink);
   --text-2: #65756f;

@@ -1,7 +1,7 @@
 /* ─── Session room ────────────────────────────────────────────────────── */
 /*
  * Loaded by SessionPage.tsx. The session is now a spatial shared workspace:
- * a warm board with movable learning surfaces and a persistent voice composer.
+ * a soft board with movable learning surfaces and a persistent voice composer.
  */
 
 .shared-workspace {
@@ -30,7 +30,7 @@
   min-height: 0;
   overflow: hidden;
   touch-action: none;
-  background: linear-gradient(135deg, var(--mb-paper) 0%, #fffaf2 55%, var(--bg-soft) 100%);
+  background: linear-gradient(135deg, var(--mb-paper) 0%, var(--bg) 55%, var(--bg-soft) 100%);
 }
 
 .shared-board::before {
@@ -435,7 +435,7 @@
   min-height: 0;
   background:
     radial-gradient(circle, rgba(41, 72, 62, 0.13) 1px, transparent 1px),
-    linear-gradient(180deg, #fffdf7, #fffaf2);
+    linear-gradient(180deg, #fffefa, var(--bg));
   background-size:
     16px 16px,
     auto;
