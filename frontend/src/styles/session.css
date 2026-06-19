@@ -701,11 +701,18 @@
 
 .textbook-overlay-docked {
   position: relative;
+  align-self: start;
   z-index: 2;
   min-width: 0;
   min-height: 0;
+  max-height: 100%;
+  overflow: auto;
   border-right: 1px solid var(--border-strong);
   box-shadow: 8px 0 26px rgba(32, 54, 47, 0.08);
+}
+
+.textbook-overlay-docked.textbook-overlay-viewer {
+  grid-template-rows: auto auto;
 }
 
 .textbook-overlay-mobile {
@@ -765,6 +772,12 @@
   min-height: 0;
   overflow: hidden;
   background: #ffffff;
+}
+
+.textbook-overlay-docked .textbook-overlay-body {
+  width: 100%;
+  aspect-ratio: 8.5 / 12.2;
+  max-height: calc(100svh - 154px);
 }
 
 .textbook-overlay-frame {

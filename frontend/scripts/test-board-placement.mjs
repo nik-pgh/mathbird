@@ -634,6 +634,7 @@ assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*max-height:\s*calc\(100% 
 assert.match(sessionCss, /\.board-ink-toolbar button\.active\s*\{[^}]*background:\s*rgba\(41,\s*72,\s*62,\s*0\.1\);[^}]*color:\s*var\(--mb-green\);/s);
 assert.match(sessionCss, /\.board-ink-divider\s*\{[^}]*width:\s*22px;[^}]*height:\s*1px;/s);
 assert.match(sessionCss, /\.ink-color-swatch\s*\{/s);
+assert.match(sessionCss, /\.textbook-overlay-docked\s+\.textbook-overlay-body\s*\{[^}]*aspect-ratio:\s*8\.5\s*\/\s*12\.2;/s);
 assert.doesNotMatch(sessionCss, /\.tutor-focus-rail/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-history/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-(?:plot|shape|diagram)\s*\{[^}]*(?:width|min-height)\s*:/s);
