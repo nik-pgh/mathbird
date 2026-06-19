@@ -649,6 +649,8 @@ assert.match(sessionCss, /\.ink-color-swatch\s*\{/s);
 assert.doesNotMatch(sessionCss, /\.textbook-overlay-head/);
 assert.match(sessionCss, /\.textbook-control-button\.is-active\s*\{/s);
 assert.match(sessionCss, /\.shared-workspace\.pdf-docked\s+\.shared-workspace-main\s*\{/s);
+assert.match(sessionCss, /\.transcript-overlay\s*\{[^}]*position:\s*fixed;[^}]*left:\s*50%;[^}]*width:\s*min\(720px,\s*calc\(100vw - 28px\)\);/s);
+assert.match(sessionCss, /\.transcript-overlay\s*\{[^}]*background:\s*rgba\(32,\s*54,\s*47,\s*0\.58\);/s);
 assert.match(sessionCss, /\.textbook-overlay-docked\s+\.textbook-overlay-body\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;/s);
 assert.doesNotMatch(sessionCss, /\.textbook-overlay-docked\s+\.textbook-overlay-body\s*\{[^}]*aspect-ratio:/s);
 assert.doesNotMatch(sessionCss, /\.document-stage/s);
