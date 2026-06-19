@@ -82,6 +82,56 @@ assert.deepEqual(plain(tutorCardSizeForKind("plot")), { width: 360, height: 250 
 assert.deepEqual(plain(tutorCardSizeForKind("shape")), { width: 340, height: 240 });
 assert.deepEqual(plain(tutorCardSizeForKind("diagram")), { width: 380, height: 260 });
 
+const {
+  COLLAPSED_TUTOR_RIBBON_HEIGHT,
+  clampTutorCardSize,
+  deriveTutorBoardTitle,
+  layoutTutorFlow,
+} = sandbox.exports;
+
+assert.equal(COLLAPSED_TUTOR_RIBBON_HEIGHT, 44);
+
+assert.deepEqual(
+  plain(clampTutorCardSize({ width: 100, height: 90 })),
+  { width: 280, height: 180 },
+);
+assert.deepEqual(
+  plain(clampTutorCardSize({ width: 900, height: 800 })),
+  { width: 720, height: 520 },
+);
+
+assert.equal(
+  deriveTutorBoardTitle({ kind: "plot", id: "plot-1", expression: "y=x", x_min: -5, x_max: 5, label: "Linear graph" }, 3),
+  "Linear graph",
+);
+assert.equal(
+  deriveTutorBoardTitle({ kind: "diagram", id: "diagram-1", syntax: "mermaid", source: "graph TD;A-->B", label: "Factor tree" }, 4),
+  "Factor tree",
+);
+assert.equal(
+  deriveTutorBoardTitle({ kind: "text", id: "text-2", markdown: "### Perfect square factor\n54 = 2 x 27" }, 5),
+  "Perfect square factor",
+);
+assert.equal(
+  deriveTutorBoardTitle({ kind: "shape", id: "shape-1", svg: "<svg></svg>" }, 6),
+  "Sketch 6",
+);
+
+const flow = layoutTutorFlow({
+  origin: { x: 36, y: 36 },
+  maxColumnHeight: 240,
+  items: [
+    { id: "a", collapsed: true, size: { width: 340, height: 180 } },
+    { id: "b", collapsed: false, size: { width: 340, height: 180 } },
+    { id: "c", collapsed: true, size: { width: 380, height: 260 } },
+  ],
+});
+assert.deepEqual(plain(flow.positions.a), { x: 36, y: 36 });
+assert.deepEqual(plain(flow.positions.b), { x: 36, y: 90 });
+assert.deepEqual(plain(flow.positions.c), { x: 400, y: 36 });
+assert.equal(flow.width, 744);
+assert.equal(flow.height, 234);
+
 const reducerPath = new URL("../src/components/session/workspaceReducer.ts", import.meta.url);
 const reducerSource = fs.readFileSync(reducerPath, "utf8");
 const reducerModule = { exports: {} };
