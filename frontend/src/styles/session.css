@@ -934,7 +934,7 @@
   padding: 12px 14px 14px;
   border-top: 1px solid var(--border);
   background:
-    linear-gradient(180deg, rgba(255, 248, 237, 0.88), var(--bg-soft)),
+    linear-gradient(180deg, rgba(253, 251, 247, 0.9), var(--bg-soft)),
     var(--bg-soft);
 }
 
@@ -959,7 +959,7 @@
   padding: 6px 6px 6px 15px;
   border: 1px solid var(--border-strong);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(253, 253, 251, 0.86);
   box-shadow: var(--shadow-soft);
 }
 
@@ -1070,7 +1070,7 @@
   padding: 0 12px;
   border: 1px solid var(--border-strong);
   border-radius: 17px;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(253, 253, 251, 0.88);
   color: var(--mb-green);
   font-size: 12px;
   font-weight: 750;
