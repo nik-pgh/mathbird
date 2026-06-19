@@ -41,7 +41,7 @@
   pointer-events: none;
   background-image: radial-gradient(
     circle,
-    rgba(0, 168, 120, 0.16) 1px,
+    rgba(100, 108, 104, 0.12) 1px,
     transparent 1px
   );
   background-size: calc(18px * var(--canvas-zoom, 1)) calc(18px * var(--canvas-zoom, 1));
@@ -434,7 +434,7 @@
   position: relative;
   min-height: 0;
   background:
-    radial-gradient(circle, rgba(0, 168, 120, 0.16) 1px, transparent 1px),
+    radial-gradient(circle, rgba(100, 108, 104, 0.1) 1px, transparent 1px),
     linear-gradient(180deg, #ffffff, var(--bg-pad));
   background-size:
     16px 16px,
@@ -797,19 +797,21 @@
 /* ─── Transcript overlay and messages ─────────────────────────────────── */
 
 .transcript-overlay {
+  position: fixed;
   left: 50%;
-  bottom: 18px;
-  width: min(720px, calc(100% - 28px));
-  max-height: min(360px, 48%);
+  bottom: 96px;
+  z-index: 12;
+  width: min(720px, calc(100vw - 28px));
+  max-height: min(360px, calc(100vh - 180px));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 168, 120, 0.22);
   border-radius: 8px;
-  background: rgba(26, 43, 52, 0.82);
-  color: #ffffff;
-  box-shadow: 0 14px 34px rgba(26, 43, 52, 0.18);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  box-shadow: 0 14px 34px rgba(26, 43, 52, 0.12);
+  backdrop-filter: blur(16px) saturate(1.2);
   transform: translateX(-50%);
 }
 
@@ -823,12 +825,12 @@
   gap: 10px;
   min-height: 42px;
   padding: 8px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  border-bottom: 1px solid rgba(0, 168, 120, 0.14);
 }
 
 .transcript-overlay-head span {
   flex: 1;
-  color: #ffffff;
+  color: var(--text);
   font-size: 12px;
   font-weight: 750;
 }
@@ -844,7 +846,7 @@
   place-items: center;
   min-height: 160px;
   padding: 28px 20px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-3);
   font-size: 13px;
   text-align: center;
 }
@@ -911,11 +913,11 @@
 
 .transcript-overlay .msg .body,
 .transcript-overlay .msg .body .who {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .transcript-overlay .msg .body .interim {
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--text-3);
 }
 
 @keyframes msg-caret-blink {
@@ -1144,8 +1146,8 @@
 
 @media (max-width: 900px) {
   .transcript-overlay {
-    bottom: 12px;
-    width: min(720px, calc(100% - 20px));
+    bottom: 92px;
+    width: min(720px, calc(100vw - 20px));
     max-height: 32vh;
   }
 }
