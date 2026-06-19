@@ -357,6 +357,10 @@
   cursor: grabbing;
 }
 
+.tutor-object-collapsed .tutor-object-handle:active {
+  cursor: pointer;
+}
+
 .tutor-object-body {
   min-height: 0;
   overflow: auto;
