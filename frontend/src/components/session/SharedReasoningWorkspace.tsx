@@ -77,6 +77,10 @@ export default function SharedReasoningWorkspace({
     dispatch({ type: "activate_object", id, boardSize: getBoardSize() });
   }, [getBoardSize]);
 
+  const collapseObject = useCallback((id: string) => {
+    dispatch({ type: "collapse_object", id, boardSize: getBoardSize() });
+  }, [getBoardSize]);
+
   const setViewport = useCallback((viewport: typeof state.viewport) => {
     dispatch({ type: "set_viewport", viewport });
   }, []);
@@ -214,6 +218,7 @@ export default function SharedReasoningWorkspace({
             onMoveObject={moveObject}
             onResizeObject={resizeObject}
             onActivateObject={activateObject}
+            onCollapseObject={collapseObject}
           />
           {state.studentCards.map((card) => (
             <HandwritingPanel

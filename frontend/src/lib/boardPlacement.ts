@@ -114,7 +114,7 @@ export function deriveTutorBoardTitle(
       .split(/\r?\n/)
       .map((part) => part.trim().replace(/^#{1,6}\s*/, "").trim())
       .find(Boolean);
-    if (line) return line.slice(0, 48);
+    if (line) return line;
   }
 
   return `Tutor Board ${index}`;

@@ -1,9 +1,12 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
+import DOMPurify from "dompurify";
+import { Maximize2, Minimize2 } from "lucide-react";
 import {
   COLLAPSED_TUTOR_RIBBON_HEIGHT,
   deriveTutorBoardTitle,
   tutorCardSizeForKind,
 } from "../../lib/boardPlacement";
+import { renderMathTextToHtml } from "../../lib/mathText";
 import BoardItem from "../whiteboard/BoardItem";
 import { useCanvasViewportContext } from "./CanvasViewportContext";
 import type { BoardObject, Point } from "./workspaceTypes";
@@ -13,6 +16,7 @@ interface Props {
   onMoveObject: (id: string, position: Point) => void;
   onResizeObject: (id: string, size: { width: number; height: number }) => void;
   onActivateObject: (id: string) => void;
+  onCollapseObject: (id: string) => void;
 }
 
 interface DragState {
@@ -54,6 +58,7 @@ export default function TutorObjectLayer({
   onMoveObject,
   onResizeObject,
   onActivateObject,
+  onCollapseObject,
 }: Props) {
   const dragRef = useRef<DragState | null>(null);
   const resizeRef = useRef<ResizeState | null>(null);
@@ -117,6 +122,10 @@ export default function TutorObjectLayer({
       {objects.map((object, index) => {
         const size = object.size ?? tutorCardSizeForKind(object.kind);
         const title = deriveTutorBoardTitle(object.item, index + 1);
+        const titleHtml = DOMPurify.sanitize(
+          renderMathTextToHtml(title, { lineBreaks: "collapse" }),
+          { USE_PROFILES: { html: true, mathMl: true, svg: true } },
+        );
         const isCollapsed = object.collapsed === true;
 
         return (
@@ -138,25 +147,8 @@ export default function TutorObjectLayer({
           >
             <div
               className="tutor-object-handle"
-              role={isCollapsed ? "button" : undefined}
-              tabIndex={isCollapsed ? 0 : undefined}
-              aria-label={`${isCollapsed ? "Expand" : "Move"} tutor ${KIND_LABELS[object.kind].toLowerCase()} card`}
-              onClick={() => {
-                if (isCollapsed) onActivateObject(object.id);
-              }}
-              onKeyDown={(event) => {
-                if (!isCollapsed) return;
-                if (event.key === " ") {
-                  event.preventDefault();
-                  onActivateObject(object.id);
-                  return;
-                }
-                if (event.key === "Enter") {
-                  onActivateObject(object.id);
-                }
-              }}
               onPointerDown={(event) => {
-                if (isCollapsed || event.button !== 0) return;
+                if (event.button !== 0) return;
                 const world = clientToWorld(event.clientX, event.clientY);
                 dragRef.current = {
                   objectId: object.id,
@@ -197,9 +189,37 @@ export default function TutorObjectLayer({
                 dragRef.current = null;
               }}
             >
-              <span className="tutor-object-title">{title}</span>
-              <span className="tutor-object-kind-pill">
-                {KIND_LABELS[object.kind]}
+              <span className="tutor-object-title" title={title}>
+                <span
+                  className="tutor-object-title-html"
+                  dangerouslySetInnerHTML={{ __html: titleHtml }}
+                />
+              </span>
+              <span className="tutor-object-title-actions">
+                <span className="tutor-object-kind-pill">
+                  {KIND_LABELS[object.kind]}
+                </span>
+                <button
+                  className="tutor-object-title-action"
+                  type="button"
+                  aria-label={isCollapsed ? "Enlarge tutor board" : "Minimize tutor board"}
+                  title={isCollapsed ? "Enlarge" : "Minimize"}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (isCollapsed) {
+                      onActivateObject(object.id);
+                    } else {
+                      onCollapseObject(object.id);
+                    }
+                  }}
+                >
+                  {isCollapsed ? (
+                    <Maximize2 size={12} aria-hidden="true" />
+                  ) : (
+                    <Minimize2 size={12} aria-hidden="true" />
+                  )}
+                </button>
               </span>
             </div>
             {!isCollapsed ? (

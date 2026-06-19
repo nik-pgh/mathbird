@@ -133,6 +133,11 @@ assert.equal(
   deriveTutorBoardTitle({ kind: "text", id: "text-3", markdown: "Intro body\nstill body\n## Heading Title" }, 6),
   "Intro body",
 );
+const longMathTitle = "\\(a_1+a_2+a_3+a_4+a_5+a_6+a_7+a_8+a_9+a_{10}=55\\)";
+assert.equal(
+  deriveTutorBoardTitle({ kind: "text", id: "text-4", markdown: longMathTitle }, 7),
+  longMathTitle,
+);
 assert.equal(
   deriveTutorBoardTitle({ kind: "shape", id: "shape-1", svg: "<svg></svg>" }, 6),
   "Sketch 6",
@@ -198,18 +203,26 @@ const withSecondTutorObject = workspaceReducer(
   { type: "ai_upsert", items: [shapeItem] },
 );
 const shapeObject = withSecondTutorObject.objects.find((object) => object.id === shapeItem.id);
-const collapsedTextObject = withSecondTutorObject.objects.find((object) => object.id === textItem.id);
-assert.deepEqual(plain(shapeObject.position), { x: 420, y: 294 });
+const retainedTextObject = withSecondTutorObject.objects.find((object) => object.id === textItem.id);
+assert.deepEqual(plain(shapeObject.position), { x: 420, y: 460 });
 assert.deepEqual(plain(shapeObject.size), { width: 340, height: 240 });
 assert.equal(shapeObject.collapsed, false);
-assert.equal(collapsedTextObject.collapsed, true);
+assert.equal(retainedTextObject.collapsed, false);
 
 const afterActivation = workspaceReducer(withSecondTutorObject, {
   type: "activate_object",
   id: textItem.id,
 });
 assert.equal(afterActivation.objects.find((object) => object.id === textItem.id).collapsed, false);
-assert.equal(afterActivation.objects.find((object) => object.id === shapeItem.id).collapsed, true);
+assert.equal(afterActivation.objects.find((object) => object.id === shapeItem.id).collapsed, false);
+
+const afterCollapse = workspaceReducer(afterActivation, {
+  type: "collapse_object",
+  id: textItem.id,
+  boardSize: { width: 900, height: 700 },
+});
+assert.equal(afterCollapse.objects.find((object) => object.id === textItem.id).collapsed, true);
+assert.equal(afterCollapse.objects.find((object) => object.id === shapeItem.id).collapsed, false);
 
 const thirdTextItem = { kind: "text", id: "tutor-text-3", markdown: "### New radical step\nsqrt(54)" };
 const flowState = workspaceReducer(
@@ -220,15 +233,15 @@ const flowState = workspaceReducer(
     boardSize: { width: 900, height: 260 },
   },
 );
-assert.equal(flowState.objects.find((object) => object.id === textItem.id).collapsed, true);
-assert.equal(flowState.objects.find((object) => object.id === shapeItem.id).collapsed, true);
+assert.equal(flowState.objects.find((object) => object.id === textItem.id).collapsed, false);
+assert.equal(flowState.objects.find((object) => object.id === shapeItem.id).collapsed, false);
 assert.equal(flowState.objects.find((object) => object.id === thirdTextItem.id).collapsed, false);
 assert.deepEqual(
   plain(flowState.objects.map((object) => object.position)),
   [
     { x: 420, y: 240 },
-    { x: 420, y: 294 },
-    { x: 420, y: 348 },
+    { x: 420, y: 460 },
+    { x: 854, y: 240 },
   ],
 );
 
@@ -252,8 +265,8 @@ assert.deepEqual(
   plain(firstTutorMoved.objects.map((object) => object.position)),
   [
     { x: 450, y: 260 },
-    { x: 450, y: 314 },
-    { x: 450, y: 368 },
+    { x: 420, y: 460 },
+    { x: 854, y: 240 },
   ],
 );
 
@@ -265,9 +278,9 @@ const secondTutorMoved = workspaceReducer(resizedTutor, {
 assert.deepEqual(
   plain(secondTutorMoved.objects.map((object) => object.position)),
   [
-    { x: 390, y: 250 },
+    { x: 420, y: 240 },
     { x: 390, y: 304 },
-    { x: 390, y: 358 },
+    { x: 854, y: 240 },
   ],
 );
 
@@ -306,15 +319,21 @@ const tutorLayerPath = new URL("../src/components/session/TutorObjectLayer.tsx",
 const tutorLayerSource = fs.readFileSync(tutorLayerPath, "utf8");
 assert.match(tutorLayerSource, /objects\.map/);
 assert.match(tutorLayerSource, /deriveTutorBoardTitle/);
+assert.match(tutorLayerSource, /renderMathTextToHtml/);
+assert.match(tutorLayerSource, /DOMPurify\.sanitize/);
 assert.match(tutorLayerSource, /onResizeObject/);
 assert.match(tutorLayerSource, /tutor-object-resize/);
+assert.match(tutorLayerSource, /onCollapseObject/);
+assert.match(tutorLayerSource, /tutor-object-title-action/);
+assert.match(tutorLayerSource, /Maximize2/);
+assert.match(tutorLayerSource, /Minimize2/);
 assert.match(tutorLayerSource, /onKeyDown/);
 assert.match(tutorLayerSource, /ArrowRight/);
 assert.match(tutorLayerSource, /ArrowLeft/);
 assert.match(tutorLayerSource, /ArrowDown/);
 assert.match(tutorLayerSource, /ArrowUp/);
-assert.match(tutorLayerSource, /role=\{isCollapsed \? "button" : undefined\}/);
-assert.match(tutorLayerSource, /tabIndex=\{isCollapsed \? 0 : undefined\}/);
+assert.doesNotMatch(tutorLayerSource, /role=\{isCollapsed \? "button" : undefined\}/);
+assert.doesNotMatch(tutorLayerSource, /tabIndex=\{isCollapsed \? 0 : undefined\}/);
 assert.match(tutorLayerSource, /onLostPointerCapture=\{endResize\}/);
 assert.doesNotMatch(tutorLayerSource, /activeObject\s*=/);
 assert.doesNotMatch(tutorLayerSource, /tutor-object-history/);
@@ -327,17 +346,22 @@ const workspaceTypesPath = new URL("../src/components/session/workspaceTypes.ts"
 const workspaceTypesSource = fs.readFileSync(workspaceTypesPath, "utf8");
 assert.match(workspaceTypesSource, /collapsed\?:\s*boolean/);
 assert.match(workspaceTypesSource, /activate_object/);
+assert.match(workspaceTypesSource, /collapse_object/);
 
 const workspacePath = new URL("../src/components/session/SharedReasoningWorkspace.tsx", import.meta.url);
 const workspaceSource = fs.readFileSync(workspacePath, "utf8");
 assert.match(workspaceSource, /boardSize: getBoardSize\(\)/);
 assert.match(workspaceSource, /resizeObject/);
 assert.match(workspaceSource, /onResizeObject=\{resizeObject\}/);
+assert.match(workspaceSource, /collapseObject/);
+assert.match(workspaceSource, /onCollapseObject=\{collapseObject\}/);
 
 const handwritingPanelPath = new URL("../src/components/session/HandwritingPanel.tsx", import.meta.url);
 const handwritingPanelSource = fs.readFileSync(handwritingPanelPath, "utf8");
 assert.match(handwritingPanelSource, /onRename/);
 assert.match(handwritingPanelSource, /handwriting-topic-input/);
+assert.match(handwritingPanelSource, /GripVertical/);
+assert.match(handwritingPanelSource, /handwriting-drag-grip/);
 assert.match(handwritingPanelSource, /draftLabel/);
 assert.match(handwritingPanelSource, /onBlur=\{\(\) => onRename\(cardId, draftLabel\)\}/);
 assert.match(handwritingPanelSource, /aria-label="Student card topic"/);
@@ -347,9 +371,13 @@ assert.match(workspaceSource, /onRename=\{renameStudentCard\}/);
 const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
 const sessionCss = fs.readFileSync(sessionCssPath, "utf8");
 assert.match(sessionCss, /\.tutor-object\s*\{[^}]*position:\s*absolute;/s);
-assert.match(sessionCss, /\.tutor-object-collapsed\s*\{[^}]*cursor:\s*pointer;/s);
-assert.match(sessionCss, /\.tutor-object-collapsed\s+\.tutor-object-handle\s*\{[^}]*cursor:\s*pointer;/s);
+assert.doesNotMatch(sessionCss, /\.tutor-object-collapsed\s*\{[^}]*cursor:\s*pointer;/s);
+assert.match(sessionCss, /\.tutor-object-collapsed\s+\.tutor-object-handle\s*\{[^}]*cursor:\s*grab;/s);
+assert.match(sessionCss, /\.tutor-object-title-html\s*\{[^}]*overflow:\s*hidden;/s);
+assert.match(sessionCss, /\.tutor-object-title-actions\s*\{[^}]*display:\s*inline-flex;/s);
+assert.match(sessionCss, /\.tutor-object-title-action\s*\{[^}]*touch-action:\s*manipulation;/s);
 assert.match(sessionCss, /\.tutor-object-resize\s*\{[^}]*cursor:\s*nwse-resize;/s);
+assert.match(sessionCss, /\.handwriting-drag-grip\s*\{[^}]*cursor:\s*grab;/s);
 assert.match(sessionCss, /\.handwriting-topic-input\s*\{[^}]*cursor:\s*text;/s);
 assert.doesNotMatch(sessionCss, /\.tutor-focus-rail/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-history/s);

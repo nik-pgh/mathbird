@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Eraser, Pencil, Trash2, Undo2 } from "lucide-react";
+import { Eraser, GripVertical, Pencil, Trash2, Undo2 } from "lucide-react";
 import { getStroke } from "perfect-freehand";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
 import {
@@ -333,22 +333,26 @@ export default function HandwritingPanel({
       aria-label={`${label} handwriting card`}
     >
       <div className="handwriting-panel-head">
-        <span
-          className="handwriting-panel-drag-handle"
+        <button
+          type="button"
+          className="handwriting-drag-grip handwriting-panel-drag-handle"
+          aria-label={`Move ${label}`}
+          title="Move card"
           onPointerDown={onDragHandlePointerDown}
           onPointerMove={onDragHandlePointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          <input
-            className="handwriting-topic-input"
-            value={draftLabel}
-            onPointerDown={(event) => event.stopPropagation()}
-            onChange={(event) => setDraftLabel(event.currentTarget.value)}
-            onBlur={() => onRename(cardId, draftLabel)}
-            aria-label="Student card topic"
-          />
-        </span>
+          <GripVertical size={14} aria-hidden="true" />
+        </button>
+        <input
+          className="handwriting-topic-input"
+          value={draftLabel}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) => setDraftLabel(event.currentTarget.value)}
+          onBlur={() => onRename(cardId, draftLabel)}
+          aria-label="Student card topic"
+        />
         <div
           className="handwriting-tools"
           onPointerDown={stopToolbarPointer}

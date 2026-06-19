@@ -163,16 +163,22 @@
 }
 
 .handwriting-panel-drag-handle {
-  min-width: 0;
-  flex: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
   color: var(--text-3);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  overflow-wrap: anywhere;
   cursor: grab;
   touch-action: none;
   user-select: none;
+}
+
+.handwriting-drag-grip {
+  cursor: grab;
 }
 
 .handwriting-panel-drag-handle:active {
@@ -180,8 +186,9 @@
 }
 
 .handwriting-topic-input {
-  width: 100%;
+  width: auto;
   min-width: 0;
+  flex: 1;
   height: 24px;
   padding: 2px 4px;
   border: 0;
@@ -304,7 +311,6 @@
 
 .tutor-object-collapsed {
   grid-template-rows: auto;
-  cursor: pointer;
 }
 
 .tutor-object-expanded {
@@ -327,19 +333,42 @@
 
 .tutor-object-collapsed .tutor-object-handle {
   height: 100%;
-  cursor: pointer;
+  cursor: grab;
 }
 
 .tutor-object-title {
+  display: block;
+  min-width: 0;
+  flex: 1;
   font-size: 10px;
   font-weight: 600;
   color: #5b3565;
+}
+
+.tutor-object-title-html {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-object-title-html .katex {
+  font-size: 1em;
+  line-height: 1;
 }
 
 .tutor-object-collapsed .tutor-object-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tutor-object-title-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .tutor-object-kind-pill {
@@ -353,12 +382,31 @@
   letter-spacing: 0.02em;
 }
 
+.tutor-object-title-action {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(91, 53, 101, 0.18);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.76);
+  color: #5b3565;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tutor-object-title-action:hover {
+  border-color: rgba(91, 53, 101, 0.38);
+  background: #ffffff;
+}
+
 .tutor-object-handle:active {
   cursor: grabbing;
 }
 
 .tutor-object-collapsed .tutor-object-handle:active {
-  cursor: pointer;
+  cursor: grabbing;
 }
 
 .tutor-object-body {

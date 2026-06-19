@@ -57,8 +57,14 @@ export function workspaceReducer(
         ),
       };
     case "move_object": {
-      const translated = translateTutorFlow(state.objects, action.id, action.position);
-      return translated ? { ...state, objects: translated } : state;
+      const existing = state.objects.find((object) => object.id === action.id);
+      if (!existing || pointsEqual(existing.position, action.position)) return state;
+      return {
+        ...state,
+        objects: state.objects.map((object) =>
+          object.id === action.id ? { ...object, position: action.position } : object,
+        ),
+      };
     }
     case "resize_object":
       return {
@@ -74,10 +80,19 @@ export function workspaceReducer(
       return {
         ...state,
         objects: reflowTutorObjects(
-          state.objects.map((obj) => ({
-            ...obj,
-            collapsed: obj.id !== action.id,
-          })),
+          state.objects.map((obj) =>
+            obj.id === action.id ? { ...obj, collapsed: false } : obj,
+          ),
+          action.boardSize,
+        ),
+      };
+    case "collapse_object":
+      return {
+        ...state,
+        objects: reflowTutorObjects(
+          state.objects.map((obj) =>
+            obj.id === action.id ? { ...obj, collapsed: true } : obj,
+          ),
           action.boardSize,
         ),
       };
@@ -176,14 +191,13 @@ function upsertBoardObjects(state: WorkspaceState, items: AiBoardItem[]): BoardO
   const existingById = new Map(state.objects.map((obj) => [obj.id, obj]));
   const activePosition = currentTutorFocusPosition(state.objects);
   const retained = state.objects
-    .filter((obj) => !incomingIds.has(obj.id))
-    .map((obj) => ({ ...obj, collapsed: true }));
+    .filter((obj) => !incomingIds.has(obj.id));
 
   const incoming = items.map((item) => {
     const existing = existingById.get(item.id);
     const size = existing?.size ?? tutorCardSizeForKind(item.kind);
     const position = existing?.position ?? activePosition;
-    return createBoardObject(item, position, size, item.id !== activeId);
+    return createBoardObject(item, position, size, existing?.collapsed ?? item.id !== activeId);
   });
 
   return [...retained, ...incoming];
@@ -269,24 +283,6 @@ function reflowTutorObjects(objects: BoardObject[], boardSize?: Size): BoardObje
   return objects.map((object) => ({
     ...object,
     position: layout.positions[object.id] ?? object.position,
-  }));
-}
-
-function translateTutorFlow(
-  objects: BoardObject[],
-  id: string,
-  nextPosition: Point,
-): BoardObject[] | null {
-  const moved = objects.find((object) => object.id === id);
-  if (!moved) return null;
-  const dx = nextPosition.x - moved.position.x;
-  const dy = nextPosition.y - moved.position.y;
-  return objects.map((object) => ({
-    ...object,
-    position: {
-      x: object.position.x + dx,
-      y: object.position.y + dy,
-    },
   }));
 }
 
