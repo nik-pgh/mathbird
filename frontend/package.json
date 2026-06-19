@@ -10,7 +10,8 @@
     "lint": "tsc -b --noEmit",
     "test:math": "node scripts/test-math-text-renderer.mjs",
     "test:canvas": "node scripts/test-canvas-viewport.mjs",
-    "test:board": "node scripts/test-board-placement.mjs"
+    "test:board": "node scripts/test-board-placement.mjs",
+    "test:pdf-layout": "node scripts/test-pdf-workspace-layout.mjs"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.0",
