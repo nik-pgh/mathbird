@@ -43,6 +43,11 @@ type InkCommand = {
   action: "undo" | "clear";
 } | null;
 
+type WorkspaceSize = {
+  width: number;
+  height: number;
+};
+
 interface Props {
   status: "connecting" | "connected" | "disconnected";
   activeDocId: string | null;
@@ -61,10 +66,11 @@ export default function SharedReasoningWorkspace({
     initialWorkspaceState,
   );
   const [inkCommand, setInkCommand] = useState<InkCommand>(null);
-  const [workspaceWidth, setWorkspaceWidth] = useState(() =>
-    typeof window === "undefined" ? 0 : window.innerWidth,
-  );
-  const workspaceRef = useRef<HTMLElement>(null);
+  const [workspaceSize, setWorkspaceSize] = useState<WorkspaceSize>(() => ({
+    width: typeof window === "undefined" ? 0 : window.innerWidth,
+    height: typeof window === "undefined" ? 0 : window.innerHeight,
+  }));
+  const workspaceMainRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const hasCustomizedHandwritingRef = useRef(false);
   const inkCommandIdRef = useRef(0);
@@ -230,9 +236,9 @@ export default function SharedReasoningWorkspace({
   const textbookMode = textbookDisplayMode({
     hasDocument: Boolean(activeDocId),
     textbook: state.overlays.textbook,
-    workspaceWidth,
+    workspaceWidth: workspaceSize.width,
   });
-  const dockWidth = pdfDockWidth(workspaceWidth);
+  const dockWidth = pdfDockWidth(workspaceSize.width, workspaceSize.height);
   const textbookToggleLabel = textbookMode === "collapsed"
     ? `Open textbook${filename ? `: ${filename}` : ""}`
     : `Close textbook${filename ? `: ${filename}` : ""}`;
@@ -256,16 +262,17 @@ export default function SharedReasoningWorkspace({
   );
 
   useLayoutEffect(() => {
-    const workspace = workspaceRef.current;
-    if (!workspace) return;
+    const workspaceMain = workspaceMainRef.current;
+    if (!workspaceMain) return;
 
-    const updateWorkspaceWidth = () => {
-      setWorkspaceWidth(workspace.getBoundingClientRect().width);
+    const updateWorkspaceSize = () => {
+      const rect = workspaceMain.getBoundingClientRect();
+      setWorkspaceSize({ width: rect.width, height: rect.height });
     };
 
-    updateWorkspaceWidth();
-    const observer = new ResizeObserver(updateWorkspaceWidth);
-    observer.observe(workspace);
+    updateWorkspaceSize();
+    const observer = new ResizeObserver(updateWorkspaceSize);
+    observer.observe(workspaceMain);
     return () => observer.disconnect();
   }, []);
 
@@ -298,7 +305,6 @@ export default function SharedReasoningWorkspace({
 
   return (
     <section
-      ref={workspaceRef}
       className={
         textbookMode === "docked"
           ? "shared-workspace pdf-docked"
@@ -310,7 +316,7 @@ export default function SharedReasoningWorkspace({
         } as React.CSSProperties
       }
     >
-      <div className="shared-workspace-main">
+      <div className="shared-workspace-main" ref={workspaceMainRef}>
         {textbookMode === "docked" && (
           <TextbookOverlay
             docId={activeDocId}
@@ -374,6 +380,7 @@ export default function SharedReasoningWorkspace({
               docId={activeDocId}
               title={filename}
               displayMode={textbookMode}
+              onClose={() => dispatch({ type: "set_textbook", value: "small" })}
             />
           )}
           <TranscriptOverlay

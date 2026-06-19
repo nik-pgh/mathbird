@@ -712,7 +712,7 @@
   min-height: 0;
   height: 100%;
   max-height: 100%;
-  overflow: auto;
+  overflow: hidden;
   border-right: 1px solid var(--border-strong);
   background: #ffffff;
 }
@@ -725,6 +725,28 @@
   border-radius: 8px;
   box-shadow: 0 16px 42px rgba(32, 54, 47, 0.18);
   backdrop-filter: blur(10px);
+}
+
+.textbook-overlay-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--mb-green);
+  box-shadow: 0 8px 22px rgba(32, 54, 47, 0.16);
+}
+
+.textbook-overlay-close:hover {
+  border-color: var(--mb-green);
+  background: #ffffff;
 }
 
 .transcript-overlay-head button {
@@ -755,11 +777,11 @@
 
 .textbook-overlay-docked .textbook-overlay-body {
   width: 100%;
-  aspect-ratio: 8.5 / 12.2;
-  max-height: 100%;
+  height: 100%;
 }
 
 .textbook-overlay-mobile .textbook-overlay-body {
+  width: 100%;
   height: 100%;
 }
 
@@ -1022,12 +1044,6 @@
   color: var(--text);
 }
 
-.voice-composer .icon-btn.primary {
-  border-color: var(--mb-green);
-  background: var(--mb-green);
-  color: #ffffff;
-}
-
 .voice-composer .icon-btn.end-session {
   color: var(--text-2);
 }
@@ -1131,12 +1147,6 @@
     bottom: 12px;
     width: min(720px, calc(100% - 20px));
     max-height: 32vh;
-  }
-}
-
-@media (max-width: 719px) {
-  .shared-workspace.pdf-docked .shared-workspace-main {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 

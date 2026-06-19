@@ -2,12 +2,10 @@
  * Active-PDF selection persisted to localStorage.
  *
  * The Library page writes the selected doc_id here; the Session page reads it
- * to pass into ``requestToken`` and to render the in-session PDF popover.
+ * to pass into ``requestToken`` and to render the in-session PDF dock.
  *
  * Keys:
  * - ``mathbird:active_doc_id``  — string, the selected doc_id
- * - ``mathbird:pdf_popover_geom`` — JSON, popover position/size (managed by
- *    ``PdfPopover``, not this module)
  */
 
 const KEY = "mathbird:active_doc_id";
