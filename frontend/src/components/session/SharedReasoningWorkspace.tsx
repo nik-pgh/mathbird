@@ -2,6 +2,10 @@ import { useCallback, useLayoutEffect, useReducer, useRef, useState } from "reac
 import { SquarePen, StickyNote as StickyNoteIcon } from "lucide-react";
 import { zoomAtPoint } from "../../lib/canvasViewport";
 import {
+  pdfDockWidth,
+  textbookDisplayMode,
+} from "../../lib/pdfWorkspaceLayout";
+import {
   AI_BOARD_TOPIC,
   type AiBoardUpdate,
   decodeAiUpdate,
@@ -52,6 +56,10 @@ export default function SharedReasoningWorkspace({
     initialWorkspaceState,
   );
   const [inkCommand, setInkCommand] = useState<InkCommand>(null);
+  const [workspaceWidth, setWorkspaceWidth] = useState(() =>
+    typeof window === "undefined" ? 0 : window.innerWidth,
+  );
+  const workspaceRef = useRef<HTMLElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const hasCustomizedHandwritingRef = useRef(false);
   const inkCommandIdRef = useRef(0);
@@ -214,6 +222,12 @@ export default function SharedReasoningWorkspace({
     state.ink.activeTarget.kind === "student_card" ||
     (state.ink.activeTarget.kind === "private_board" &&
       state.privateBoardStrokes.length > 0);
+  const textbookMode = textbookDisplayMode({
+    hasDocument: Boolean(activeDocId),
+    textbook: state.overlays.textbook,
+    workspaceWidth,
+  });
+  const dockWidth = pdfDockWidth(workspaceWidth);
 
   const zoomFromCenter = useCallback(
     (factor: number) => {
@@ -232,6 +246,20 @@ export default function SharedReasoningWorkspace({
     },
     [state.viewport],
   );
+
+  useLayoutEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+
+    const updateWorkspaceWidth = () => {
+      setWorkspaceWidth(workspace.getBoundingClientRect().width);
+    };
+
+    updateWorkspaceWidth();
+    const observer = new ResizeObserver(updateWorkspaceWidth);
+    observer.observe(workspace);
+    return () => observer.disconnect();
+  }, []);
 
   useLayoutEffect(() => {
     const board = boardRef.current;
@@ -261,105 +289,147 @@ export default function SharedReasoningWorkspace({
   }, []);
 
   return (
-    <section className="shared-workspace">
-      <div
-        className="shared-board"
-        aria-label="Shared reasoning board"
-        ref={boardRef}
-        style={
-          {
-            "--canvas-pan-x": `${state.viewport.pan.x}px`,
-            "--canvas-pan-y": `${state.viewport.pan.y}px`,
-            "--canvas-zoom": String(state.viewport.zoom),
-          } as React.CSSProperties
-        }
-      >
-        <div className="board-top-actions">
-          <button
-            type="button"
-            onClick={addStudentCard}
-            aria-label="Add student card"
-            title="Add student card"
-          >
-            <SquarePen size={17} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={addStickyNote}
-            aria-label="Add sticky note"
-            title="Add sticky note"
-          >
-            <StickyNoteIcon size={17} aria-hidden="true" />
-          </button>
-        </div>
-        <TextbookOverlay
-          docId={activeDocId}
-          title={filename}
-          mode={state.overlays.textbook}
-          onToggle={() =>
-            dispatch({
-              type: "set_textbook",
-              value: state.overlays.textbook === "large" ? "small" : "large",
-            })
+    <section
+      ref={workspaceRef}
+      className={
+        textbookMode === "docked"
+          ? "shared-workspace pdf-docked"
+          : "shared-workspace"
+      }
+      style={
+        {
+          "--pdf-dock-width": `${dockWidth}px`,
+        } as React.CSSProperties
+      }
+    >
+      <div className="shared-workspace-main">
+        {textbookMode === "docked" && (
+          <TextbookOverlay
+            docId={activeDocId}
+            title={filename}
+            displayMode={textbookMode}
+            onToggle={() =>
+              dispatch({
+                type: "set_textbook",
+                value: "small",
+              })
+            }
+          />
+        )}
+        <div
+          className="shared-board"
+          aria-label="Shared reasoning board"
+          ref={boardRef}
+          style={
+            {
+              "--canvas-pan-x": `${state.viewport.pan.x}px`,
+              "--canvas-pan-y": `${state.viewport.pan.y}px`,
+              "--canvas-zoom": String(state.viewport.zoom),
+            } as React.CSSProperties
           }
-        />
-        <TranscriptOverlay
-          open={state.overlays.transcriptOpen}
-          onToggle={() => dispatch({ type: "toggle_transcript" })}
-        />
-        <BoardInkToolbar
-          tool={state.ink.tool}
-          color={state.ink.color}
-          canUndo={canChangeActiveInk}
-          canClear={canChangeActiveInk}
-          onToolChange={setInkTool}
-          onColorChange={setInkColor}
-          onUndo={undoActiveInk}
-          onClear={clearActiveInk}
-        />
-        <CanvasViewport
-          boardRef={boardRef}
-          viewport={state.viewport}
-          onViewportChange={setViewport}
         >
-          <PrivateBoardInkLayer
-            strokes={state.privateBoardStrokes}
+          <div className="board-top-actions">
+            <button
+              type="button"
+              onClick={addStudentCard}
+              aria-label="Add student card"
+              title="Add student card"
+            >
+              <SquarePen size={17} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={addStickyNote}
+              aria-label="Add sticky note"
+              title="Add sticky note"
+            >
+              <StickyNoteIcon size={17} aria-hidden="true" />
+            </button>
+            {textbookMode === "collapsed" && (
+              <TextbookOverlay
+                docId={activeDocId}
+                title={filename}
+                displayMode={textbookMode}
+                onToggle={() =>
+                  dispatch({
+                    type: "set_textbook",
+                    value: "large",
+                  })
+                }
+              />
+            )}
+          </div>
+          {textbookMode === "overlay" && (
+            <TextbookOverlay
+              docId={activeDocId}
+              title={filename}
+              displayMode={textbookMode}
+              onToggle={() =>
+                dispatch({
+                  type: "set_textbook",
+                  value: "small",
+                })
+              }
+            />
+          )}
+          <TranscriptOverlay
+            open={state.overlays.transcriptOpen}
+            onToggle={() => dispatch({ type: "toggle_transcript" })}
+          />
+          <BoardInkToolbar
             tool={state.ink.tool}
             color={state.ink.color}
-            onCommitStroke={commitPrivateBoardStroke}
+            canUndo={canChangeActiveInk}
+            canClear={canChangeActiveInk}
+            onToolChange={setInkTool}
+            onColorChange={setInkColor}
+            onUndo={undoActiveInk}
+            onClear={clearActiveInk}
           />
-          <TutorObjectLayer
-            objects={state.objects}
-            onMoveObject={moveObject}
-            onResizeObject={resizeObject}
-            onActivateObject={activateObject}
-            onCollapseObject={collapseObject}
-          />
-          <StickyNoteLayer
-            notes={state.stickyNotes}
-            onMoveNote={moveStickyNote}
-            onResizeNote={resizeStickyNote}
-            onTextChange={updateStickyNoteText}
-          />
-          {state.studentCards.map((card) => (
-            <HandwritingPanel
-              key={card.id}
-              cardId={card.id}
-              label={card.label}
-              position={card.position}
-              size={card.size}
-              isCapturing={card.isCapturing}
-              inkTool={state.ink.tool}
-              inkColor={state.ink.color}
-              inkCommand={inkCommand}
-              onMove={moveStudentCard}
-              onResize={resizeStudentCard}
-              onRename={renameStudentCard}
-              onCaptureStateChange={setStudentCardCaptureActive}
-              onStrokeTargeted={setActiveInkTarget}
+          <CanvasViewport
+            boardRef={boardRef}
+            viewport={state.viewport}
+            onViewportChange={setViewport}
+          >
+            <PrivateBoardInkLayer
+              strokes={state.privateBoardStrokes}
+              tool={state.ink.tool}
+              color={state.ink.color}
+              onCommitStroke={commitPrivateBoardStroke}
             />
-          ))}
-        </CanvasViewport>
+            <TutorObjectLayer
+              objects={state.objects}
+              onMoveObject={moveObject}
+              onResizeObject={resizeObject}
+              onActivateObject={activateObject}
+              onCollapseObject={collapseObject}
+            />
+            <StickyNoteLayer
+              notes={state.stickyNotes}
+              onMoveNote={moveStickyNote}
+              onResizeNote={resizeStickyNote}
+              onTextChange={updateStickyNoteText}
+            />
+            {state.studentCards.map((card) => (
+              <HandwritingPanel
+                key={card.id}
+                cardId={card.id}
+                label={card.label}
+                position={card.position}
+                size={card.size}
+                isCapturing={card.isCapturing}
+                inkTool={state.ink.tool}
+                inkColor={state.ink.color}
+                inkCommand={inkCommand}
+                onMove={moveStudentCard}
+                onResize={resizeStudentCard}
+                onRename={renameStudentCard}
+                onCaptureStateChange={setStudentCardCaptureActive}
+                onStrokeTargeted={setActiveInkTarget}
+              />
+            ))}
+          </CanvasViewport>
+        </div>
       </div>
       <VoiceComposer
         status={status}
