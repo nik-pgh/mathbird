@@ -113,8 +113,16 @@ assert.equal(
   "Perfect square factor",
 );
 assert.equal(
+  deriveTutorBoardTitle({ kind: "text", id: "text-3", markdown: "Intro body\nstill body\n## Heading Title" }, 6),
+  "Heading Title",
+);
+assert.equal(
   deriveTutorBoardTitle({ kind: "shape", id: "shape-1", svg: "<svg></svg>" }, 6),
   "Sketch 6",
+);
+assert.equal(
+  deriveTutorBoardTitle({ kind: "shape", id: "shape-2", svg: "<svg></svg>", label: "Ignored" }, 7),
+  "Sketch 7",
 );
 
 const flow = layoutTutorFlow({

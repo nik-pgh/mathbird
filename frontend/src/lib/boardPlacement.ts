@@ -104,18 +104,22 @@ export function deriveTutorBoardTitle(
   item: { kind: VisualKind; id: string; label?: string | null; markdown?: string },
   index: number,
 ): string {
+  if (item.kind === "shape") return `Sketch ${index}`;
+
   const label = "label" in item ? item.label?.trim() : "";
   if (label) return label;
 
   if (item.kind === "text" && "markdown" in item) {
-    const line = item.markdown
-      .split(/\r?\n/)
-      .map((part) => part.replace(/^#+\s*/, "").trim())
+    const lines = item.markdown.split(/\r?\n/);
+    const heading = lines
+      .map((part) => part.match(/^#+\s+(.+)$/)?.[1].trim() ?? "")
+      .find(Boolean);
+    const line = heading ?? lines
+      .map((part) => part.trim())
       .find(Boolean);
     if (line) return line.slice(0, 48);
   }
 
-  if (item.kind === "shape") return `Sketch ${index}`;
   return `Tutor Board ${index}`;
 }
 
