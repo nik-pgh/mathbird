@@ -548,6 +548,11 @@ assert.match(workspaceSource, /StickyNote(?:\s+as\s+StickyNoteIcon)?/);
 assert.match(workspaceSource, /const addStickyNote = useCallback/);
 assert.match(workspaceSource, /dispatch\(\{[\s\S]*?type: "add_sticky_note"[\s\S]*?boardSize: getBoardSize\(\)[\s\S]*?\}\)/);
 assert.match(workspaceSource, /aria-label="Add sticky note"/);
+assert.match(workspaceSource, /const textbookToggleLabel = textbookMode === "collapsed"\s*\?\s*`Open textbook/);
+assert.match(workspaceSource, /className=\{`textbook-control-button \$\{textbookMode !== "collapsed" \? "is-active" : ""\}`\.trim\(\)\}/);
+assert.match(workspaceSource, /aria-label=\{textbookToggleLabel\}/);
+assert.match(workspaceSource, /aria-pressed=\{textbookMode !== "collapsed"\}/);
+assert.doesNotMatch(workspaceSource, /textbookMode === "collapsed" && \(/);
 
 const stickyNoteLayerPath = new URL("../src/components/session/StickyNoteLayer.tsx", import.meta.url);
 const stickyNoteLayerSource = fs.readFileSync(stickyNoteLayerPath, "utf8");
@@ -601,6 +606,11 @@ assert.doesNotMatch(privateBoardInkLayerSource, /whiteboard/);
 
 const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
 const sessionCss = fs.readFileSync(sessionCssPath, "utf8");
+const textbookOverlayPath = new URL("../src/components/session/TextbookOverlay.tsx", import.meta.url);
+const textbookOverlaySource = fs.readFileSync(textbookOverlayPath, "utf8");
+assert.match(textbookOverlaySource, /toolbar=0/);
+assert.doesNotMatch(textbookOverlaySource, /textbook-overlay-head/);
+assert.doesNotMatch(textbookOverlaySource, /onToggle/);
 assert.match(sessionCss, /\.board-top-actions\s*\{[^}]*display:\s*grid;/s);
 assert.match(sessionCss, /\.board-top-actions\s*\{[^}]*gap:\s*8px;/s);
 assert.match(sessionCss, /\.board-top-actions\s*\{[^}]*--board-tool-rail-width:\s*38px;/s);
@@ -634,7 +644,10 @@ assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*max-height:\s*calc\(100% 
 assert.match(sessionCss, /\.board-ink-toolbar button\.active\s*\{[^}]*background:\s*rgba\(41,\s*72,\s*62,\s*0\.1\);[^}]*color:\s*var\(--mb-green\);/s);
 assert.match(sessionCss, /\.board-ink-divider\s*\{[^}]*width:\s*22px;[^}]*height:\s*1px;/s);
 assert.match(sessionCss, /\.ink-color-swatch\s*\{/s);
+assert.doesNotMatch(sessionCss, /\.textbook-overlay-head/);
+assert.match(sessionCss, /\.textbook-control-button\.is-active\s*\{/s);
 assert.match(sessionCss, /\.textbook-overlay-docked\s+\.textbook-overlay-body\s*\{[^}]*aspect-ratio:\s*8\.5\s*\/\s*12\.2;/s);
+assert.match(sessionCss, /\.textbook-overlay-docked\s+\.textbook-overlay-body\s*\{[^}]*width:\s*100%;/s);
 assert.doesNotMatch(sessionCss, /\.tutor-focus-rail/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-history/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-(?:plot|shape|diagram)\s*\{[^}]*(?:width|min-height)\s*:/s);

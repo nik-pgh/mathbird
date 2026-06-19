@@ -1,5 +1,10 @@
 import { useCallback, useLayoutEffect, useReducer, useRef, useState } from "react";
-import { SquarePen, StickyNote as StickyNoteIcon } from "lucide-react";
+import {
+  FileText,
+  FileX,
+  SquarePen,
+  StickyNote as StickyNoteIcon,
+} from "lucide-react";
 import { zoomAtPoint } from "../../lib/canvasViewport";
 import {
   pdfDockWidth,
@@ -228,6 +233,9 @@ export default function SharedReasoningWorkspace({
     workspaceWidth,
   });
   const dockWidth = pdfDockWidth(workspaceWidth);
+  const textbookToggleLabel = textbookMode === "collapsed"
+    ? `Open textbook${filename ? `: ${filename}` : ""}`
+    : `Close textbook${filename ? `: ${filename}` : ""}`;
 
   const zoomFromCenter = useCallback(
     (factor: number) => {
@@ -308,12 +316,6 @@ export default function SharedReasoningWorkspace({
             docId={activeDocId}
             title={filename}
             displayMode={textbookMode}
-            onToggle={() =>
-              dispatch({
-                type: "set_textbook",
-                value: "small",
-              })
-            }
           />
         )}
         <div
@@ -345,18 +347,26 @@ export default function SharedReasoningWorkspace({
             >
               <StickyNoteIcon size={17} aria-hidden="true" />
             </button>
-            {textbookMode === "collapsed" && (
-              <TextbookOverlay
-                docId={activeDocId}
-                title={filename}
-                displayMode={textbookMode}
-                onToggle={() =>
+            {activeDocId && (
+              <button
+                type="button"
+                className={`textbook-control-button ${textbookMode !== "collapsed" ? "is-active" : ""}`.trim()}
+                onClick={() =>
                   dispatch({
                     type: "set_textbook",
-                    value: "large",
+                    value: textbookMode === "collapsed" ? "large" : "small",
                   })
                 }
-              />
+                aria-label={textbookToggleLabel}
+                title={textbookToggleLabel}
+                aria-pressed={textbookMode !== "collapsed"}
+              >
+                {textbookMode === "collapsed" ? (
+                  <FileText size={17} aria-hidden="true" />
+                ) : (
+                  <FileX size={17} aria-hidden="true" />
+                )}
+              </button>
             )}
           </div>
           {textbookMode === "overlay" && (
@@ -364,12 +374,6 @@ export default function SharedReasoningWorkspace({
               docId={activeDocId}
               title={filename}
               displayMode={textbookMode}
-              onToggle={() =>
-                dispatch({
-                  type: "set_textbook",
-                  value: "small",
-                })
-              }
             />
           )}
           <TranscriptOverlay
