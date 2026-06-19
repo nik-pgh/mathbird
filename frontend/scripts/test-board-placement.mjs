@@ -87,6 +87,8 @@ const {
   clampTutorCardSize,
   deriveTutorBoardTitle,
   layoutTutorFlow,
+  tutorFlowItemHeight,
+  tutorFlowMaxColumnHeight,
 } = sandbox.exports;
 
 assert.equal(COLLAPSED_TUTOR_RIBBON_HEIGHT, 44);
@@ -98,6 +100,21 @@ assert.deepEqual(
 assert.deepEqual(
   plain(clampTutorCardSize({ width: 900, height: 800 })),
   { width: 720, height: 520 },
+);
+assert.deepEqual(
+  plain(clampTutorCardSize({ width: 360, height: 250 })),
+  { width: 360, height: 250 },
+);
+
+assert.equal(tutorFlowMaxColumnHeight(400), 520);
+assert.equal(tutorFlowMaxColumnHeight(900), 828);
+assert.equal(
+  tutorFlowItemHeight({ id: "collapsed", collapsed: true, size: { width: 340, height: 180 } }),
+  44,
+);
+assert.equal(
+  tutorFlowItemHeight({ id: "expanded", collapsed: false, size: { width: 340, height: 180 } }),
+  180,
 );
 
 assert.equal(

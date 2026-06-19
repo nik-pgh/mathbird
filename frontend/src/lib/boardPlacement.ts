@@ -109,7 +109,7 @@ export function deriveTutorBoardTitle(
   const label = "label" in item ? item.label?.trim() : "";
   if (label) return label;
 
-  if (item.kind === "text" && "markdown" in item) {
+  if (item.kind === "text" && typeof item.markdown === "string") {
     const lines = item.markdown.split(/\r?\n/);
     const heading = lines
       .map((part) => part.match(/^#+\s+(.+)$/)?.[1].trim() ?? "")
