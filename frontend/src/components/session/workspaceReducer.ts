@@ -10,8 +10,10 @@ import {
 import type {
   BoardObject,
   HandwritingPanelState,
+  InkState,
   Point,
   Size,
+  StickyNoteState,
   StudentCardState,
   ViewportState,
   WorkspaceAction,
@@ -31,9 +33,20 @@ const DEFAULT_VIEWPORT: ViewportState = {
 
 const DEFAULT_TUTOR_POSITION: Point = { x: 36, y: 36 };
 
+const DEFAULT_STICKY_NOTE_SIZE: Size = { width: 220, height: 160 };
+
+const DEFAULT_INK: InkState = {
+  tool: "pen",
+  color: "#213f35",
+  activeTarget: { kind: "private_board" },
+};
+
 export const initialWorkspaceState: WorkspaceState = {
   objects: [],
   studentCards: [createStudentCard(1, DEFAULT_HANDWRITING)],
+  stickyNotes: [],
+  privateBoardStrokes: [],
+  ink: DEFAULT_INK,
   viewport: DEFAULT_VIEWPORT,
   overlays: {
     textbook: "small",
@@ -117,6 +130,95 @@ export function workspaceReducer(
         ],
       };
     }
+    case "add_sticky_note": {
+      const nextNumber = nextStickyNoteNumber(state.stickyNotes);
+      const size = DEFAULT_STICKY_NOTE_SIZE;
+      const position = findOpenBoardPosition({
+        size,
+        occupied: occupiedRects(state),
+        viewport: {
+          x: 0,
+          y: 0,
+          width: action.boardSize.width,
+          height: action.boardSize.height,
+        },
+      });
+      return {
+        ...state,
+        stickyNotes: [
+          ...state.stickyNotes,
+          createStickyNote(nextNumber, position, size),
+        ],
+      };
+    }
+    case "move_sticky_note": {
+      const existing = state.stickyNotes.find((note) => note.id === action.id);
+      if (!existing || pointsEqual(existing.position, action.position)) return state;
+      return {
+        ...state,
+        stickyNotes: state.stickyNotes.map((note) =>
+          note.id === action.id ? { ...note, position: action.position } : note,
+        ),
+      };
+    }
+    case "resize_sticky_note": {
+      const size = clampStickyNoteSize(action.size);
+      const existing = state.stickyNotes.find((note) => note.id === action.id);
+      if (!existing || sizesEqual(existing.size, size)) return state;
+      return {
+        ...state,
+        stickyNotes: state.stickyNotes.map((note) =>
+          note.id === action.id ? { ...note, size } : note,
+        ),
+      };
+    }
+    case "update_sticky_note_text": {
+      const existing = state.stickyNotes.find((note) => note.id === action.id);
+      if (!existing || existing.text === action.text) return state;
+      return {
+        ...state,
+        stickyNotes: state.stickyNotes.map((note) =>
+          note.id === action.id ? { ...note, text: action.text } : note,
+        ),
+      };
+    }
+    case "set_ink_tool":
+      return {
+        ...state,
+        ink: { ...state.ink, tool: action.tool },
+      };
+    case "set_ink_color":
+      return {
+        ...state,
+        ink: { ...state.ink, color: action.color },
+      };
+    case "set_active_ink_target":
+      return {
+        ...state,
+        ink: { ...state.ink, activeTarget: action.target },
+      };
+    case "commit_private_board_stroke":
+      return {
+        ...state,
+        privateBoardStrokes: [...state.privateBoardStrokes, action.stroke],
+        ink: { ...state.ink, activeTarget: { kind: "private_board" } },
+      };
+    case "undo_active_ink":
+      if (state.ink.activeTarget.kind !== "private_board" || state.privateBoardStrokes.length === 0) {
+        return state;
+      }
+      return {
+        ...state,
+        privateBoardStrokes: state.privateBoardStrokes.slice(0, -1),
+      };
+    case "clear_active_ink":
+      if (state.ink.activeTarget.kind !== "private_board" || state.privateBoardStrokes.length === 0) {
+        return state;
+      }
+      return {
+        ...state,
+        privateBoardStrokes: [],
+      };
     case "move_student_card": {
       const existing = state.studentCards.find((card) => card.id === action.id);
       if (!existing || pointsEqual(existing.position, action.position)) return state;
@@ -224,6 +326,23 @@ function nextStudentCardNumber(cards: StudentCardState[]): number {
   return Math.max(1, ...numbers) + 1;
 }
 
+function createStickyNote(number: number, position: Point, size: Size): StickyNoteState {
+  return {
+    id: `sticky-note-${number}`,
+    position,
+    size,
+    text: "",
+  };
+}
+
+function nextStickyNoteNumber(notes: StickyNoteState[]): number {
+  const numbers = notes.map((note) => {
+    const match = /^sticky-note-(\d+)$/.exec(note.id);
+    return match ? Number(match[1]) : 0;
+  });
+  return Math.max(0, ...numbers) + 1;
+}
+
 function occupiedRects(state: WorkspaceState): BoardRect[] {
   const studentRects = state.studentCards.map((card) => ({
     x: card.position.x,
@@ -240,7 +359,13 @@ function occupiedRects(state: WorkspaceState): BoardRect[] {
       height: size.height,
     };
   });
-  return [...studentRects, ...objectRects];
+  const stickyRects = state.stickyNotes.map((note) => ({
+    x: note.position.x,
+    y: note.position.y,
+    width: note.size.width,
+    height: note.size.height,
+  }));
+  return [...studentRects, ...objectRects, ...stickyRects];
 }
 
 function createBoardObject(
@@ -299,6 +424,13 @@ function clampPanelSize(size: Size): Size {
   return {
     width,
     height: width * 0.75,
+  };
+}
+
+function clampStickyNoteSize(size: Size): Size {
+  return {
+    width: Math.max(160, Math.min(420, size.width)),
+    height: Math.max(120, Math.min(360, size.height)),
   };
 }
 

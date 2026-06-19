@@ -51,12 +51,32 @@
   cursor: grabbing;
 }
 
+.private-board-ink-layer {
+  position: absolute;
+  left: -10000px;
+  top: -10000px;
+  width: 20000px;
+  height: 20000px;
+  z-index: 0;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.private-board-ink-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  touch-action: none;
+}
+
 .board-top-actions {
   position: absolute;
   top: 14px;
   right: 14px;
   z-index: 6;
-  display: flex;
+  display: grid;
   gap: 8px;
 }
 
@@ -79,6 +99,81 @@
 .board-top-actions button:hover {
   border-color: var(--mb-green);
   background: #ffffff;
+}
+
+.board-ink-toolbar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 6;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 90px);
+  padding: 5px;
+  border: 1px solid rgba(41, 72, 62, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 6px 18px rgba(32, 54, 47, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.board-ink-toolbar button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mb-green);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.board-ink-toolbar button:hover:not(:disabled) {
+  border-color: rgba(41, 72, 62, 0.24);
+  background: rgba(41, 72, 62, 0.07);
+}
+
+.board-ink-toolbar button.active {
+  border-color: var(--mb-green);
+  background: var(--mb-green);
+  color: #ffffff;
+}
+
+.board-ink-toolbar button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.board-ink-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 3px;
+  background: rgba(41, 72, 62, 0.18);
+}
+
+.ink-color-swatch {
+  color: var(--ink-color);
+}
+
+.ink-color-swatch::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--ink-color);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.ink-color-swatch.active {
+  border-color: var(--mb-green);
+  background: rgba(41, 72, 62, 0.08);
 }
 
 .canvas-controls {
@@ -124,6 +219,85 @@
 .transcript-overlay {
   position: absolute;
   z-index: 2;
+}
+
+.sticky-note-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.sticky-note {
+  position: absolute;
+  display: grid;
+  grid-template-rows: 28px minmax(0, 1fr);
+  min-width: 160px;
+  min-height: 120px;
+  overflow: hidden;
+  border: 1px solid rgba(151, 114, 18, 0.28);
+  border-radius: 7px;
+  background: #fff3a3;
+  box-shadow:
+    0 8px 0 rgba(151, 114, 18, 0.18),
+    0 14px 26px rgba(32, 54, 47, 0.14);
+  color: #3f3514;
+  pointer-events: auto;
+}
+
+.sticky-note-handle {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 7px;
+  border-bottom: 1px solid rgba(151, 114, 18, 0.16);
+  background: rgba(255, 220, 86, 0.52);
+  color: rgba(63, 53, 20, 0.72);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.sticky-note-handle:active {
+  cursor: grabbing;
+}
+
+.sticky-note-text {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  resize: none;
+  padding: 8px 10px 12px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: 600 14px/1.45 var(--font-sans, system-ui, sans-serif);
+  cursor: text;
+}
+
+.sticky-note-text::placeholder {
+  color: rgba(63, 53, 20, 0.5);
+}
+
+.sticky-note-text:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(41, 72, 62, 0.28);
+}
+
+.sticky-note-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  cursor: nwse-resize;
+  touch-action: none;
+  background:
+    linear-gradient(135deg, transparent 50%, rgba(151, 114, 18, 0.42) 50%);
 }
 
 .textbook-overlay,
@@ -206,51 +380,6 @@
   background: rgba(255, 255, 255, 0.82);
   color: var(--text);
   box-shadow: 0 0 0 2px rgba(41, 72, 62, 0.18);
-}
-
-.handwriting-tools {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.handwriting-tools button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--text-2);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.handwriting-tools button svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.handwriting-tools button:hover:not(:disabled) {
-  border-color: var(--mb-green);
-}
-
-.handwriting-tools button.active {
-  border-color: var(--mb-green);
-  background: var(--mb-green);
-  color: #ffffff;
-}
-
-.handwriting-tools button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .handwriting-surface {
@@ -1010,15 +1139,6 @@
     align-items: center;
     flex-direction: row;
     gap: 4px;
-  }
-
-  .handwriting-tools {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .handwriting-tools button {
-    flex: 0 0 auto;
   }
 
   .textbook-overlay-large {

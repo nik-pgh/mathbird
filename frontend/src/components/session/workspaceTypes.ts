@@ -37,6 +37,41 @@ export interface StudentCardState {
   isCapturing: boolean;
 }
 
+export type InkTool = "pen" | "eraser";
+
+export type InkColor = "#213f35" | "#ff775f" | "#2f6fed" | "#7c4dff";
+
+export type InkPoint = [number, number, number];
+
+export type InkTarget =
+  | { kind: "private_board" }
+  | { kind: "student_card"; cardId: string };
+
+export interface InkStroke {
+  id: string;
+  target: InkTarget;
+  tool: InkTool;
+  color: InkColor;
+  points: InkPoint[];
+}
+
+export interface PrivateBoardInkStroke extends Omit<InkStroke, "target"> {
+  target: { kind: "private_board" };
+}
+
+export interface InkState {
+  tool: InkTool;
+  color: InkColor;
+  activeTarget: InkTarget;
+}
+
+export interface StickyNoteState {
+  id: string;
+  position: Point;
+  size: Size;
+  text: string;
+}
+
 export interface ViewportState {
   pan: Point;
   zoom: number;
@@ -50,6 +85,9 @@ export interface WorkspaceOverlayState {
 export interface WorkspaceState {
   objects: BoardObject[];
   studentCards: StudentCardState[];
+  stickyNotes: StickyNoteState[];
+  privateBoardStrokes: PrivateBoardInkStroke[];
+  ink: InkState;
   viewport: ViewportState;
   overlays: WorkspaceOverlayState;
 }
@@ -66,6 +104,16 @@ export type WorkspaceAction =
   | { type: "resize_student_card"; id: string; size: Size }
   | { type: "rename_student_card"; id: string; label: string }
   | { type: "set_student_card_capturing"; id: string; value: boolean }
+  | { type: "add_sticky_note"; boardSize: Size }
+  | { type: "move_sticky_note"; id: string; position: Point }
+  | { type: "resize_sticky_note"; id: string; size: Size }
+  | { type: "update_sticky_note_text"; id: string; text: string }
+  | { type: "set_ink_tool"; tool: InkTool }
+  | { type: "set_ink_color"; color: InkColor }
+  | { type: "set_active_ink_target"; target: InkTarget }
+  | { type: "commit_private_board_stroke"; stroke: PrivateBoardInkStroke }
+  | { type: "undo_active_ink" }
+  | { type: "clear_active_ink" }
   | { type: "set_viewport"; viewport: ViewportState }
   | { type: "reset_viewport" }
   | { type: "set_textbook"; value: "large" | "small" }

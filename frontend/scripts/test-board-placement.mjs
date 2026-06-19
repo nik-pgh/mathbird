@@ -315,6 +315,112 @@ assert.equal(
   "Student Card 1",
 );
 
+const withStickyNote = workspaceReducer(initialWorkspaceState, {
+  type: "add_sticky_note",
+  boardSize: { width: 900, height: 600 },
+});
+assert.equal(Array.isArray(withStickyNote.stickyNotes), true);
+assert.equal(withStickyNote.stickyNotes.length, 1);
+assert.equal(withStickyNote.stickyNotes[0].id, "sticky-note-1");
+assert.equal(withStickyNote.stickyNotes[0].text, "");
+assert.deepEqual(plain(withStickyNote.stickyNotes[0].size), { width: 220, height: 160 });
+
+const movedStickyNote = workspaceReducer(withStickyNote, {
+  type: "move_sticky_note",
+  id: "sticky-note-1",
+  position: { x: 460, y: 280 },
+});
+assert.deepEqual(
+  plain(movedStickyNote.stickyNotes.find((note) => note.id === "sticky-note-1").position),
+  { x: 460, y: 280 },
+);
+
+const updatedStickyNote = workspaceReducer(movedStickyNote, {
+  type: "update_sticky_note_text",
+  id: "sticky-note-1",
+  text: "Try factoring first",
+});
+assert.equal(
+  updatedStickyNote.stickyNotes.find((note) => note.id === "sticky-note-1").text,
+  "Try factoring first",
+);
+
+const resizedStickyNote = workspaceReducer(updatedStickyNote, {
+  type: "resize_sticky_note",
+  id: "sticky-note-1",
+  size: { width: 120, height: 90 },
+});
+assert.deepEqual(
+  plain(resizedStickyNote.stickyNotes.find((note) => note.id === "sticky-note-1").size),
+  { width: 160, height: 120 },
+);
+
+const maxResizedStickyNote = workspaceReducer(updatedStickyNote, {
+  type: "resize_sticky_note",
+  id: "sticky-note-1",
+  size: { width: 900, height: 800 },
+});
+assert.deepEqual(
+  plain(maxResizedStickyNote.stickyNotes.find((note) => note.id === "sticky-note-1").size),
+  { width: 420, height: 360 },
+);
+
+const withInkColor = workspaceReducer(resizedStickyNote, {
+  type: "set_ink_color",
+  color: "#ff775f",
+});
+assert.equal(withInkColor.ink.color, "#ff775f");
+
+const withInkTool = workspaceReducer(withInkColor, {
+  type: "set_ink_tool",
+  tool: "eraser",
+});
+assert.equal(withInkTool.ink.tool, "eraser");
+
+const privateStroke = {
+  id: "private-stroke-1",
+  target: { kind: "private_board" },
+  tool: "pen",
+  color: "#2f6fed",
+  points: [[10, 20, 0], [14, 24, 8]],
+};
+const withPrivateStroke = workspaceReducer(withInkTool, {
+  type: "commit_private_board_stroke",
+  stroke: privateStroke,
+});
+assert.equal(withPrivateStroke.privateBoardStrokes.length, 1);
+assert.deepEqual(plain(withPrivateStroke.privateBoardStrokes[0]), privateStroke);
+assert.deepEqual(plain(withPrivateStroke.ink.activeTarget), { kind: "private_board" });
+
+const afterUndoInk = workspaceReducer(withPrivateStroke, { type: "undo_active_ink" });
+assert.equal(afterUndoInk.privateBoardStrokes.length, 0);
+
+const withTwoPrivateStrokes = workspaceReducer(
+  workspaceReducer(afterUndoInk, {
+    type: "commit_private_board_stroke",
+    stroke: privateStroke,
+  }),
+  {
+    type: "commit_private_board_stroke",
+    stroke: { ...privateStroke, id: "private-stroke-2" },
+  },
+);
+const afterClearInk = workspaceReducer(withTwoPrivateStrokes, { type: "clear_active_ink" });
+assert.equal(afterClearInk.privateBoardStrokes.length, 0);
+
+const withStudentCardInkTarget = workspaceReducer(withTwoPrivateStrokes, {
+  type: "set_active_ink_target",
+  target: { kind: "student_card", cardId: "student-card-1" },
+});
+assert.deepEqual(
+  plain(withStudentCardInkTarget.ink.activeTarget),
+  { kind: "student_card", cardId: "student-card-1" },
+);
+const afterStudentTargetUndo = workspaceReducer(withStudentCardInkTarget, { type: "undo_active_ink" });
+assert.equal(afterStudentTargetUndo.privateBoardStrokes.length, 2);
+const afterStudentTargetClear = workspaceReducer(withStudentCardInkTarget, { type: "clear_active_ink" });
+assert.equal(afterStudentTargetClear.privateBoardStrokes.length, 2);
+
 const tutorLayerPath = new URL("../src/components/session/TutorObjectLayer.tsx", import.meta.url);
 const tutorLayerSource = fs.readFileSync(tutorLayerPath, "utf8");
 assert.match(tutorLayerSource, /objects\.map/);
@@ -347,6 +453,11 @@ const workspaceTypesSource = fs.readFileSync(workspaceTypesPath, "utf8");
 assert.match(workspaceTypesSource, /collapsed\?:\s*boolean/);
 assert.match(workspaceTypesSource, /activate_object/);
 assert.match(workspaceTypesSource, /collapse_object/);
+assert.match(workspaceTypesSource, /InkTarget[\s\S]*kind:\s*"private_board"[\s\S]*kind:\s*"student_card";\s*cardId:\s*string/);
+assert.doesNotMatch(workspaceTypesSource, /cardId\?:\s*string/);
+assert.match(workspaceTypesSource, /PrivateBoardInkStroke extends Omit<InkStroke, "target">/);
+assert.match(workspaceTypesSource, /privateBoardStrokes:\s*PrivateBoardInkStroke\[\]/);
+assert.match(workspaceTypesSource, /commit_private_board_stroke";\s*stroke:\s*PrivateBoardInkStroke/);
 
 const workspacePath = new URL("../src/components/session/SharedReasoningWorkspace.tsx", import.meta.url);
 const workspaceSource = fs.readFileSync(workspacePath, "utf8");
@@ -355,9 +466,69 @@ assert.match(workspaceSource, /resizeObject/);
 assert.match(workspaceSource, /onResizeObject=\{resizeObject\}/);
 assert.match(workspaceSource, /collapseObject/);
 assert.match(workspaceSource, /onCollapseObject=\{collapseObject\}/);
+assert.match(workspaceSource, /import BoardInkToolbar from "\.\/BoardInkToolbar"/);
+assert.match(workspaceSource, /import PrivateBoardInkLayer from "\.\/PrivateBoardInkLayer"/);
+assert.match(workspaceSource, /const setInkTool = useCallback/);
+assert.match(workspaceSource, /dispatch\(\{ type: "set_ink_tool", tool \}\)/);
+assert.match(workspaceSource, /const setInkColor = useCallback/);
+assert.match(workspaceSource, /dispatch\(\{ type: "set_ink_color", color \}\)/);
+assert.match(workspaceSource, /const commitPrivateBoardStroke = useCallback/);
+assert.match(workspaceSource, /dispatch\(\{ type: "commit_private_board_stroke", stroke \}\)/);
+assert.match(workspaceSource, /const setActiveInkTarget = useCallback/);
+assert.match(workspaceSource, /dispatch\(\{ type: "set_active_ink_target", target \}\)/);
+assert.match(workspaceSource, /const undoActiveInk = useCallback/);
+assert.match(workspaceSource, /const activeTarget = state\.ink\.activeTarget;[\s\S]*?activeTarget\.kind === "student_card"[\s\S]*?setInkCommand\(\{[\s\S]*?target: activeTarget[\s\S]*?action: "undo"/);
+assert.match(workspaceSource, /activeTarget\.kind === "private_board"[\s\S]*?dispatch\(\{ type: "undo_active_ink" \}\)/);
+assert.match(workspaceSource, /const clearActiveInk = useCallback/);
+assert.match(workspaceSource, /const activeTarget = state\.ink\.activeTarget;[\s\S]*?activeTarget\.kind === "student_card"[\s\S]*?setInkCommand\(\{[\s\S]*?target: activeTarget[\s\S]*?action: "clear"/);
+assert.match(workspaceSource, /activeTarget\.kind === "private_board"[\s\S]*?dispatch\(\{ type: "clear_active_ink" \}\)/);
+assert.match(workspaceSource, /state\.ink\.activeTarget\.kind === "student_card"\s*\|\|[\s\S]*?state\.ink\.activeTarget\.kind === "private_board"[\s\S]*?state\.privateBoardStrokes\.length > 0/);
+assert.doesNotMatch(workspaceSource, /target: "student_card"/);
+assert.match(workspaceSource, /<BoardInkToolbar[\s\S]*?tool=\{state\.ink\.tool\}[\s\S]*?color=\{state\.ink\.color\}[\s\S]*?canUndo=\{canChangeActiveInk\}[\s\S]*?canClear=\{canChangeActiveInk\}[\s\S]*?onToolChange=\{setInkTool\}[\s\S]*?onColorChange=\{setInkColor\}[\s\S]*?onUndo=\{undoActiveInk\}[\s\S]*?onClear=\{clearActiveInk\}/);
+assert.ok(workspaceSource.indexOf("<BoardInkToolbar") < workspaceSource.indexOf("<CanvasViewport"));
+assert.match(workspaceSource, /<PrivateBoardInkLayer[\s\S]*?strokes=\{state\.privateBoardStrokes\}[\s\S]*?tool=\{state\.ink\.tool\}[\s\S]*?color=\{state\.ink\.color\}[\s\S]*?onCommitStroke=\{commitPrivateBoardStroke\}/);
+assert.ok(workspaceSource.indexOf("<PrivateBoardInkLayer") < workspaceSource.indexOf("<TutorObjectLayer"));
+assert.ok(workspaceSource.indexOf("<PrivateBoardInkLayer") < workspaceSource.indexOf("<StickyNoteLayer"));
+assert.ok(workspaceSource.indexOf("<PrivateBoardInkLayer") < workspaceSource.indexOf("state.studentCards.map"));
+
+const boardInkToolbarPath = new URL("../src/components/session/BoardInkToolbar.tsx", import.meta.url);
+const boardInkToolbarSource = fs.readFileSync(boardInkToolbarPath, "utf8");
+assert.match(boardInkToolbarSource, /"#213f35"/);
+assert.match(boardInkToolbarSource, /"#ff775f"/);
+assert.match(boardInkToolbarSource, /"#2f6fed"/);
+assert.match(boardInkToolbarSource, /"#7c4dff"/);
+assert.match(boardInkToolbarSource, /Pencil/);
+assert.match(boardInkToolbarSource, /Eraser/);
+assert.match(boardInkToolbarSource, /Undo2/);
+assert.match(boardInkToolbarSource, /Trash2/);
+assert.match(boardInkToolbarSource, /ink-color-swatch/);
+assert.doesNotMatch(boardInkToolbarSource, /USER_BOARD_TOPIC/);
+assert.doesNotMatch(boardInkToolbarSource, /useBoardChannel/);
+assert.doesNotMatch(boardInkToolbarSource, /whiteboard/);
 
 const handwritingPanelPath = new URL("../src/components/session/HandwritingPanel.tsx", import.meta.url);
 const handwritingPanelSource = fs.readFileSync(handwritingPanelPath, "utf8");
+assert.match(handwritingPanelSource, /inkTool/);
+assert.match(handwritingPanelSource, /inkColor/);
+assert.match(handwritingPanelSource, /inkCommand/);
+assert.match(handwritingPanelSource, /onStrokeTargeted/);
+assert.match(handwritingPanelSource, /getCoalescedEvents/);
+assert.match(handwritingPanelSource, /target:\s*Extract<InkTarget,\s*\{ kind: "student_card" \}>/);
+assert.match(handwritingPanelSource, /inkCommand\.target\.kind !== "student_card"/);
+assert.match(handwritingPanelSource, /inkCommand\.target\.cardId !== cardId/);
+assert.match(handwritingPanelSource, /if \(strokesRef\.current\.length === 0\) return;/);
+assert.match(handwritingPanelSource, /releasePointerCapture\(e\.pointerId\)/);
+assert.match(handwritingPanelSource, /onLostPointerCapture=\{\(\) => \{\s*dragRef\.current = null;\s*\}\}/);
+assert.match(handwritingPanelSource, /onLostPointerCapture=\{\(\) => \{\s*resizeRef\.current = null;\s*\}\}/);
+assert.doesNotMatch(handwritingPanelSource, /import\s*\{[^}]*\b(?:Eraser|Pencil|Trash2|Undo2)\b[^}]*\}\s*from "lucide-react"/);
+assert.doesNotMatch(handwritingPanelSource, /aria-label="Pen"/);
+assert.doesNotMatch(handwritingPanelSource, /aria-label="Eraser"/);
+assert.doesNotMatch(handwritingPanelSource, /aria-label="Undo"/);
+assert.doesNotMatch(handwritingPanelSource, /aria-label="Clear"/);
+assert.match(handwritingPanelSource, /USER_BOARD_TOPIC/);
+assert.match(handwritingPanelSource, /useBoardChannel/);
+assert.match(handwritingPanelSource, /card_label:\s*label/);
+assert.match(handwritingPanelSource, /card_id:\s*cardId/);
 assert.match(handwritingPanelSource, /onRename/);
 assert.match(handwritingPanelSource, /handwriting-topic-input/);
 assert.match(handwritingPanelSource, /GripVertical/);
@@ -367,9 +538,77 @@ assert.match(handwritingPanelSource, /onBlur=\{\(\) => onRename\(cardId, draftLa
 assert.match(handwritingPanelSource, /aria-label="Student card topic"/);
 assert.match(workspaceSource, /renameStudentCard/);
 assert.match(workspaceSource, /onRename=\{renameStudentCard\}/);
+assert.match(workspaceSource, /inkTool=\{state\.ink\.tool\}/);
+assert.match(workspaceSource, /inkColor=\{state\.ink\.color\}/);
+assert.match(workspaceSource, /inkCommand=\{inkCommand\}/);
+assert.match(workspaceSource, /onStrokeTargeted=\{setActiveInkTarget\}/);
+assert.match(workspaceSource, /import StickyNoteLayer from "\.\/StickyNoteLayer"/);
+assert.match(workspaceSource, /<StickyNoteLayer[\s\S]*?notes=\{state\.stickyNotes\}[\s\S]*?onMoveNote=\{moveStickyNote\}[\s\S]*?onResizeNote=\{resizeStickyNote\}[\s\S]*?onTextChange=\{updateStickyNoteText\}/);
+assert.match(workspaceSource, /StickyNote(?:\s+as\s+StickyNoteIcon)?/);
+assert.match(workspaceSource, /const addStickyNote = useCallback/);
+assert.match(workspaceSource, /dispatch\(\{[\s\S]*?type: "add_sticky_note"[\s\S]*?boardSize: getBoardSize\(\)[\s\S]*?\}\)/);
+assert.match(workspaceSource, /aria-label="Add sticky note"/);
+
+const stickyNoteLayerPath = new URL("../src/components/session/StickyNoteLayer.tsx", import.meta.url);
+const stickyNoteLayerSource = fs.readFileSync(stickyNoteLayerPath, "utf8");
+assert.match(stickyNoteLayerSource, /notes\.map/);
+assert.match(stickyNoteLayerSource, /clientToWorld/);
+assert.match(stickyNoteLayerSource, /viewport\.zoom/);
+assert.match(stickyNoteLayerSource, /sticky-note-text/);
+assert.match(stickyNoteLayerSource, /onMoveNote/);
+assert.match(stickyNoteLayerSource, /onResizeNote/);
+assert.match(stickyNoteLayerSource, /onTextChange/);
+assert.match(stickyNoteLayerSource, /onPointerDown=\{\(event\) => event\.stopPropagation\(\)\}/);
+assert.match(stickyNoteLayerSource, /onKeyDown=\{\(event\) => resizeWithKeyboard\(event, note\)\}/);
+assert.match(stickyNoteLayerSource, /ArrowRight/);
+assert.match(stickyNoteLayerSource, /ArrowLeft/);
+assert.match(stickyNoteLayerSource, /ArrowDown/);
+assert.match(stickyNoteLayerSource, /ArrowUp/);
+assert.doesNotMatch(stickyNoteLayerSource, /USER_BOARD_TOPIC/);
+assert.doesNotMatch(stickyNoteLayerSource, /useBoardChannel/);
+assert.doesNotMatch(stickyNoteLayerSource, /whiteboard/);
+
+const privateBoardInkLayerPath = new URL("../src/components/session/PrivateBoardInkLayer.tsx", import.meta.url);
+const privateBoardInkLayerSource = fs.readFileSync(privateBoardInkLayerPath, "utf8");
+assert.match(privateBoardInkLayerSource, /strokes:\s*PrivateBoardInkStroke\[\]/);
+assert.match(privateBoardInkLayerSource, /tool:\s*InkTool/);
+assert.match(privateBoardInkLayerSource, /color:\s*InkColor/);
+assert.match(privateBoardInkLayerSource, /onCommitStroke:\s*\(stroke:\s*PrivateBoardInkStroke\) => void/);
+assert.match(privateBoardInkLayerSource, /getCoalescedEvents/);
+assert.match(privateBoardInkLayerSource, /getStroke/);
+assert.match(privateBoardInkLayerSource, /clientToWorld/);
+assert.match(privateBoardInkLayerSource, /isSpacePan/);
+assert.match(privateBoardInkLayerSource, /event\.button !== 0 \|\| isSpacePan \|\| activePointerRef\.current !== null/);
+assert.match(privateBoardInkLayerSource, /setPointerCapture/);
+assert.match(privateBoardInkLayerSource, /releasePointerCapture/);
+assert.match(privateBoardInkLayerSource, /draftStrokeRef/);
+assert.doesNotMatch(privateBoardInkLayerSource, /onCommitStroke\(stroke\);[\s\S]*?return null;/);
+assert.match(privateBoardInkLayerSource, /completedStroke\.points\.length > 1/);
+assert.match(privateBoardInkLayerSource, /viewBox=\{`\$\{WORLD_ORIGIN\} \$\{WORLD_ORIGIN\} \$\{WORLD_SIZE\} \$\{WORLD_SIZE\}`\}/);
+assert.match(privateBoardInkLayerSource, /committedPaths = useMemo/);
+assert.match(privateBoardInkLayerSource, /draftPath = useMemo/);
+assert.match(privateBoardInkLayerSource, /<mask id=\{maskId\}/);
+assert.match(privateBoardInkLayerSource, /stroke\.tool === "eraser"/);
+assert.match(privateBoardInkLayerSource, /strokeToPath/);
+assert.match(privateBoardInkLayerSource, /private-board-ink-layer/);
+assert.match(privateBoardInkLayerSource, /private-board-ink-svg/);
+assert.doesNotMatch(privateBoardInkLayerSource, /USER_BOARD_TOPIC/);
+assert.doesNotMatch(privateBoardInkLayerSource, /useBoardChannel/);
+assert.doesNotMatch(privateBoardInkLayerSource, /whiteboard/);
 
 const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
 const sessionCss = fs.readFileSync(sessionCssPath, "utf8");
+assert.match(sessionCss, /\.board-top-actions\s*\{[^}]*display:\s*grid;/s);
+assert.match(sessionCss, /\.board-top-actions\s*\{[^}]*gap:\s*8px;/s);
+assert.match(sessionCss, /\.private-board-ink-layer\s*\{/s);
+assert.match(sessionCss, /\.private-board-ink-layer\s*\{[^}]*left:\s*-10000px;[^}]*top:\s*-10000px;[^}]*width:\s*20000px;[^}]*height:\s*20000px;/s);
+assert.match(sessionCss, /\.private-board-ink-svg\s*\{/s);
+assert.match(sessionCss, /\.sticky-note-layer\s*\{/s);
+assert.match(sessionCss, /\.sticky-note\s*\{/s);
+assert.match(sessionCss, /\.sticky-note-handle\s*\{/s);
+assert.match(sessionCss, /\.sticky-note-text\s*\{/s);
+assert.match(sessionCss, /\.sticky-note-text:focus-visible\s*\{/s);
+assert.match(sessionCss, /\.sticky-note-resize\s*\{/s);
 assert.match(sessionCss, /\.tutor-object\s*\{[^}]*position:\s*absolute;/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-collapsed\s*\{[^}]*cursor:\s*pointer;/s);
 assert.match(sessionCss, /\.tutor-object-collapsed\s+\.tutor-object-handle\s*\{[^}]*cursor:\s*grab;/s);
@@ -379,6 +618,10 @@ assert.match(sessionCss, /\.tutor-object-title-action\s*\{[^}]*touch-action:\s*m
 assert.match(sessionCss, /\.tutor-object-resize\s*\{[^}]*cursor:\s*nwse-resize;/s);
 assert.match(sessionCss, /\.handwriting-drag-grip\s*\{[^}]*cursor:\s*grab;/s);
 assert.match(sessionCss, /\.handwriting-topic-input\s*\{[^}]*cursor:\s*text;/s);
+assert.match(sessionCss, /\.board-ink-toolbar\s*\{/s);
+assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*flex-wrap:\s*wrap;/s);
+assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*max-width:\s*calc\(100% - 90px\);/s);
+assert.match(sessionCss, /\.ink-color-swatch\s*\{/s);
 assert.doesNotMatch(sessionCss, /\.tutor-focus-rail/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-history/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-(?:plot|shape|diagram)\s*\{[^}]*(?:width|min-height)\s*:/s);

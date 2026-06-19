@@ -1,5 +1,5 @@
-import { useCallback, useLayoutEffect, useReducer, useRef } from "react";
-import { SquarePen } from "lucide-react";
+import { useCallback, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { SquarePen, StickyNote as StickyNoteIcon } from "lucide-react";
 import { zoomAtPoint } from "../../lib/canvasViewport";
 import {
   AI_BOARD_TOPIC,
@@ -8,8 +8,11 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
+import BoardInkToolbar from "./BoardInkToolbar";
 import CanvasViewport from "./CanvasViewport";
 import HandwritingPanel from "./HandwritingPanel";
+import PrivateBoardInkLayer from "./PrivateBoardInkLayer";
+import StickyNoteLayer from "./StickyNoteLayer";
 import TextbookOverlay from "./TextbookOverlay";
 import TranscriptOverlay from "./TranscriptOverlay";
 import TutorObjectLayer from "./TutorObjectLayer";
@@ -18,6 +21,18 @@ import {
   initialWorkspaceState,
   workspaceReducer,
 } from "./workspaceReducer";
+import type {
+  InkColor,
+  InkTarget,
+  InkTool,
+  PrivateBoardInkStroke,
+} from "./workspaceTypes";
+
+type InkCommand = {
+  id: number;
+  target: Extract<InkTarget, { kind: "student_card" }>;
+  action: "undo" | "clear";
+} | null;
 
 interface Props {
   status: "connecting" | "connected" | "disconnected";
@@ -36,8 +51,10 @@ export default function SharedReasoningWorkspace({
     workspaceReducer,
     initialWorkspaceState,
   );
+  const [inkCommand, setInkCommand] = useState<InkCommand>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const hasCustomizedHandwritingRef = useRef(false);
+  const inkCommandIdRef = useRef(0);
 
   const getBoardSize = useCallback(() => {
     const rect = boardRef.current?.getBoundingClientRect();
@@ -96,6 +113,13 @@ export default function SharedReasoningWorkspace({
     });
   }, []);
 
+  const addStickyNote = useCallback(() => {
+    dispatch({
+      type: "add_sticky_note",
+      boardSize: getBoardSize(),
+    });
+  }, [getBoardSize]);
+
   const moveStudentCard = useCallback(
     (id: string, position: { x: number; y: number }) => {
       if (id === "student-card-1") {
@@ -123,6 +147,73 @@ export default function SharedReasoningWorkspace({
   const setStudentCardCaptureActive = useCallback((id: string, value: boolean) => {
     dispatch({ type: "set_student_card_capturing", id, value });
   }, []);
+
+  const moveStickyNote = useCallback((id: string, position: { x: number; y: number }) => {
+    dispatch({ type: "move_sticky_note", id, position });
+  }, []);
+
+  const resizeStickyNote = useCallback((id: string, size: { width: number; height: number }) => {
+    dispatch({ type: "resize_sticky_note", id, size });
+  }, []);
+
+  const updateStickyNoteText = useCallback((id: string, text: string) => {
+    dispatch({ type: "update_sticky_note_text", id, text });
+  }, []);
+
+  const setInkTool = useCallback((tool: InkTool) => {
+    dispatch({ type: "set_ink_tool", tool });
+  }, []);
+
+  const setInkColor = useCallback((color: InkColor) => {
+    dispatch({ type: "set_ink_color", color });
+  }, []);
+
+  const commitPrivateBoardStroke = useCallback((stroke: PrivateBoardInkStroke) => {
+    dispatch({ type: "commit_private_board_stroke", stroke });
+  }, []);
+
+  const setActiveInkTarget = useCallback((target: InkTarget) => {
+    dispatch({ type: "set_active_ink_target", target });
+  }, []);
+
+  const undoActiveInk = useCallback(() => {
+    const activeTarget = state.ink.activeTarget;
+    if (activeTarget.kind === "student_card") {
+      inkCommandIdRef.current += 1;
+      setInkCommand({
+        id: inkCommandIdRef.current,
+        target: activeTarget,
+        action: "undo",
+      });
+      return;
+    }
+
+    if (activeTarget.kind === "private_board") {
+      dispatch({ type: "undo_active_ink" });
+    }
+  }, [state.ink.activeTarget]);
+
+  const clearActiveInk = useCallback(() => {
+    const activeTarget = state.ink.activeTarget;
+    if (activeTarget.kind === "student_card") {
+      inkCommandIdRef.current += 1;
+      setInkCommand({
+        id: inkCommandIdRef.current,
+        target: activeTarget,
+        action: "clear",
+      });
+      return;
+    }
+
+    if (activeTarget.kind === "private_board") {
+      dispatch({ type: "clear_active_ink" });
+    }
+  }, [state.ink.activeTarget]);
+
+  const canChangeActiveInk =
+    state.ink.activeTarget.kind === "student_card" ||
+    (state.ink.activeTarget.kind === "private_board" &&
+      state.privateBoardStrokes.length > 0);
 
   const zoomFromCenter = useCallback(
     (factor: number) => {
@@ -192,6 +283,14 @@ export default function SharedReasoningWorkspace({
           >
             <SquarePen size={17} aria-hidden="true" />
           </button>
+          <button
+            type="button"
+            onClick={addStickyNote}
+            aria-label="Add sticky note"
+            title="Add sticky note"
+          >
+            <StickyNoteIcon size={17} aria-hidden="true" />
+          </button>
         </div>
         <TextbookOverlay
           docId={activeDocId}
@@ -208,17 +307,39 @@ export default function SharedReasoningWorkspace({
           open={state.overlays.transcriptOpen}
           onToggle={() => dispatch({ type: "toggle_transcript" })}
         />
+        <BoardInkToolbar
+          tool={state.ink.tool}
+          color={state.ink.color}
+          canUndo={canChangeActiveInk}
+          canClear={canChangeActiveInk}
+          onToolChange={setInkTool}
+          onColorChange={setInkColor}
+          onUndo={undoActiveInk}
+          onClear={clearActiveInk}
+        />
         <CanvasViewport
           boardRef={boardRef}
           viewport={state.viewport}
           onViewportChange={setViewport}
         >
+          <PrivateBoardInkLayer
+            strokes={state.privateBoardStrokes}
+            tool={state.ink.tool}
+            color={state.ink.color}
+            onCommitStroke={commitPrivateBoardStroke}
+          />
           <TutorObjectLayer
             objects={state.objects}
             onMoveObject={moveObject}
             onResizeObject={resizeObject}
             onActivateObject={activateObject}
             onCollapseObject={collapseObject}
+          />
+          <StickyNoteLayer
+            notes={state.stickyNotes}
+            onMoveNote={moveStickyNote}
+            onResizeNote={resizeStickyNote}
+            onTextChange={updateStickyNoteText}
           />
           {state.studentCards.map((card) => (
             <HandwritingPanel
@@ -228,10 +349,14 @@ export default function SharedReasoningWorkspace({
               position={card.position}
               size={card.size}
               isCapturing={card.isCapturing}
+              inkTool={state.ink.tool}
+              inkColor={state.ink.color}
+              inkCommand={inkCommand}
               onMove={moveStudentCard}
               onResize={resizeStudentCard}
               onRename={renameStudentCard}
               onCaptureStateChange={setStudentCardCaptureActive}
+              onStrokeTargeted={setActiveInkTarget}
             />
           ))}
         </CanvasViewport>
