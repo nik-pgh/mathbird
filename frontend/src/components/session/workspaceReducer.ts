@@ -57,15 +57,8 @@ export function workspaceReducer(
         ),
       };
     case "move_object": {
-      const origin = flowOriginFromMovedObject(state.objects, action.id, action.position);
-      return {
-        ...state,
-        objects: reflowTutorObjects(
-          state.objects.map((obj, index) => (
-            index === 0 ? { ...obj, position: origin } : obj
-          )),
-        ),
-      };
+      const translated = translateTutorFlow(state.objects, action.id, action.position);
+      return translated ? { ...state, objects: translated } : state;
     }
     case "resize_object":
       return {
@@ -279,18 +272,22 @@ function reflowTutorObjects(objects: BoardObject[], boardSize?: Size): BoardObje
   }));
 }
 
-function flowOriginFromMovedObject(
+function translateTutorFlow(
   objects: BoardObject[],
   id: string,
   nextPosition: Point,
-): Point {
+): BoardObject[] | null {
   const moved = objects.find((object) => object.id === id);
-  const first = objects[0];
-  if (!moved || !first) return nextPosition;
-  return {
-    x: first.position.x + (nextPosition.x - moved.position.x),
-    y: first.position.y + (nextPosition.y - moved.position.y),
-  };
+  if (!moved) return null;
+  const dx = nextPosition.x - moved.position.x;
+  const dy = nextPosition.y - moved.position.y;
+  return objects.map((object) => ({
+    ...object,
+    position: {
+      x: object.position.x + dx,
+      y: object.position.y + dy,
+    },
+  }));
 }
 
 function normalizeStudentCardLabel(label: string, cardId: string): string {

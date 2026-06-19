@@ -243,6 +243,45 @@ assert.deepEqual(
   { width: 720, height: 520 },
 );
 
+const firstTutorMoved = workspaceReducer(resizedTutor, {
+  type: "move_object",
+  id: textItem.id,
+  position: { x: 450, y: 260 },
+});
+assert.deepEqual(
+  plain(firstTutorMoved.objects.map((object) => object.position)),
+  [
+    { x: 450, y: 260 },
+    { x: 450, y: 314 },
+    { x: 450, y: 368 },
+  ],
+);
+
+const secondTutorMoved = workspaceReducer(resizedTutor, {
+  type: "move_object",
+  id: shapeItem.id,
+  position: { x: 390, y: 304 },
+});
+assert.deepEqual(
+  plain(secondTutorMoved.objects.map((object) => object.position)),
+  [
+    { x: 390, y: 250 },
+    { x: 390, y: 304 },
+    { x: 390, y: 358 },
+  ],
+);
+
+const unknownTutorMoved = workspaceReducer(resizedTutor, {
+  type: "move_object",
+  id: "missing-tutor-object",
+  position: { x: 20, y: 20 },
+});
+assert.equal(unknownTutorMoved, resizedTutor);
+assert.deepEqual(
+  plain(unknownTutorMoved.objects.map((object) => object.position)),
+  plain(resizedTutor.objects.map((object) => object.position)),
+);
+
 const relabeled = workspaceReducer(resizedTutor, {
   type: "rename_student_card",
   id: "student-card-1",
