@@ -930,9 +930,10 @@
 
 .voice-composer {
   position: relative;
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 720px) minmax(120px, 1fr);
   align-items: center;
+  column-gap: 14px;
   padding: 12px 14px 14px;
   border-top: 1px solid var(--border);
   background:
@@ -941,21 +942,21 @@
 }
 
 .voice-composer-main {
+  grid-column: 2;
   min-width: 0;
+  width: 100%;
 }
 
 .voice-composer .canvas-controls {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
+  grid-column: 3;
+  justify-self: end;
 }
 
 .voice-composer .wrap {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: min(720px, calc(100vw - 180px));
+  width: 100%;
   min-height: 48px;
   margin: 0;
   padding: 6px 6px 6px 15px;
@@ -1164,19 +1165,23 @@
   }
 
   .transcript-overlay {
+    bottom: 132px;
     max-height: 28svh;
   }
 
   .voice-composer {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 8px;
     padding: 10px;
   }
 
   .voice-composer .canvas-controls {
-    right: 10px;
+    grid-column: 1;
+    justify-self: center;
   }
 
-  .voice-composer .wrap {
-    width: min(720px, calc(100vw - 120px));
+  .voice-composer-main {
+    grid-column: 1;
   }
 
   .voice-composer .state {
