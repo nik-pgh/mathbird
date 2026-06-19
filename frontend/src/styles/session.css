@@ -72,7 +72,7 @@
 }
 
 .board-top-actions {
-  --board-tool-rail-width: 42px;
+  --board-tool-rail-width: 38px;
   position: absolute;
   top: 14px;
   right: 14px;
@@ -105,9 +105,9 @@
 }
 
 .board-ink-toolbar {
-  --board-tool-rail-width: 42px;
+  --board-tool-rail-width: 38px;
   position: absolute;
-  top: 108px;
+  top: 124px;
   right: 14px;
   z-index: 6;
   display: inline-flex;
@@ -116,8 +116,8 @@
   align-items: center;
   gap: 4px;
   width: var(--board-tool-rail-width);
-  max-height: calc(100% - 122px);
-  padding: 5px;
+  max-height: calc(100% - 138px);
+  padding: 3px;
   border: 1px solid rgba(41, 72, 62, 0.22);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.88);
