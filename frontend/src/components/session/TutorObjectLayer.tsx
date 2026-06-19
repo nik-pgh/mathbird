@@ -108,11 +108,22 @@ export default function TutorObjectLayer({
           >
             <div
               className="tutor-object-handle"
-              role="button"
-              tabIndex={0}
+              role={isCollapsed ? "button" : undefined}
+              tabIndex={isCollapsed ? 0 : undefined}
               aria-label={`${isCollapsed ? "Expand" : "Move"} tutor ${KIND_LABELS[object.kind].toLowerCase()} card`}
               onClick={() => {
                 if (isCollapsed) onActivateObject(object.id);
+              }}
+              onKeyDown={(event) => {
+                if (!isCollapsed) return;
+                if (event.key === " ") {
+                  event.preventDefault();
+                  onActivateObject(object.id);
+                  return;
+                }
+                if (event.key === "Enter") {
+                  onActivateObject(object.id);
+                }
               }}
               onPointerDown={(event) => {
                 if (isCollapsed || event.button !== 0) return;
@@ -186,6 +197,7 @@ export default function TutorObjectLayer({
                   onPointerMove={moveResize}
                   onPointerUp={endResize}
                   onPointerCancel={endResize}
+                  onLostPointerCapture={endResize}
                 />
               </>
             ) : null}

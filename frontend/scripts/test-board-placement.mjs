@@ -308,6 +308,10 @@ assert.match(tutorLayerSource, /objects\.map/);
 assert.match(tutorLayerSource, /deriveTutorBoardTitle/);
 assert.match(tutorLayerSource, /onResizeObject/);
 assert.match(tutorLayerSource, /tutor-object-resize/);
+assert.match(tutorLayerSource, /onKeyDown/);
+assert.match(tutorLayerSource, /role=\{isCollapsed \? "button" : undefined\}/);
+assert.match(tutorLayerSource, /tabIndex=\{isCollapsed \? 0 : undefined\}/);
+assert.match(tutorLayerSource, /onLostPointerCapture=\{endResize\}/);
 assert.doesNotMatch(tutorLayerSource, /activeObject\s*=/);
 assert.doesNotMatch(tutorLayerSource, /tutor-object-history/);
 
