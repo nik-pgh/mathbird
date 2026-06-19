@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent } from "react";
+import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import {
   COLLAPSED_TUTOR_RIBBON_HEIGHT,
   deriveTutorBoardTitle,
@@ -35,6 +35,19 @@ const KIND_LABELS: Record<BoardObject["kind"], string> = {
   shape: "Sketch",
   diagram: "Diagram",
 };
+
+const KEYBOARD_RESIZE_DELTAS: Record<string, { width: number; height: number }> = {
+  ArrowRight: { width: 1, height: 0 },
+  ArrowLeft: { width: -1, height: 0 },
+  ArrowDown: { width: 0, height: 1 },
+  ArrowUp: { width: 0, height: -1 },
+};
+
+function keyboardResizeStep(event: KeyboardEvent<HTMLButtonElement>): number {
+  if (event.altKey) return 4;
+  if (event.shiftKey) return 48;
+  return 16;
+}
 
 export default function TutorObjectLayer({
   objects,
@@ -80,6 +93,23 @@ export default function TutorObjectLayer({
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     resizeRef.current = null;
+  };
+
+  const resizeWithKeyboard = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    object: BoardObject,
+    size: { width: number; height: number },
+  ) => {
+    const delta = KEYBOARD_RESIZE_DELTAS[event.key];
+    if (!delta) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    const step = keyboardResizeStep(event);
+    onResizeObject(object.id, {
+      width: size.width + delta.width * step,
+      height: size.height + delta.height * step,
+    });
   };
 
   return (
@@ -186,6 +216,7 @@ export default function TutorObjectLayer({
                   onPointerUp={endResize}
                   onPointerCancel={endResize}
                   onLostPointerCapture={endResize}
+                  onKeyDown={(event) => resizeWithKeyboard(event, object, size)}
                 />
               </>
             ) : null}

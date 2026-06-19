@@ -131,7 +131,7 @@ assert.equal(
 );
 assert.equal(
   deriveTutorBoardTitle({ kind: "text", id: "text-3", markdown: "Intro body\nstill body\n## Heading Title" }, 6),
-  "Heading Title",
+  "Intro body",
 );
 assert.equal(
   deriveTutorBoardTitle({ kind: "shape", id: "shape-1", svg: "<svg></svg>" }, 6),
@@ -309,6 +309,10 @@ assert.match(tutorLayerSource, /deriveTutorBoardTitle/);
 assert.match(tutorLayerSource, /onResizeObject/);
 assert.match(tutorLayerSource, /tutor-object-resize/);
 assert.match(tutorLayerSource, /onKeyDown/);
+assert.match(tutorLayerSource, /ArrowRight/);
+assert.match(tutorLayerSource, /ArrowLeft/);
+assert.match(tutorLayerSource, /ArrowDown/);
+assert.match(tutorLayerSource, /ArrowUp/);
 assert.match(tutorLayerSource, /role=\{isCollapsed \? "button" : undefined\}/);
 assert.match(tutorLayerSource, /tabIndex=\{isCollapsed \? 0 : undefined\}/);
 assert.match(tutorLayerSource, /onLostPointerCapture=\{endResize\}/);

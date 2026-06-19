@@ -110,12 +110,9 @@ export function deriveTutorBoardTitle(
   if (label) return label;
 
   if (item.kind === "text" && typeof item.markdown === "string") {
-    const lines = item.markdown.split(/\r?\n/);
-    const heading = lines
-      .map((part) => part.match(/^#+\s+(.+)$/)?.[1].trim() ?? "")
-      .find(Boolean);
-    const line = heading ?? lines
-      .map((part) => part.trim())
+    const line = item.markdown
+      .split(/\r?\n/)
+      .map((part) => part.trim().replace(/^#{1,6}\s*/, "").trim())
       .find(Boolean);
     if (line) return line.slice(0, 48);
   }
