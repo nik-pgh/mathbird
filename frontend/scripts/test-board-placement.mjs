@@ -654,6 +654,7 @@ assert.match(sessionCss, /\.transcript-overlay\s*\{[^}]*background:\s*rgba\(32,\
 assert.match(sessionCss, /\.voice-composer\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(120px,\s*1fr\)\s+minmax\(0,\s*720px\)\s+minmax\(120px,\s*1fr\);/s);
 assert.match(sessionCss, /\.voice-composer\s+\.canvas-controls\s*\{[^}]*grid-column:\s*3;[^}]*justify-self:\s*end;/s);
 assert.doesNotMatch(sessionCss, /\.voice-composer\s+\.canvas-controls\s*\{[^}]*position:\s*absolute;/s);
+assert.match(sessionCss, /@media\s*\(max-width:\s*560px\)\s*\{[\s\S]*?\.voice-composer\s+\.canvas-controls\s*\{[^}]*display:\s*none;/s);
 assert.match(sessionCss, /\.textbook-overlay-docked\s+\.textbook-overlay-body\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;/s);
 assert.doesNotMatch(sessionCss, /\.textbook-overlay-docked\s+\.textbook-overlay-body\s*\{[^}]*aspect-ratio:/s);
 assert.doesNotMatch(sessionCss, /\.document-stage/s);

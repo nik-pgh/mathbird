@@ -1165,7 +1165,6 @@
   }
 
   .transcript-overlay {
-    bottom: 132px;
     max-height: 28svh;
   }
 
@@ -1176,8 +1175,7 @@
   }
 
   .voice-composer .canvas-controls {
-    grid-column: 1;
-    justify-self: center;
+    display: none;
   }
 
   .voice-composer-main {
