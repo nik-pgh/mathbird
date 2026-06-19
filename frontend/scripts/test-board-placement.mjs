@@ -326,6 +326,16 @@ assert.match(workspaceSource, /boardSize: getBoardSize\(\)/);
 assert.match(workspaceSource, /resizeObject/);
 assert.match(workspaceSource, /onResizeObject=\{resizeObject\}/);
 
+const handwritingPanelPath = new URL("../src/components/session/HandwritingPanel.tsx", import.meta.url);
+const handwritingPanelSource = fs.readFileSync(handwritingPanelPath, "utf8");
+assert.match(handwritingPanelSource, /onRename/);
+assert.match(handwritingPanelSource, /handwriting-topic-input/);
+assert.match(handwritingPanelSource, /draftLabel/);
+assert.match(handwritingPanelSource, /onBlur=\{\(\) => onRename\(cardId, draftLabel\)\}/);
+assert.match(handwritingPanelSource, /aria-label="Student card topic"/);
+assert.match(workspaceSource, /renameStudentCard/);
+assert.match(workspaceSource, /onRename=\{renameStudentCard\}/);
+
 const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
 const sessionCss = fs.readFileSync(sessionCssPath, "utf8");
 assert.match(sessionCss, /\.tutor-focus-rail/s);

@@ -112,6 +112,10 @@ export default function SharedReasoningWorkspace({
     [],
   );
 
+  const renameStudentCard = useCallback((id: string, label: string) => {
+    dispatch({ type: "rename_student_card", id, label });
+  }, []);
+
   const setStudentCardCaptureActive = useCallback((id: string, value: boolean) => {
     dispatch({ type: "set_student_card_capturing", id, value });
   }, []);
@@ -221,6 +225,7 @@ export default function SharedReasoningWorkspace({
               isCapturing={card.isCapturing}
               onMove={moveStudentCard}
               onResize={resizeStudentCard}
+              onRename={renameStudentCard}
               onCaptureStateChange={setStudentCardCaptureActive}
             />
           ))}

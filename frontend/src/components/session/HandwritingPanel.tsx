@@ -18,6 +18,7 @@ interface Props {
   isCapturing: boolean;
   onMove: (cardId: string, position: { x: number; y: number }) => void;
   onResize: (cardId: string, size: { width: number; height: number }) => void;
+  onRename: (cardId: string, label: string) => void;
   onCaptureStateChange: (cardId: string, value: boolean) => void;
 }
 
@@ -53,6 +54,7 @@ export default function HandwritingPanel({
   isCapturing,
   onMove,
   onResize,
+  onRename,
   onCaptureStateChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,6 +71,7 @@ export default function HandwritingPanel({
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [tool, setTool] = useState<Tool>("pen");
   const [drawing, setDrawing] = useState<Stroke | null>(null);
+  const [draftLabel, setDraftLabel] = useState(label);
   const { isSpacePan, clientToWorld, viewport } = useCanvasViewportContext();
 
   const { send } = useBoardChannel<
@@ -87,6 +90,10 @@ export default function HandwritingPanel({
   useEffect(() => {
     sizeRef.current = size;
   }, [size]);
+
+  useEffect(() => {
+    setDraftLabel(label);
+  }, [label]);
 
   useEffect(() => {
     onCaptureStateChangeRef.current = onCaptureStateChange;
@@ -333,7 +340,14 @@ export default function HandwritingPanel({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
-          {label}
+          <input
+            className="handwriting-topic-input"
+            value={draftLabel}
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => setDraftLabel(event.currentTarget.value)}
+            onBlur={() => onRename(cardId, draftLabel)}
+            aria-label="Student card topic"
+          />
         </span>
         <div
           className="handwriting-tools"
