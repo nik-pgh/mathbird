@@ -1,8 +1,10 @@
 /* ─── Tokens ──────────────────────────────────────────────────────────── */
 
 :root {
-  --mb-green: #00a878;
-  --mb-green-soft: #d7f8eb;
+  --mb-green: #65736d;
+  --mb-green-soft: #e8ece9;
+  --mb-student-green: #00a878;
+  --mb-student-green-soft: #d7f8eb;
   --mb-coral: #ff4f36;
   --mb-coral-soft: #ffe0da;
   --mb-lavender: #8f45ff;

@@ -643,7 +643,7 @@ assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*flex-direction:\s*column;
 assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*flex-wrap:\s*nowrap;/s);
 assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*width:\s*var\(--board-tool-rail-width\);/s);
 assert.match(sessionCss, /\.board-ink-toolbar\s*\{[^}]*max-height:\s*calc\(100% - 184px\);/s);
-assert.match(sessionCss, /\.board-ink-toolbar button\.active\s*\{[^}]*background:\s*rgba\(0,\s*168,\s*120,\s*0\.14\);[^}]*color:\s*var\(--mb-green\);/s);
+assert.match(sessionCss, /\.board-ink-toolbar button\.active\s*\{[^}]*background:\s*rgba\(101,\s*115,\s*109,\s*0\.12\);[^}]*color:\s*var\(--mb-green\);/s);
 assert.match(sessionCss, /\.board-ink-divider\s*\{[^}]*width:\s*22px;[^}]*height:\s*1px;/s);
 assert.match(sessionCss, /\.ink-color-swatch\s*\{/s);
 assert.doesNotMatch(sessionCss, /\.textbook-overlay-head/);
