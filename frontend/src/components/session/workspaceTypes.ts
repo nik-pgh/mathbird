@@ -56,12 +56,14 @@ export interface WorkspaceState {
 
 export type WorkspaceAction =
   | { type: "ai_clear" }
-  | { type: "ai_upsert"; items: AiBoardItem[] }
+  | { type: "ai_upsert"; items: AiBoardItem[]; boardSize?: Size }
   | { type: "move_object"; id: string; position: Point }
-  | { type: "activate_object"; id: string }
+  | { type: "resize_object"; id: string; size: Size; boardSize?: Size }
+  | { type: "activate_object"; id: string; boardSize?: Size }
   | { type: "add_student_card"; boardSize: Size }
   | { type: "move_student_card"; id: string; position: Point }
   | { type: "resize_student_card"; id: string; size: Size }
+  | { type: "rename_student_card"; id: string; label: string }
   | { type: "set_student_card_capturing"; id: string; value: boolean }
   | { type: "set_viewport"; viewport: ViewportState }
   | { type: "reset_viewport" }

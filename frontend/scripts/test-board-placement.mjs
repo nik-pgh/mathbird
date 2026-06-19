@@ -199,7 +199,7 @@ const withSecondTutorObject = workspaceReducer(
 );
 const shapeObject = withSecondTutorObject.objects.find((object) => object.id === shapeItem.id);
 const collapsedTextObject = withSecondTutorObject.objects.find((object) => object.id === textItem.id);
-assert.deepEqual(plain(shapeObject.position), { x: 420, y: 240 });
+assert.deepEqual(plain(shapeObject.position), { x: 420, y: 294 });
 assert.deepEqual(plain(shapeObject.size), { width: 340, height: 240 });
 assert.equal(shapeObject.collapsed, false);
 assert.equal(collapsedTextObject.collapsed, true);
@@ -210,6 +210,58 @@ const afterActivation = workspaceReducer(withSecondTutorObject, {
 });
 assert.equal(afterActivation.objects.find((object) => object.id === textItem.id).collapsed, false);
 assert.equal(afterActivation.objects.find((object) => object.id === shapeItem.id).collapsed, true);
+
+const thirdTextItem = { kind: "text", id: "tutor-text-3", markdown: "### New radical step\nsqrt(54)" };
+const flowState = workspaceReducer(
+  afterActivation,
+  {
+    type: "ai_upsert",
+    items: [thirdTextItem],
+    boardSize: { width: 900, height: 260 },
+  },
+);
+assert.equal(flowState.objects.find((object) => object.id === textItem.id).collapsed, true);
+assert.equal(flowState.objects.find((object) => object.id === shapeItem.id).collapsed, true);
+assert.equal(flowState.objects.find((object) => object.id === thirdTextItem.id).collapsed, false);
+assert.deepEqual(
+  plain(flowState.objects.map((object) => object.position)),
+  [
+    { x: 420, y: 240 },
+    { x: 420, y: 294 },
+    { x: 420, y: 348 },
+  ],
+);
+
+const resizedTutor = workspaceReducer(flowState, {
+  type: "resize_object",
+  id: thirdTextItem.id,
+  size: { width: 760, height: 560 },
+  boardSize: { width: 900, height: 700 },
+});
+assert.deepEqual(
+  plain(resizedTutor.objects.find((object) => object.id === thirdTextItem.id).size),
+  { width: 720, height: 520 },
+);
+
+const relabeled = workspaceReducer(resizedTutor, {
+  type: "rename_student_card",
+  id: "student-card-1",
+  label: "Exercise 4.2: radicals",
+});
+assert.equal(
+  relabeled.studentCards.find((card) => card.id === "student-card-1").label,
+  "Exercise 4.2: radicals",
+);
+
+const blankRelabel = workspaceReducer(relabeled, {
+  type: "rename_student_card",
+  id: "student-card-1",
+  label: "   ",
+});
+assert.equal(
+  blankRelabel.studentCards.find((card) => card.id === "student-card-1").label,
+  "Student Card 1",
+);
 
 const tutorLayerPath = new URL("../src/components/session/TutorObjectLayer.tsx", import.meta.url);
 const tutorLayerSource = fs.readFileSync(tutorLayerPath, "utf8");

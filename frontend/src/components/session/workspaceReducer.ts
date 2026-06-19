@@ -1,7 +1,10 @@
 import type { AiBoardItem } from "../../lib/whiteboard";
 import {
+  clampTutorCardSize,
   findOpenBoardPosition,
+  layoutTutorFlow,
   tutorCardSizeForKind,
+  tutorFlowMaxColumnHeight,
   type BoardRect,
 } from "../../lib/boardPlacement";
 import type {
@@ -46,21 +49,44 @@ export function workspaceReducer(
     case "ai_clear":
       return { ...state, objects: [] };
     case "ai_upsert":
-      return { ...state, objects: upsertBoardObjects(state, action.items) };
-    case "move_object":
       return {
         ...state,
-        objects: state.objects.map((obj) =>
-          obj.id === action.id ? { ...obj, position: action.position } : obj,
+        objects: reflowTutorObjects(
+          upsertBoardObjects(state, action.items),
+          action.boardSize,
+        ),
+      };
+    case "move_object": {
+      const origin = flowOriginFromMovedObject(state.objects, action.id, action.position);
+      return {
+        ...state,
+        objects: reflowTutorObjects(
+          state.objects.map((obj, index) => (
+            index === 0 ? { ...obj, position: origin } : obj
+          )),
+        ),
+      };
+    }
+    case "resize_object":
+      return {
+        ...state,
+        objects: reflowTutorObjects(
+          state.objects.map((obj) =>
+            obj.id === action.id ? { ...obj, size: clampTutorCardSize(action.size) } : obj,
+          ),
+          action.boardSize,
         ),
       };
     case "activate_object":
       return {
         ...state,
-        objects: state.objects.map((obj) => ({
-          ...obj,
-          collapsed: obj.id !== action.id,
-        })),
+        objects: reflowTutorObjects(
+          state.objects.map((obj) => ({
+            ...obj,
+            collapsed: obj.id !== action.id,
+          })),
+          action.boardSize,
+        ),
       };
     case "add_student_card": {
       const nextNumber = nextStudentCardNumber(state.studentCards);
@@ -106,6 +132,15 @@ export function workspaceReducer(
         ),
       };
     }
+    case "rename_student_card":
+      return {
+        ...state,
+        studentCards: state.studentCards.map((card) =>
+          card.id === action.id
+            ? { ...card, label: normalizeStudentCardLabel(action.label, card.id) }
+            : card,
+        ),
+      };
     case "set_textbook":
       return {
         ...state,
@@ -207,21 +242,62 @@ function createBoardObject(
   size: Size,
   collapsed = false,
 ): BoardObject {
+  const clampedSize = clampTutorCardSize(size);
   switch (item.kind) {
     case "text":
-      return { id: item.id, kind: item.kind, item, position, size, collapsed };
+      return { id: item.id, kind: item.kind, item, position, size: clampedSize, collapsed };
     case "plot":
-      return { id: item.id, kind: item.kind, item, position, size, collapsed };
+      return { id: item.id, kind: item.kind, item, position, size: clampedSize, collapsed };
     case "shape":
-      return { id: item.id, kind: item.kind, item, position, size, collapsed };
+      return { id: item.id, kind: item.kind, item, position, size: clampedSize, collapsed };
     case "diagram":
-      return { id: item.id, kind: item.kind, item, position, size, collapsed };
+      return { id: item.id, kind: item.kind, item, position, size: clampedSize, collapsed };
   }
 }
 
 function currentTutorFocusPosition(objects: BoardObject[]): Point {
   const active = objects.find((obj) => !obj.collapsed);
   return active?.position ?? objects.at(-1)?.position ?? DEFAULT_TUTOR_POSITION;
+}
+
+function reflowTutorObjects(objects: BoardObject[], boardSize?: Size): BoardObject[] {
+  if (objects.length === 0) return objects;
+  const origin = objects[0].position;
+  const layout = layoutTutorFlow({
+    origin,
+    items: objects.map((object) => ({
+      id: object.id,
+      collapsed: object.collapsed,
+      size: object.size ?? tutorCardSizeForKind(object.kind),
+    })),
+    maxColumnHeight: tutorFlowMaxColumnHeight(boardSize?.height ?? 640),
+  });
+
+  return objects.map((object) => ({
+    ...object,
+    position: layout.positions[object.id] ?? object.position,
+  }));
+}
+
+function flowOriginFromMovedObject(
+  objects: BoardObject[],
+  id: string,
+  nextPosition: Point,
+): Point {
+  const moved = objects.find((object) => object.id === id);
+  const first = objects[0];
+  if (!moved || !first) return nextPosition;
+  return {
+    x: first.position.x + (nextPosition.x - moved.position.x),
+    y: first.position.y + (nextPosition.y - moved.position.y),
+  };
+}
+
+function normalizeStudentCardLabel(label: string, cardId: string): string {
+  const trimmed = label.trim();
+  if (trimmed) return trimmed.slice(0, 64);
+  const match = /^student-card-(\d+)$/.exec(cardId);
+  return match ? `Student Card ${match[1]}` : "Student Card";
 }
 
 function clampPanelSize(size: Size): Size {
