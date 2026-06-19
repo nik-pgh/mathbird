@@ -304,9 +304,12 @@ assert.equal(
 
 const tutorLayerPath = new URL("../src/components/session/TutorObjectLayer.tsx", import.meta.url);
 const tutorLayerSource = fs.readFileSync(tutorLayerPath, "utf8");
-assert.match(tutorLayerSource, /tutor-object-collapsed/);
-assert.match(tutorLayerSource, /onActivateObject/);
-assert.doesNotMatch(tutorLayerSource, /height:\s*object\.size\?\.height/);
+assert.match(tutorLayerSource, /objects\.map/);
+assert.match(tutorLayerSource, /deriveTutorBoardTitle/);
+assert.match(tutorLayerSource, /onResizeObject/);
+assert.match(tutorLayerSource, /tutor-object-resize/);
+assert.doesNotMatch(tutorLayerSource, /activeObject\s*=/);
+assert.doesNotMatch(tutorLayerSource, /tutor-object-history/);
 
 const workspaceTypesPath = new URL("../src/components/session/workspaceTypes.ts", import.meta.url);
 const workspaceTypesSource = fs.readFileSync(workspaceTypesPath, "utf8");
@@ -315,9 +318,9 @@ assert.match(workspaceTypesSource, /activate_object/);
 
 const workspacePath = new URL("../src/components/session/SharedReasoningWorkspace.tsx", import.meta.url);
 const workspaceSource = fs.readFileSync(workspacePath, "utf8");
-assert.match(workspaceSource, /SquarePen/);
-assert.match(workspaceSource, /aria-label="Add student card"/);
-assert.doesNotMatch(workspaceSource, />\s*Student Card\s*<\/button>/);
+assert.match(workspaceSource, /boardSize: getBoardSize\(\)/);
+assert.match(workspaceSource, /resizeObject/);
+assert.match(workspaceSource, /onResizeObject=\{resizeObject\}/);
 
 const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
 const sessionCss = fs.readFileSync(sessionCssPath, "utf8");

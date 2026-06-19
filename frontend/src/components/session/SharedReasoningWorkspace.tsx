@@ -39,13 +39,21 @@ export default function SharedReasoningWorkspace({
   const boardRef = useRef<HTMLDivElement>(null);
   const hasCustomizedHandwritingRef = useRef(false);
 
+  const getBoardSize = useCallback(() => {
+    const rect = boardRef.current?.getBoundingClientRect();
+    return {
+      width: rect?.width ?? 900,
+      height: rect?.height ?? 640,
+    };
+  }, []);
+
   const onAiMessage = useCallback((msg: AiBoardUpdate) => {
     if (msg.op === "clear") {
       dispatch({ type: "ai_clear" });
       return;
     }
-    dispatch({ type: "ai_upsert", items: msg.items });
-  }, []);
+    dispatch({ type: "ai_upsert", items: msg.items, boardSize: getBoardSize() });
+  }, [getBoardSize]);
 
   useBoardChannel<typeof AI_BOARD_TOPIC, AiBoardUpdate>({
     topic: AI_BOARD_TOPIC,
@@ -58,9 +66,16 @@ export default function SharedReasoningWorkspace({
     dispatch({ type: "move_object", id, position });
   }, []);
 
+  const resizeObject = useCallback(
+    (id: string, size: { width: number; height: number }) => {
+      dispatch({ type: "resize_object", id, size, boardSize: getBoardSize() });
+    },
+    [getBoardSize],
+  );
+
   const activateObject = useCallback((id: string) => {
-    dispatch({ type: "activate_object", id });
-  }, []);
+    dispatch({ type: "activate_object", id, boardSize: getBoardSize() });
+  }, [getBoardSize]);
 
   const setViewport = useCallback((viewport: typeof state.viewport) => {
     dispatch({ type: "set_viewport", viewport });
@@ -193,6 +208,7 @@ export default function SharedReasoningWorkspace({
           <TutorObjectLayer
             objects={state.objects}
             onMoveObject={moveObject}
+            onResizeObject={resizeObject}
             onActivateObject={activateObject}
           />
           {state.studentCards.map((card) => (
