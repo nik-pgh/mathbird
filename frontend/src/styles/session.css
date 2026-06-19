@@ -103,14 +103,15 @@
 
 .board-ink-toolbar {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 108px;
+  right: 14px;
   z-index: 6;
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
-  max-width: calc(100% - 90px);
+  max-height: calc(100% - 122px);
   padding: 5px;
   border: 1px solid rgba(41, 72, 62, 0.22);
   border-radius: 8px;
@@ -152,9 +153,9 @@
 }
 
 .board-ink-divider {
-  width: 1px;
-  height: 22px;
-  margin: 0 3px;
+  width: 22px;
+  height: 1px;
+  margin: 3px 0;
   background: rgba(41, 72, 62, 0.18);
 }
 

@@ -54,6 +54,7 @@ export default function PrivateBoardInkLayer({
   const beginStroke = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (event.button !== 0 || isSpacePan || activePointerRef.current !== null) return;
 
+    blurActiveEditable();
     event.preventDefault();
     event.stopPropagation();
     activePointerRef.current = event.pointerId;
@@ -169,6 +170,21 @@ function pointerEventsToPoints(
     const world = clientToWorld(event.clientX, event.clientY);
     return [world.x, world.y, event.pressure > 0 ? event.pressure : 0.5];
   });
+}
+
+function blurActiveEditable() {
+  const activeElement = document.activeElement;
+  if (!(activeElement instanceof HTMLElement)) return;
+
+  const tagName = activeElement.tagName;
+  if (
+    tagName === "INPUT" ||
+    tagName === "TEXTAREA" ||
+    tagName === "SELECT" ||
+    activeElement.isContentEditable
+  ) {
+    activeElement.blur();
+  }
 }
 
 function strokeToPath(stroke: PrivateBoardInkStroke): string | null {
