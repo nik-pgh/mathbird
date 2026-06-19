@@ -102,7 +102,7 @@
   min-width: var(--board-tool-rail-width);
   min-height: var(--board-tool-rail-width);
   padding: 0;
-  border: 1px solid rgba(101, 115, 109, 0.26);
+  border: 1px solid rgba(46, 143, 163, 0.26);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
   color: var(--mb-green);
@@ -125,7 +125,7 @@
   min-width: var(--board-tool-rail-width);
   min-height: var(--board-tool-rail-width);
   padding: 0;
-  border: 1px solid rgba(101, 115, 109, 0.26);
+  border: 1px solid rgba(46, 143, 163, 0.26);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
   color: var(--mb-green);
@@ -140,7 +140,7 @@
 
 .textbook-control-button.is-active {
   border-color: var(--mb-green);
-  background: rgba(101, 115, 109, 0.12);
+  background: rgba(46, 143, 163, 0.12);
   color: var(--mb-green);
 }
 
@@ -158,7 +158,7 @@
   width: var(--board-tool-rail-width);
   max-height: calc(100% - 184px);
   padding: 3px;
-  border: 1px solid rgba(101, 115, 109, 0.26);
+  border: 1px solid rgba(46, 143, 163, 0.26);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 6px 18px rgba(26, 43, 52, 0.1);
@@ -183,15 +183,15 @@
 }
 
 .board-ink-toolbar button:hover:not(:disabled) {
-  border-color: rgba(101, 115, 109, 0.32);
-  background: rgba(101, 115, 109, 0.1);
+  border-color: rgba(46, 143, 163, 0.32);
+  background: rgba(46, 143, 163, 0.1);
 }
 
 .board-ink-toolbar button.active {
   border-color: var(--mb-green);
-  background: rgba(101, 115, 109, 0.12);
+  background: rgba(46, 143, 163, 0.12);
   color: var(--mb-green);
-  box-shadow: inset 0 0 0 1px rgba(101, 115, 109, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(46, 143, 163, 0.16);
 }
 
 .board-ink-toolbar button:disabled {
@@ -203,7 +203,7 @@
   width: 22px;
   height: 1px;
   margin: 3px 0;
-  background: rgba(101, 115, 109, 0.22);
+  background: rgba(46, 143, 163, 0.22);
 }
 
 .ink-color-swatch {
@@ -221,7 +221,7 @@
 
 .ink-color-swatch.active {
   border-color: var(--mb-green);
-  background: rgba(101, 115, 109, 0.1);
+  background: rgba(46, 143, 163, 0.1);
 }
 
 .canvas-controls {
@@ -249,7 +249,7 @@
 }
 
 .canvas-controls button:hover {
-  background: rgba(101, 115, 109, 0.1);
+  background: rgba(46, 143, 163, 0.1);
 }
 
 .canvas-controls-zoom {
@@ -330,7 +330,7 @@
 }
 
 .sticky-note-text:focus-visible {
-  box-shadow: inset 0 0 0 2px rgba(101, 115, 109, 0.3);
+  box-shadow: inset 0 0 0 2px rgba(46, 143, 163, 0.3);
 }
 
 .sticky-note-resize {
@@ -806,7 +806,7 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid rgba(101, 115, 109, 0.22);
+  border: 1px solid rgba(46, 143, 163, 0.22);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.72);
   color: var(--text);
@@ -825,7 +825,7 @@
   gap: 10px;
   min-height: 42px;
   padding: 8px 10px;
-  border-bottom: 1px solid rgba(101, 115, 109, 0.14);
+  border-bottom: 1px solid rgba(46, 143, 163, 0.14);
 }
 
 .transcript-overlay-head span {
