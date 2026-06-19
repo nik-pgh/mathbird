@@ -1,26 +1,26 @@
 /* ─── Tokens ──────────────────────────────────────────────────────────── */
 
 :root {
-  --mb-green: #1f7a68;
-  --mb-green-soft: #d8f3ec;
-  --mb-coral: #ff6f57;
-  --mb-coral-soft: #ffe2dc;
-  --mb-lavender: #a766ff;
-  --mb-lavender-soft: #efe1ff;
-  --mb-paper: #fafbfb;
-  --mb-paper-deep: #e8eeee;
-  --mb-ink: #1e3632;
+  --mb-green: #00a878;
+  --mb-green-soft: #d7f8eb;
+  --mb-coral: #ff4f36;
+  --mb-coral-soft: #ffe0da;
+  --mb-lavender: #8f45ff;
+  --mb-lavender-soft: #eadcff;
+  --mb-paper: #fbfcfa;
+  --mb-paper-deep: #e9eee8;
+  --mb-ink: #1d332c;
 
-  --bg: #fbfcfc;
-  --bg-soft: #f3f6f6;
-  --bg-pad: #fafbfb;
+  --bg: #fcfdfb;
+  --bg-soft: #f4f6f2;
+  --bg-pad: #fbfcfa;
 
-  --border: #d6dddd;
-  --border-strong: #b9c6c6;
+  --border: #d8ded6;
+  --border-strong: #bdc9bc;
 
   --text: var(--mb-ink);
-  --text-2: #5f706c;
-  --text-3: #839390;
+  --text-2: #5c6f67;
+  --text-3: #82928a;
 
   --accent-live: var(--mb-green);
   --accent-danger: var(--mb-coral);

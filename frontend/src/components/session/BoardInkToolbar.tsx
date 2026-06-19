@@ -13,7 +13,7 @@ interface BoardInkToolbarProps {
   onClear: () => void;
 }
 
-const INK_COLORS: InkColor[] = ["#1f7a68", "#ff6f57", "#2f6fed", "#7c4dff"];
+const INK_COLORS: InkColor[] = ["#00a878", "#ff4f36", "#2f6fed", "#7c4dff"];
 const ICON_SIZE = 16;
 
 export default function BoardInkToolbar({

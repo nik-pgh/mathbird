@@ -41,7 +41,7 @@
   pointer-events: none;
   background-image: radial-gradient(
     circle,
-    rgba(31, 122, 104, 0.15) 1px,
+    rgba(0, 168, 120, 0.16) 1px,
     transparent 1px
   );
   background-size: calc(18px * var(--canvas-zoom, 1)) calc(18px * var(--canvas-zoom, 1));
@@ -102,7 +102,7 @@
   min-width: var(--board-tool-rail-width);
   min-height: var(--board-tool-rail-width);
   padding: 0;
-  border: 1px solid rgba(31, 122, 104, 0.24);
+  border: 1px solid rgba(0, 168, 120, 0.28);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
   color: var(--mb-green);
@@ -125,7 +125,7 @@
   min-width: var(--board-tool-rail-width);
   min-height: var(--board-tool-rail-width);
   padding: 0;
-  border: 1px solid rgba(31, 122, 104, 0.24);
+  border: 1px solid rgba(0, 168, 120, 0.28);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
   color: var(--mb-green);
@@ -140,7 +140,7 @@
 
 .textbook-control-button.is-active {
   border-color: var(--mb-green);
-  background: rgba(31, 122, 104, 0.12);
+  background: rgba(0, 168, 120, 0.14);
   color: var(--mb-green);
 }
 
@@ -158,7 +158,7 @@
   width: var(--board-tool-rail-width);
   max-height: calc(100% - 184px);
   padding: 3px;
-  border: 1px solid rgba(31, 122, 104, 0.24);
+  border: 1px solid rgba(0, 168, 120, 0.28);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 6px 18px rgba(26, 43, 52, 0.1);
@@ -183,15 +183,15 @@
 }
 
 .board-ink-toolbar button:hover:not(:disabled) {
-  border-color: rgba(31, 122, 104, 0.28);
-  background: rgba(31, 122, 104, 0.08);
+  border-color: rgba(0, 168, 120, 0.32);
+  background: rgba(0, 168, 120, 0.1);
 }
 
 .board-ink-toolbar button.active {
   border-color: var(--mb-green);
-  background: rgba(31, 122, 104, 0.12);
+  background: rgba(0, 168, 120, 0.14);
   color: var(--mb-green);
-  box-shadow: inset 0 0 0 1px rgba(31, 122, 104, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(0, 168, 120, 0.16);
 }
 
 .board-ink-toolbar button:disabled {
@@ -203,7 +203,7 @@
   width: 22px;
   height: 1px;
   margin: 3px 0;
-  background: rgba(31, 122, 104, 0.2);
+  background: rgba(0, 168, 120, 0.22);
 }
 
 .ink-color-swatch {
@@ -221,7 +221,7 @@
 
 .ink-color-swatch.active {
   border-color: var(--mb-green);
-  background: rgba(31, 122, 104, 0.1);
+  background: rgba(0, 168, 120, 0.12);
 }
 
 .canvas-controls {
@@ -249,7 +249,7 @@
 }
 
 .canvas-controls button:hover {
-  background: rgba(31, 122, 104, 0.08);
+  background: rgba(0, 168, 120, 0.1);
 }
 
 .canvas-controls-zoom {
@@ -285,7 +285,7 @@
   overflow: hidden;
   border: 1px solid rgba(130, 132, 46, 0.28);
   border-radius: 7px;
-  background: #f4f06f;
+  background: #fff24d;
   box-shadow:
     0 8px 0 rgba(130, 132, 46, 0.16),
     0 14px 26px rgba(26, 43, 52, 0.14);
@@ -330,7 +330,7 @@
 }
 
 .sticky-note-text:focus-visible {
-  box-shadow: inset 0 0 0 2px rgba(31, 122, 104, 0.3);
+  box-shadow: inset 0 0 0 2px rgba(0, 168, 120, 0.34);
 }
 
 .sticky-note-resize {
@@ -370,7 +370,7 @@
 }
 
 .handwriting-panel.capturing {
-  outline: 3px solid rgba(255, 111, 87, 0.3);
+  outline: 3px solid rgba(255, 79, 54, 0.32);
 }
 
 .handwriting-panel-head {
@@ -427,14 +427,14 @@
 .handwriting-topic-input:focus {
   background: rgba(255, 255, 255, 0.9);
   color: var(--text);
-  box-shadow: 0 0 0 2px rgba(31, 122, 104, 0.2);
+  box-shadow: 0 0 0 2px rgba(0, 168, 120, 0.24);
 }
 
 .handwriting-surface {
   position: relative;
   min-height: 0;
   background:
-    radial-gradient(circle, rgba(31, 122, 104, 0.15) 1px, transparent 1px),
+    radial-gradient(circle, rgba(0, 168, 120, 0.16) 1px, transparent 1px),
     linear-gradient(180deg, #ffffff, var(--bg-pad));
   background-size:
     16px 16px,
@@ -476,7 +476,7 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
-  border: 1px solid rgba(167, 102, 255, 0.52);
+  border: 1px solid rgba(143, 69, 255, 0.55);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow:
@@ -501,8 +501,8 @@
   gap: 8px;
   min-height: 0;
   padding: 4px 8px;
-  background: rgba(239, 225, 255, 0.92);
-  color: #5f3d91;
+  background: rgba(234, 220, 255, 0.92);
+  color: #5730a0;
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -519,7 +519,7 @@
   flex: 1;
   font-size: 10px;
   font-weight: 600;
-  color: #5f3d91;
+  color: #5730a0;
 }
 
 .tutor-object-title-html {
@@ -552,8 +552,8 @@
   flex-shrink: 0;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(95, 61, 145, 0.13);
-  color: #6a46a0;
+  background: rgba(87, 48, 160, 0.14);
+  color: #6334b8;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -565,16 +565,16 @@
   width: 22px;
   height: 22px;
   padding: 0;
-  border: 1px solid rgba(95, 61, 145, 0.2);
+  border: 1px solid rgba(87, 48, 160, 0.22);
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.76);
-  color: #5f3d91;
+  color: #5730a0;
   cursor: pointer;
   touch-action: manipulation;
 }
 
 .tutor-object-title-action:hover {
-  border-color: rgba(95, 61, 145, 0.42);
+  border-color: rgba(87, 48, 160, 0.46);
   background: #ffffff;
 }
 
@@ -676,7 +676,7 @@
 .ai-card.board-item-diagram.invalid {
   min-width: 0;
   padding: 8px 10px;
-  border-color: rgba(255, 111, 87, 0.38);
+  border-color: rgba(255, 79, 54, 0.4);
   background: rgba(255, 247, 245, 0.92);
 }
 
@@ -873,7 +873,7 @@
 
 .msg .avatar.tutor {
   background: var(--mb-lavender-soft);
-  color: #5f3d91;
+  color: #5730a0;
 }
 
 .msg .avatar.you {
@@ -1049,7 +1049,7 @@
 }
 
 .voice-composer .icon-btn.end-session:hover {
-  border-color: rgba(255, 111, 87, 0.58);
+  border-color: rgba(255, 79, 54, 0.6);
   background: rgba(255, 224, 218, 0.55);
   color: #8b3428;
 }
@@ -1098,7 +1098,7 @@
   gap: 12px;
   margin: 0;
   padding: 10px 14px;
-  border: 1px solid rgba(255, 111, 87, 0.48);
+  border: 1px solid rgba(255, 79, 54, 0.5);
   border-radius: var(--radius);
   background: rgba(255, 224, 218, 0.96);
   color: #8b3428;
