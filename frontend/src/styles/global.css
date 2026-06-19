@@ -1,26 +1,26 @@
 /* ─── Tokens ──────────────────────────────────────────────────────────── */
 
 :root {
-  --mb-green: #29483e;
-  --mb-green-soft: #dcebe4;
+  --mb-green: #2b6258;
+  --mb-green-soft: #dcece8;
   --mb-coral: #ff775f;
-  --mb-coral-soft: #ffe3dc;
-  --mb-lavender: #d48be4;
-  --mb-lavender-soft: #f3def8;
-  --mb-paper: #fff8ed;
-  --mb-paper-deep: #f4e5cb;
-  --mb-ink: #20362f;
+  --mb-coral-soft: #ffe0da;
+  --mb-lavender: #c184d8;
+  --mb-lavender-soft: #f0dcf7;
+  --mb-paper: #f5f8fa;
+  --mb-paper-deep: #e3edf1;
+  --mb-ink: #1f3934;
 
-  --bg: #fffaf2;
-  --bg-soft: #fff4e4;
-  --bg-pad: #fff8ed;
+  --bg: #f7fafb;
+  --bg-soft: #edf3f5;
+  --bg-pad: #f5f8fa;
 
-  --border: #eadcc7;
-  --border-strong: #d5c0a0;
+  --border: #d2dde2;
+  --border-strong: #b8c8d0;
 
   --text: var(--mb-ink);
-  --text-2: #65756f;
-  --text-3: #8d9b95;
+  --text-2: #60716d;
+  --text-3: #879895;
 
   --accent-live: var(--mb-green);
   --accent-danger: var(--mb-coral);
@@ -178,7 +178,7 @@ button {
 }
 
 .topbar .btn.primary:hover {
-  background: #2a2a2a;
+  background: var(--mb-green);
 }
 
 .btn-label-short {
