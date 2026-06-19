@@ -188,6 +188,7 @@
   border-radius: 4px;
   background: transparent;
   color: var(--text-3);
+  cursor: text;
   font: inherit;
   font-size: 10px;
   font-weight: 650;
@@ -326,6 +327,7 @@
 
 .tutor-object-collapsed .tutor-object-handle {
   height: 100%;
+  cursor: pointer;
 }
 
 .tutor-object-title {

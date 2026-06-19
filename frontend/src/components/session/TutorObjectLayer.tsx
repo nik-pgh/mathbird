@@ -181,18 +181,6 @@ export default function TutorObjectLayer({
                   className="tutor-object-resize"
                   type="button"
                   aria-label="Resize tutor board"
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    bottom: 0,
-                    width: 24,
-                    height: 24,
-                    border: 0,
-                    cursor: "nwse-resize",
-                    touchAction: "none",
-                    background:
-                      "linear-gradient(135deg, transparent 50%, var(--mb-coral) 50%)",
-                  }}
                   onPointerDown={(event) => beginResize(event, object)}
                   onPointerMove={moveResize}
                   onPointerUp={endResize}

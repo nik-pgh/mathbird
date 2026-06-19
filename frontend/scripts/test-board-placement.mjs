@@ -314,6 +314,10 @@ assert.match(tutorLayerSource, /tabIndex=\{isCollapsed \? 0 : undefined\}/);
 assert.match(tutorLayerSource, /onLostPointerCapture=\{endResize\}/);
 assert.doesNotMatch(tutorLayerSource, /activeObject\s*=/);
 assert.doesNotMatch(tutorLayerSource, /tutor-object-history/);
+assert.doesNotMatch(
+  tutorLayerSource,
+  /className="tutor-object-resize"[\s\S]*?style=\{\{/,
+);
 
 const workspaceTypesPath = new URL("../src/components/session/workspaceTypes.ts", import.meta.url);
 const workspaceTypesSource = fs.readFileSync(workspaceTypesPath, "utf8");
@@ -340,7 +344,9 @@ const sessionCssPath = new URL("../src/styles/session.css", import.meta.url);
 const sessionCss = fs.readFileSync(sessionCssPath, "utf8");
 assert.match(sessionCss, /\.tutor-object\s*\{[^}]*position:\s*absolute;/s);
 assert.match(sessionCss, /\.tutor-object-collapsed\s*\{[^}]*cursor:\s*pointer;/s);
+assert.match(sessionCss, /\.tutor-object-collapsed\s+\.tutor-object-handle\s*\{[^}]*cursor:\s*pointer;/s);
 assert.match(sessionCss, /\.tutor-object-resize\s*\{[^}]*cursor:\s*nwse-resize;/s);
-assert.match(sessionCss, /\.handwriting-topic-input\s*\{/s);
+assert.match(sessionCss, /\.handwriting-topic-input\s*\{[^}]*cursor:\s*text;/s);
 assert.doesNotMatch(sessionCss, /\.tutor-focus-rail/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-history/s);
+assert.doesNotMatch(sessionCss, /\.tutor-object-(?:plot|shape|diagram)\s*\{[^}]*(?:width|min-height)\s*:/s);
