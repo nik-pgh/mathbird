@@ -200,6 +200,13 @@ async def _persist_progress(ctx: RunContext, engine: ProgressEngine) -> None:
         return
     store = get_progress_store(get_storage())
     await store.save(engine.state)
+    try:
+        from app.progress.publisher import publish_session_progress
+
+        room = ctx.session.room_io.room
+        await publish_session_progress(room, engine.snapshot_update())
+    except Exception:
+        logger.exception("Failed to publish session progress update")
 
 
 @function_tool

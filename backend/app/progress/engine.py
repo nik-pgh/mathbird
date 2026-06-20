@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from app.progress.messages import ProblemProgressSnapshot, SessionProgressUpdate
 from app.progress.models import FocusPointer, ProblemProgress, ProgressState, ProgressSummary
 from app.syllabus.models import Problem, Syllabus
 
@@ -146,6 +147,31 @@ class ProgressEngine:
             status = node.status if node else "not_started"
             lines.append(f"{problem.id}: {problem.label} ({status}, page {problem.page_number})")
         return lines
+
+    def snapshot_update(self) -> SessionProgressUpdate:
+        summary = self.summary()
+        nodes: list[ProblemProgressSnapshot] = []
+        for pointer, problem in self._ordered:
+            node = self._state.nodes.get(problem.id)
+            status = node.status if node is not None else "not_started"
+            attempts = node.attempts if node is not None else 0
+            nodes.append(
+                ProblemProgressSnapshot(
+                    problem_id=problem.id,
+                    chapter_id=pointer.chapter_id,
+                    concept_id=pointer.concept_id,
+                    label=problem.label,
+                    status=status,
+                    attempts=attempts,
+                )
+            )
+        return SessionProgressUpdate(
+            op="snapshot",
+            focus=self._state.focus,
+            next_suggestion=self._state.next_suggestion,
+            summary=summary,
+            nodes=nodes,
+        )
 
     def format_injection(self) -> str:
         summary = self.summary()

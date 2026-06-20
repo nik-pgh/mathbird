@@ -9,6 +9,7 @@ import {
 import { getActiveDocId } from "../lib/activeDoc";
 import SessionTopbar from "../components/session/SessionTopbar";
 import SharedReasoningWorkspace from "../components/session/SharedReasoningWorkspace";
+import SessionProgressBridge from "../components/progress/SessionProgressBridge";
 import "../styles/session.css";
 
 interface Connection {
@@ -101,6 +102,7 @@ export default function SessionPage() {
               </button>
             </div>
           )}
+          <SessionProgressBridge />
           <SharedReasoningWorkspace
             status={status}
             activeDocId={activeDocId}

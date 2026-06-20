@@ -186,6 +186,14 @@ async def entrypoint(ctx: JobContext) -> None:
     )
 
     if progress_engine is not None:
+        try:
+            from app.progress.publisher import publish_session_progress
+
+            await publish_session_progress(ctx.room, progress_engine.snapshot_update())
+        except Exception:
+            logger.exception("Failed to publish initial session progress snapshot")
+
+    if progress_engine is not None:
         await session.generate_reply(
             instructions=(
                 "Greet briefly. If session progress shows a current focus, offer to "
