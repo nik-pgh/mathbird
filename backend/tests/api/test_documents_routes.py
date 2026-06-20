@@ -37,8 +37,17 @@ def _upload_pdf(client: TestClient, name: str = "doc.pdf") -> dict:
     ).json()
 
 
-def test_uploaded_doc_status_uploaded_then_indexed(isolated_storage: Path) -> None:
+def test_documents_require_auth(isolated_storage: Path) -> None:  # noqa: ARG001
     client = TestClient(app)
+    res = client.get("/api/documents")
+    assert res.status_code == 401
+
+
+def test_uploaded_doc_status_uploaded_then_indexed(
+    isolated_storage: Path,
+    auth_client: TestClient,
+) -> None:
+    client = auth_client
 
     created = _upload_pdf(client)
     assert created["status"] == "uploaded"
@@ -66,6 +75,7 @@ def test_uploaded_doc_status_uploaded_then_indexed(isolated_storage: Path) -> No
 def test_ingest_failure_preserves_file_and_502(
     isolated_storage: Path,
     monkeypatch: pytest.MonkeyPatch,
+    auth_client: TestClient,
 ) -> None:
     """If the retriever raises, ingest returns 502 but leaves the PDF in place
     so the user can retry via the Re-index path."""
@@ -79,7 +89,7 @@ def test_ingest_failure_preserves_file_and_502(
 
     monkeypatch.setattr(retriever_mod, "_singleton", _RaisingRetriever())
 
-    client = TestClient(app)
+    client = auth_client
     created = _upload_pdf(client)
     doc_id = created["doc_id"]
     pdf_path = isolated_storage / created["key"]
@@ -98,8 +108,11 @@ def test_ingest_failure_preserves_file_and_502(
     assert statuses[doc_id] == "uploaded"
 
 
-def test_get_document_file_returns_pdf_bytes(isolated_storage: Path) -> None:  # noqa: ARG001
-    client = TestClient(app)
+def test_get_document_file_returns_pdf_bytes(
+    isolated_storage: Path,  # noqa: ARG001
+    auth_client: TestClient,
+) -> None:
+    client = auth_client
     created = _upload_pdf(client, name="textbook.pdf")
     doc_id = created["doc_id"]
 
@@ -112,8 +125,9 @@ def test_get_document_file_returns_pdf_bytes(isolated_storage: Path) -> None:  #
 
 def test_get_document_file_quotes_download_filename_safely(
     isolated_storage: Path,  # noqa: ARG001
+    auth_client: TestClient,
 ) -> None:
-    client = TestClient(app)
+    client = auth_client
     created = _upload_pdf(client, name='bad"name.pdf')
     doc_id = created["doc_id"]
 
@@ -124,7 +138,10 @@ def test_get_document_file_quotes_download_filename_safely(
     assert 'bad"name.pdf' not in res.headers["content-disposition"]
 
 
-def test_get_document_file_404_for_unknown_id(isolated_storage: Path) -> None:  # noqa: ARG001
-    client = TestClient(app)
+def test_get_document_file_404_for_unknown_id(
+    isolated_storage: Path,  # noqa: ARG001
+    auth_client: TestClient,
+) -> None:
+    client = auth_client
     res = client.get("/api/documents/does-not-exist/file")
     assert res.status_code == 404

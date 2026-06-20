@@ -25,10 +25,11 @@ from typing import Annotated, Any, Literal
 from urllib.parse import quote, unquote, urlparse
 from urllib.request import url2pathname
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
+from app.auth import User, get_current_user
 from app.rag import get_retriever
 from app.storage import StoredObject, get_storage
 
@@ -158,6 +159,7 @@ def _find_stored_pdf(objects: list[StoredObject], doc_id: str) -> StoredObject |
 @router.post("/documents", response_model=DocumentResponse, status_code=201)
 async def upload_document(
     file: Annotated[UploadFile, File(description="PDF document to ingest")],
+    _user: User = Depends(get_current_user),
 ) -> DocumentResponse:
     if (file.content_type or "").lower() != "application/pdf":
         raise HTTPException(status_code=415, detail="Only application/pdf is accepted.")
@@ -172,7 +174,10 @@ async def upload_document(
 
 
 @router.post("/documents/{doc_id}/ingest", response_model=DocumentResponse)
-async def ingest_document(doc_id: str) -> DocumentResponse:
+async def ingest_document(
+    doc_id: str,
+    _user: User = Depends(get_current_user),
+) -> DocumentResponse:
     storage = get_storage()
     objects = await storage.list()
     stored = _find_stored_pdf(objects, doc_id)
@@ -194,7 +199,7 @@ async def ingest_document(doc_id: str) -> DocumentResponse:
 
 
 @router.get("/documents", response_model=DocumentListResponse)
-async def list_documents() -> DocumentListResponse:
+async def list_documents(_user: User = Depends(get_current_user)) -> DocumentListResponse:
     storage = get_storage()
     objects = await storage.list()
 
@@ -219,7 +224,7 @@ async def list_documents() -> DocumentListResponse:
 
 
 @router.get("/documents/{doc_id}/file")
-async def get_document_file(doc_id: str):
+async def get_document_file(doc_id: str, _user: User = Depends(get_current_user)):
     storage = get_storage()
     objects = await storage.list()
     stored = _find_stored_pdf(objects, doc_id)

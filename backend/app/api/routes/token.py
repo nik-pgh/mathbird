@@ -11,10 +11,11 @@ from __future__ import annotations
 import json
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from livekit import api
 from pydantic import BaseModel, Field
 
+from app.auth import User, get_current_user
 from app.config import get_settings
 
 router = APIRouter()
@@ -44,7 +45,10 @@ class TokenResponse(BaseModel):
 
 
 @router.post("/token", response_model=TokenResponse)
-async def create_token(req: TokenRequest) -> TokenResponse:
+async def create_token(
+    req: TokenRequest,
+    user: User = Depends(get_current_user),
+) -> TokenResponse:
     settings = get_settings()
     if not (settings.livekit_api_key and settings.livekit_api_secret and settings.livekit_url):
         raise HTTPException(
@@ -52,13 +56,13 @@ async def create_token(req: TokenRequest) -> TokenResponse:
             detail="LiveKit credentials are not configured on the server.",
         )
 
-    identity = req.identity or f"user-{uuid.uuid4().hex[:8]}"
+    identity = user.id
     room = req.room or f"room-{uuid.uuid4().hex[:8]}"
 
     builder = (
         api.AccessToken(settings.livekit_api_key, settings.livekit_api_secret)
         .with_identity(identity)
-        .with_name(req.name or identity)
+        .with_name(req.name or user.name or identity)
         .with_grants(
             api.VideoGrants(
                 room_join=True,
@@ -68,8 +72,10 @@ async def create_token(req: TokenRequest) -> TokenResponse:
             )
         )
     )
+    metadata: dict[str, str] = {"user_id": user.id}
     if req.doc_id:
-        builder = builder.with_metadata(json.dumps({"active_doc_id": req.doc_id}))
+        metadata["active_doc_id"] = req.doc_id
+    builder = builder.with_metadata(json.dumps(metadata))
 
     return TokenResponse(
         token=builder.to_jwt(),
