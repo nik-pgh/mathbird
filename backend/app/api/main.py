@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.observability import setup_phoenix
 
-from .routes import auth, documents, token
+from .routes import auth, documents, progress, token
 
 settings = get_settings()
 
@@ -47,6 +47,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(progress.router, prefix="/api", tags=["progress"])
 app.include_router(token.router, prefix="/api", tags=["livekit"])
 app.include_router(documents.router, prefix="/api", tags=["documents"])
 

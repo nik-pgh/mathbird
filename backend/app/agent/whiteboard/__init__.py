@@ -18,6 +18,9 @@ Public surface intentionally narrow:
 
 from dataclasses import dataclass
 
+from app.progress.engine import ProgressEngine
+from app.syllabus.models import Syllabus
+
 from .cache import BoardCache
 from .extractor import BoardExtractor, get_board_extractor
 from .listener import UserBoardListenerHandle, install_user_board_listener
@@ -44,6 +47,9 @@ class SessionData:
     board_state: BoardState
     board_cache: BoardCache
     active_doc_id: str | None = None
+    user_id: str | None = None
+    syllabus: Syllabus | None = None
+    progress_engine: ProgressEngine | None = None
 
 
 __all__ = [

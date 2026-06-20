@@ -36,7 +36,10 @@ from app.agent.whiteboard import (
     publish_ai_board,
 )
 from app.config import get_settings
+from app.progress import get_progress_store
+from app.progress.engine import ProgressEngine
 from app.rag import get_retriever
+from app.storage import get_storage
 
 logger = logging.getLogger("mathbird.agent.tools")
 
@@ -176,7 +179,100 @@ async def read_user_board(ctx: RunContext) -> str:
     return state.user_text
 
 
-def build_function_tools() -> list:
+def _session_data(ctx: RunContext) -> SessionData | None:
+    try:
+        data = ctx.session.userdata
+    except Exception:
+        return None
+    return data if isinstance(data, SessionData) else None
+
+
+def _progress_engine(ctx: RunContext) -> ProgressEngine | None:
+    data = _session_data(ctx)
+    if data is None:
+        return None
+    return data.progress_engine
+
+
+async def _persist_progress(ctx: RunContext, engine: ProgressEngine) -> None:
+    data = _session_data(ctx)
+    if data is None or not data.user_id or not data.active_doc_id:
+        return
+    store = get_progress_store(get_storage())
+    await store.save(engine.state)
+
+
+@function_tool
+async def set_focus(ctx: RunContext, problem_id: str) -> str:
+    """Anchor the session on a syllabus problem the student wants to work on.
+
+    Call when the student names a problem/chapter anchor (for example
+    "help with problem 3" or "chapter 2 exercise 5").
+    """
+    engine = _progress_engine(ctx)
+    if engine is None:
+        return "Progress tracking is unavailable for this session."
+    try:
+        engine.set_focus(problem_id)
+    except ValueError as exc:
+        return str(exc)
+    await _persist_progress(ctx, engine)
+    return f"Focus set to {problem_id}."
+
+
+@function_tool
+async def record_mastery(ctx: RunContext, problem_id: str, solved: bool, explained: bool) -> str:
+    """Record whether the student mastered the current problem.
+
+    Call ONLY after BOTH are true:
+    - ``solved``: the student's work/answer is correct
+    - ``explained``: they explained the reasoning in their own words
+
+    Do not call until both bars are met. This is how the session advances.
+    """
+    engine = _progress_engine(ctx)
+    if engine is None:
+        return "Progress tracking is unavailable for this session."
+    try:
+        engine.record_mastery(problem_id, solved=solved, explained=explained)
+    except ValueError as exc:
+        return str(exc)
+    await _persist_progress(ctx, engine)
+    summary = engine.summary()
+    next_ptr = engine.state.next_suggestion
+    next_msg = f" Next suggestion: {next_ptr.problem_id}." if next_ptr else " No next problem."
+    return (
+        f"Recorded mastery for {problem_id} (solved={solved}, explained={explained}). "
+        f"Progress: {summary.mastered}/{summary.total} mastered.{next_msg}"
+    )
+
+
+@function_tool
+async def get_progress(ctx: RunContext) -> str:
+    """Return a summary of the student's syllabus progress and current focus."""
+    engine = _progress_engine(ctx)
+    if engine is None:
+        return "Progress tracking is unavailable for this session."
+    return engine.format_injection()
+
+
+@function_tool
+async def list_problems(
+    ctx: RunContext,
+    chapter_id: str | None = None,
+    concept_id: str | None = None,
+) -> str:
+    """List syllabus problems, optionally filtered by chapter or concept."""
+    engine = _progress_engine(ctx)
+    if engine is None:
+        return "Progress tracking is unavailable for this session."
+    lines = engine.list_problems(chapter_id=chapter_id, concept_id=concept_id)
+    if not lines:
+        return "No problems matched that filter."
+    return "\n".join(lines)
+
+
+def build_function_tools(*, include_progress: bool = False) -> list:
     """Return the tool set the agent should expose to the LLM.
 
     AiBoard writes (``update_ai_board`` / ``clear_ai_board``) are NOT in this
@@ -185,4 +281,6 @@ def build_function_tools() -> list:
     stay defined in this module so the publish primitive is reachable for
     tests and so re-enabling LLM-direct board writes is a one-line change.
     """
-    return [search_documents, read_user_board]
+    return [search_documents, read_user_board] + (
+        [set_focus, record_mastery, get_progress, list_problems] if include_progress else []
+    )

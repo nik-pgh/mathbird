@@ -59,7 +59,7 @@ async def test_entrypoint_initializes_phoenix_inside_room_job(monkeypatch) -> No
     monkeypatch.setattr(main, "build_llm", lambda _settings: object())
     monkeypatch.setattr(main, "build_tts", lambda _settings: object())
     monkeypatch.setattr(main, "build_vad", lambda _settings: object())
-    monkeypatch.setattr(main, "build_function_tools", lambda: [])
+    monkeypatch.setattr(main, "build_function_tools", lambda **_kwargs: [])
     monkeypatch.setattr(main, "WhiteboardAgent", lambda **_kwargs: object())
 
     class FakeSession:

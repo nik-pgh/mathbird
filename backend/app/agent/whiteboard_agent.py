@@ -34,6 +34,7 @@ from app.agent.whiteboard.messages import AiBoardUpdate
 from app.agent.whiteboard.publisher import publish_ai_board
 from app.agent.whiteboard.sentence import split_sentences
 from app.agent.whiteboard.state import BoardState
+from app.progress.engine import ProgressEngine
 
 logger = logging.getLogger("mathbird.agent.extractor")
 
@@ -47,12 +48,14 @@ class WhiteboardAgent(Agent):
         board_state: BoardState,
         board_cache: BoardCache,
         extractor: BoardExtractor,
+        progress_engine: ProgressEngine | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self._board_state = board_state
         self._board_cache = board_cache
         self._extractor = extractor
+        self._progress_engine = progress_engine
         self._sentence_queue: asyncio.Queue[str] = asyncio.Queue(maxsize=_QUEUE_MAXSIZE)
         self._buffer: str = ""
         self._last_sentence: str | None = None
@@ -69,18 +72,19 @@ class WhiteboardAgent(Agent):
         new_message: ChatMessage,  # noqa: ARG002 — required by framework hook
     ) -> None:
         state = self._board_state
-        if state.refreshed_at is None:
-            return
+        if state.refreshed_at is not None:
+            age = state.age_seconds()
+            age_str = f"{age:.0f}s ago" if age is not None else "just now"
 
-        age = state.age_seconds()
-        age_str = f"{age:.0f}s ago" if age is not None else "just now"
+            if state.is_blank:
+                body = f"[user whiteboard (refreshed {age_str}): blank]"
+            else:
+                body = f"[user whiteboard (refreshed {age_str}):\n{state.user_text}\n]"
 
-        if state.is_blank:
-            body = f"[user whiteboard (refreshed {age_str}): blank]"
-        else:
-            body = f"[user whiteboard (refreshed {age_str}):\n{state.user_text}\n]"
+            turn_ctx.add_message(role="system", content=body)
 
-        turn_ctx.add_message(role="system", content=body)
+        if self._progress_engine is not None:
+            turn_ctx.add_message(role="system", content=self._progress_engine.format_injection())
 
     # ── lifecycle ──────────────────────────────────────────────────────
 
