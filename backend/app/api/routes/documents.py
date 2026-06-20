@@ -128,41 +128,21 @@ async def _local_pdf_path(storage: Any, stored: StoredObject) -> AsyncIterator[s
 
 async def _maybe_build_syllabus(
     storage: Any,
-    stored: StoredObject,
     *,
     doc_id: str,
+    pdf_path: str,
 ) -> tuple[bool, str | None]:
     settings = get_settings()
     if not settings.llamaparse_api_key:
         return False, "LLAMAPARSE_API_KEY not configured"
     try:
-        async with _local_pdf_path(storage, stored) as path:
-            document = await parse_pdf_to_document(path, doc_id=doc_id, settings=settings)
-            syllabus = build_heuristic_syllabus(document)
-            await save_syllabus(storage, doc_id, syllabus)
+        document = await parse_pdf_to_document(pdf_path, doc_id=doc_id, settings=settings)
+        syllabus = build_heuristic_syllabus(document)
+        await save_syllabus(storage, doc_id, syllabus)
         return True, None
     except Exception as exc:
-        logger.exception("Syllabus build failed for doc_id=%s key=%s", doc_id, stored.key)
+        logger.exception("Syllabus build failed for doc_id=%s path=%s", doc_id, pdf_path)
         return False, str(exc)
-
-
-async def _ingest_stored_pdf(storage: Any, stored: StoredObject, *, doc_id: str) -> None:
-    retriever = get_retriever()
-    if stored.uri.startswith("file://"):
-        await retriever.ingest_pdf(_path_from_file_uri(stored.uri), doc_id=doc_id)
-        return
-
-    temp_dir = ""
-    try:
-        temp_dir = tempfile.mkdtemp()
-        temp_path = Path(temp_dir) / _filename_from_storage_key(stored.key)
-        with temp_path.open("wb") as temp_file:
-            async with _open_storage_stream(storage, stored.key) as source:
-                shutil.copyfileobj(source, temp_file)
-        await retriever.ingest_pdf(str(temp_path), doc_id=doc_id)
-    finally:
-        if temp_dir:
-            shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def _path_from_file_uri(uri: str) -> str:
@@ -241,12 +221,16 @@ async def ingest_document(
         raise HTTPException(status_code=404, detail="Document not found.")
 
     try:
-        await _ingest_stored_pdf(storage, stored, doc_id=doc_id)
+        async with _local_pdf_path(storage, stored) as pdf_path:
+            await get_retriever().ingest_pdf(pdf_path, doc_id=doc_id)
+            syllabus_ready, syllabus_error = await _maybe_build_syllabus(
+                storage,
+                doc_id=doc_id,
+                pdf_path=pdf_path,
+            )
     except Exception as exc:
         logger.exception("Document ingestion failed for doc_id=%s key=%s", doc_id, stored.key)
         raise HTTPException(status_code=502, detail="Document ingestion failed.") from exc
-
-    syllabus_ready, syllabus_error = await _maybe_build_syllabus(storage, stored, doc_id=doc_id)
     sidecar_payload: dict[str, Any] = {
         "indexed": True,
         "indexed_at": datetime.now(UTC).isoformat(),
