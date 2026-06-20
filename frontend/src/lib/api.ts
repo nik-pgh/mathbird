@@ -19,6 +19,7 @@ export interface UploadedDocument {
   size: number;
   content_type: string;
   status: DocStatus;
+  syllabus_ready?: boolean;
 }
 
 export interface TokenResponse {

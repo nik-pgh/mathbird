@@ -66,10 +66,68 @@ def test_uploaded_doc_status_uploaded_then_indexed(
     payload = json.loads(sidecar.read_text())
     assert payload["indexed"] is True
     assert "indexed_at" in payload
+    assert payload.get("syllabus_ready") is False
 
     listing = client.get("/api/documents").json()
     statuses = {d["doc_id"]: d["status"] for d in listing["documents"]}
     assert statuses[doc_id] == "indexed"
+
+
+def test_ingest_builds_syllabus_when_parser_available(
+    isolated_storage: Path,
+    auth_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.rag.parsing import ParsedBlock, ParsedDocument, ParsedPage
+
+    sample = ParsedDocument(
+        doc_id="placeholder",
+        filename="doc.pdf",
+        pages=[
+            ParsedPage(
+                page_number=1,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="doc-1:p1:b0",
+                        page_number=1,
+                        block_type="exercise",
+                        text="Problem 1.",
+                        chapter_number=1,
+                        exercise_number="1",
+                    )
+                ],
+            )
+        ],
+    )
+
+    async def _fake_parse(path: str, *, doc_id: str, settings=None):  # noqa: ANN001, ARG001
+        return ParsedDocument(
+            doc_id=doc_id,
+            filename="doc.pdf",
+            pages=sample.pages,
+        )
+
+    monkeypatch.setenv("LLAMAPARSE_API_KEY", "test-key")
+    get_settings.cache_clear()
+    monkeypatch.setattr("app.api.routes.documents.parse_pdf_to_document", _fake_parse)
+
+    client = auth_client
+    created = _upload_pdf(client)
+    doc_id = created["doc_id"]
+
+    ingest_res = client.post(f"/api/documents/{doc_id}/ingest")
+    assert ingest_res.status_code == 200
+    body = ingest_res.json()
+    assert body["syllabus_ready"] is True
+
+    sidecar = json.loads((isolated_storage / doc_id / "meta.json").read_text())
+    assert sidecar["syllabus_ready"] is True
+    assert (isolated_storage / doc_id / "syllabus.json").exists()
+
+    syllabus_res = client.get(f"/api/documents/{doc_id}/syllabus")
+    assert syllabus_res.status_code == 200
+    assert syllabus_res.json()["chapters"][0]["concepts"][0]["problems"][0]["exercise_number"] == "1"
 
 
 def test_ingest_failure_preserves_file_and_502(

@@ -30,8 +30,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app.auth import User, get_current_user
+from app.config import get_settings
 from app.rag import get_retriever
 from app.storage import StoredObject, get_storage
+from app.syllabus import Syllabus, build_heuristic_syllabus, load_syllabus, save_syllabus
+from app.syllabus.parse import parse_pdf_to_document
 
 router = APIRouter()
 logger = logging.getLogger("mathbird.api.documents")
@@ -39,6 +42,7 @@ logger = logging.getLogger("mathbird.api.documents")
 DocStatus = Literal["uploaded", "indexed", "failed"]
 
 _SIDECAR_NAME = "meta.json"
+_SYLLABUS_NAME = "syllabus.json"
 
 
 class DocumentResponse(BaseModel):
@@ -48,6 +52,7 @@ class DocumentResponse(BaseModel):
     size: int
     content_type: str
     status: DocStatus = "uploaded"
+    syllabus_ready: bool = False
 
     @classmethod
     def from_stored(
@@ -56,6 +61,7 @@ class DocumentResponse(BaseModel):
         obj: StoredObject,
         *,
         status: DocStatus = "uploaded",
+        syllabus_ready: bool = False,
     ) -> DocumentResponse:
         return cls(
             doc_id=doc_id,
@@ -64,6 +70,7 @@ class DocumentResponse(BaseModel):
             size=obj.size,
             content_type=obj.content_type,
             status=status,
+            syllabus_ready=syllabus_ready,
         )
 
 
@@ -91,6 +98,52 @@ async def _open_storage_stream(storage: Any, key: str) -> AsyncIterator[Any]:
         close = getattr(opened, "close", None)
         if close is not None:
             close()
+
+
+async def _read_sidecar(storage: Any, doc_id: str) -> dict[str, Any]:
+    try:
+        async with _open_storage_stream(storage, _sidecar_key(doc_id)) as stream:
+            payload = json.loads(stream.read().decode("utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError, ValueError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+@asynccontextmanager
+async def _local_pdf_path(storage: Any, stored: StoredObject) -> AsyncIterator[str]:
+    if stored.uri.startswith("file://"):
+        yield _path_from_file_uri(stored.uri)
+        return
+
+    temp_dir = tempfile.mkdtemp()
+    try:
+        temp_path = Path(temp_dir) / _filename_from_storage_key(stored.key)
+        with temp_path.open("wb") as temp_file:
+            async with _open_storage_stream(storage, stored.key) as source:
+                shutil.copyfileobj(source, temp_file)
+        yield str(temp_path)
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+async def _maybe_build_syllabus(
+    storage: Any,
+    stored: StoredObject,
+    *,
+    doc_id: str,
+) -> tuple[bool, str | None]:
+    settings = get_settings()
+    if not settings.llamaparse_api_key:
+        return False, "LLAMAPARSE_API_KEY not configured"
+    try:
+        async with _local_pdf_path(storage, stored) as path:
+            document = await parse_pdf_to_document(path, doc_id=doc_id, settings=settings)
+            syllabus = build_heuristic_syllabus(document)
+            await save_syllabus(storage, doc_id, syllabus)
+        return True, None
+    except Exception as exc:
+        logger.exception("Syllabus build failed for doc_id=%s key=%s", doc_id, stored.key)
+        return False, str(exc)
 
 
 async def _ingest_stored_pdf(storage: Any, stored: StoredObject, *, doc_id: str) -> None:
@@ -148,8 +201,11 @@ async def _write_sidecar(storage: Any, doc_id: str, payload: dict) -> None:
 def _find_stored_pdf(objects: list[StoredObject], doc_id: str) -> StoredObject | None:
     prefix = f"{doc_id}/"
     for obj in objects:
-        if obj.key.startswith(prefix) and not obj.key.endswith(f"/{_SIDECAR_NAME}"):
-            return obj
+        if not obj.key.startswith(prefix):
+            continue
+        if obj.key.endswith(f"/{_SIDECAR_NAME}") or obj.key.endswith(f"/{_SYLLABUS_NAME}"):
+            continue
+        return obj
     return None
 
 
@@ -190,12 +246,21 @@ async def ingest_document(
         logger.exception("Document ingestion failed for doc_id=%s key=%s", doc_id, stored.key)
         raise HTTPException(status_code=502, detail="Document ingestion failed.") from exc
 
-    await _write_sidecar(
-        storage,
+    syllabus_ready, syllabus_error = await _maybe_build_syllabus(storage, stored, doc_id=doc_id)
+    sidecar_payload: dict[str, Any] = {
+        "indexed": True,
+        "indexed_at": datetime.now(UTC).isoformat(),
+        "syllabus_ready": syllabus_ready,
+    }
+    if syllabus_error:
+        sidecar_payload["syllabus_error"] = syllabus_error
+    await _write_sidecar(storage, doc_id, sidecar_payload)
+    return DocumentResponse.from_stored(
         doc_id,
-        {"indexed": True, "indexed_at": datetime.now(UTC).isoformat()},
+        stored,
+        status="indexed",
+        syllabus_ready=syllabus_ready,
     )
-    return DocumentResponse.from_stored(doc_id, stored, status="indexed")
 
 
 @router.get("/documents", response_model=DocumentListResponse)
@@ -221,8 +286,29 @@ async def list_documents(
     results: list[DocumentResponse] = []
     for doc_id, obj in docs.items():
         status: DocStatus = "indexed" if doc_id in sidecar_doc_ids else "uploaded"
-        results.append(DocumentResponse.from_stored(doc_id, obj, status=status))
+        meta = await _read_sidecar(storage, doc_id) if doc_id in sidecar_doc_ids else {}
+        syllabus_ready = bool(meta.get("syllabus_ready"))
+        results.append(
+            DocumentResponse.from_stored(
+                doc_id,
+                obj,
+                status=status,
+                syllabus_ready=syllabus_ready,
+            )
+        )
     return DocumentListResponse(documents=results)
+
+
+@router.get("/documents/{doc_id}/syllabus", response_model=Syllabus)
+async def get_document_syllabus(
+    doc_id: str,
+    _user: Annotated[User, Depends(get_current_user)],
+) -> Syllabus:
+    storage = get_storage()
+    syllabus = await load_syllabus(storage, doc_id)
+    if syllabus is None:
+        raise HTTPException(status_code=404, detail="Syllabus not found.")
+    return syllabus
 
 
 @router.get("/documents/{doc_id}/file")
