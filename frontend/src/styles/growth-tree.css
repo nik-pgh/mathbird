@@ -1,0 +1,168 @@
+/* ─── Growth tree progress panel (session, bottom-right) ─────────────── */
+
+.growth-tree-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 88px;
+  z-index: 11;
+  width: min(220px, calc(100vw - 32px));
+  display: grid;
+  gap: 8px;
+  padding: 10px 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(165deg, rgba(251, 250, 246, 0.96), rgba(247, 244, 238, 0.92)),
+    var(--mb-paper);
+  box-shadow: var(--shadow-lifted);
+  pointer-events: none;
+  user-select: none;
+}
+
+.growth-tree-head {
+  display: grid;
+  gap: 2px;
+}
+
+.growth-tree-title {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.growth-tree-meta {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.growth-tree-frame {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #faf7f2;
+  box-shadow: inset 0 0 0 1px rgba(32, 54, 47, 0.06);
+}
+
+.growth-tree-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  transform-origin: center bottom;
+}
+
+.growth-tree-art--revealing {
+  animation: growth-tree-sketch-reveal 1.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.growth-tree-panel:not([data-working]) .growth-tree-art:not(.growth-tree-art--revealing) {
+  animation: growth-tree-idle 7s ease-in-out infinite;
+}
+
+.growth-tree-panel[data-working] .growth-tree-art {
+  animation: growth-tree-working 2.4s ease-in-out infinite;
+}
+
+.growth-tree-sketch-shimmer {
+  position: absolute;
+  inset: auto 12% 8%;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(41, 72, 62, 0.35),
+    transparent
+  );
+  animation: growth-tree-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes growth-tree-sketch-reveal {
+  from {
+    clip-path: inset(100% 0 0 0);
+    filter: contrast(1.12) brightness(1.03);
+    opacity: 0.92;
+  }
+
+  70% {
+    filter: contrast(1.04) brightness(1.01);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    filter: none;
+    opacity: 1;
+  }
+}
+
+@keyframes growth-tree-idle {
+  0%,
+  100% {
+    transform: rotate(-0.12deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(0.12deg) scale(1.004);
+  }
+}
+
+@keyframes growth-tree-working {
+  0%,
+  100% {
+    transform: rotate(-0.2deg) scale(1);
+    filter: contrast(1);
+  }
+
+  50% {
+    transform: rotate(0.2deg) scale(1.006);
+    filter: contrast(1.06);
+  }
+}
+
+@keyframes growth-tree-shimmer {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateX(-30%);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateX(30%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growth-tree-art,
+  .growth-tree-art--revealing,
+  .growth-tree-panel[data-working] .growth-tree-art,
+  .growth-tree-sketch-shimmer {
+    animation: none !important;
+  }
+
+  .growth-tree-art--revealing {
+    clip-path: inset(0 0 0 0);
+    filter: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .growth-tree-panel {
+    right: 10px;
+    bottom: 82px;
+    width: 148px;
+    padding: 8px;
+  }
+
+  .growth-tree-title {
+    font-size: 11px;
+  }
+
+  .growth-tree-meta {
+    font-size: 10px;
+  }
+}

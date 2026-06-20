@@ -1,7 +1,14 @@
+import GrowthTreePanel from "./GrowthTreePanel";
+import { ProgressSnapshotProvider } from "./ProgressSnapshotContext";
 import { useProgressChannel } from "./useProgressChannel";
 
-/** Subscribes to session_progress inside LiveKitRoom; UI deferred to P4. */
+/** Subscribes to session_progress and renders the growth-tree panel. */
 export default function SessionProgressBridge() {
-  useProgressChannel();
-  return null;
+  const snapshot = useProgressChannel();
+
+  return (
+    <ProgressSnapshotProvider snapshot={snapshot}>
+      <GrowthTreePanel />
+    </ProgressSnapshotProvider>
+  );
 }
