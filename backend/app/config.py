@@ -65,6 +65,16 @@ class Settings(BaseSettings):
     api_port: int = 8000
     api_cors_origins: str = "http://localhost:5173"
 
+    # Auth (Google OAuth)
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    auth_jwt_secret: str = ""
+    auth_jwt_expiry_hours: int = 168
+    oauth_redirect_url: str = "http://localhost:8000/api/auth/google/callback"
+    auth_db_path: str = "./auth.db"
+    auth_cookie_name: str = "mathbird_session"
+    frontend_url: str = "http://localhost:5173"
+
     # Storage
     storage_backend: StorageBackendName = "local"
     storage_local_dir: str = "./uploads"
