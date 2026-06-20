@@ -963,3 +963,51 @@ main {
     white-space: normal;
   }
 }
+
+.login-page {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.login-card {
+  width: min(100%, 22rem);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-pad);
+  box-shadow: var(--shadow-soft);
+  text-align: center;
+}
+
+.login-card h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.login-card p {
+  margin: 0 0 1.5rem;
+  color: var(--text-2);
+}
+
+.login-google-btn {
+  display: inline-block;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--mb-green);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-loading {
+  color: var(--text-2);
+}
+
+.textbook-overlay-loading {
+  margin: 0;
+  padding: 2rem;
+  color: var(--text-2);
+  text-align: center;
+}

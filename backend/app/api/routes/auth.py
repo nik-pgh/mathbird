@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
@@ -43,7 +44,11 @@ async def google_login() -> RedirectResponse:
 
 
 @router.get("/google/callback")
-async def google_callback(request: Request, code: str | None = None, state: str | None = None) -> RedirectResponse:
+async def google_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+) -> RedirectResponse:
     settings = get_settings()
     if not settings.google_client_id or not settings.google_client_secret:
         raise HTTPException(status_code=503, detail="Google OAuth is not configured")
@@ -76,7 +81,7 @@ async def google_callback(request: Request, code: str | None = None, state: str 
 
 
 @router.get("/me", response_model=MeResponse)
-async def me(user: User = Depends(get_current_user)) -> MeResponse:
+async def me(user: Annotated[User, Depends(get_current_user)]) -> MeResponse:
     return MeResponse(id=user.id, email=user.email, name=user.name)
 
 

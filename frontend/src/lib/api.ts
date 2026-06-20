@@ -8,6 +8,8 @@
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
+const fetchInit: RequestInit = { credentials: "include" };
+
 export type DocStatus = "uploaded" | "indexed" | "failed";
 
 export interface UploadedDocument {
@@ -40,6 +42,7 @@ export async function uploadPdf(file: File): Promise<UploadedDocument> {
   const res = await fetch(`${API_BASE}/api/documents`, {
     method: "POST",
     body: form,
+    ...fetchInit,
   });
   return jsonOrThrow<UploadedDocument>(res);
 }
@@ -47,19 +50,29 @@ export async function uploadPdf(file: File): Promise<UploadedDocument> {
 export async function ingestDocument(docId: string): Promise<UploadedDocument> {
   const res = await fetch(
     `${API_BASE}/api/documents/${encodeURIComponent(docId)}/ingest`,
-    { method: "POST" },
+    { method: "POST", ...fetchInit },
   );
   return jsonOrThrow<UploadedDocument>(res);
 }
 
 export async function listDocuments(): Promise<UploadedDocument[]> {
-  const res = await fetch(`${API_BASE}/api/documents`);
+  const res = await fetch(`${API_BASE}/api/documents`, fetchInit);
   const data = await jsonOrThrow<{ documents: UploadedDocument[] }>(res);
   return data.documents;
 }
 
 export function documentFileUrl(docId: string): string {
   return `${API_BASE}/api/documents/${encodeURIComponent(docId)}/file`;
+}
+
+/** Fetch PDF bytes with session cookie; use for iframe/embed auth. */
+export async function fetchDocumentPdfBlob(docId: string): Promise<string> {
+  const res = await fetch(documentFileUrl(docId), fetchInit);
+  if (!res.ok) {
+    throw new Error(`API ${res.status}: failed to load PDF`);
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }
 
 export async function requestToken(opts?: {
@@ -72,6 +85,7 @@ export async function requestToken(opts?: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(opts ?? {}),
+    ...fetchInit,
   });
   return jsonOrThrow<TokenResponse>(res);
 }

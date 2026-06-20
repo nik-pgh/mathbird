@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from livekit import api
@@ -47,7 +48,7 @@ class TokenResponse(BaseModel):
 @router.post("/token", response_model=TokenResponse)
 async def create_token(
     req: TokenRequest,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ) -> TokenResponse:
     settings = get_settings()
     if not (settings.livekit_api_key and settings.livekit_api_secret and settings.livekit_url):

@@ -159,7 +159,7 @@ def _find_stored_pdf(objects: list[StoredObject], doc_id: str) -> StoredObject |
 @router.post("/documents", response_model=DocumentResponse, status_code=201)
 async def upload_document(
     file: Annotated[UploadFile, File(description="PDF document to ingest")],
-    _user: User = Depends(get_current_user),
+    _user: Annotated[User, Depends(get_current_user)],
 ) -> DocumentResponse:
     if (file.content_type or "").lower() != "application/pdf":
         raise HTTPException(status_code=415, detail="Only application/pdf is accepted.")
@@ -176,7 +176,7 @@ async def upload_document(
 @router.post("/documents/{doc_id}/ingest", response_model=DocumentResponse)
 async def ingest_document(
     doc_id: str,
-    _user: User = Depends(get_current_user),
+    _user: Annotated[User, Depends(get_current_user)],
 ) -> DocumentResponse:
     storage = get_storage()
     objects = await storage.list()
@@ -199,7 +199,9 @@ async def ingest_document(
 
 
 @router.get("/documents", response_model=DocumentListResponse)
-async def list_documents(_user: User = Depends(get_current_user)) -> DocumentListResponse:
+async def list_documents(
+    _user: Annotated[User, Depends(get_current_user)],
+) -> DocumentListResponse:
     storage = get_storage()
     objects = await storage.list()
 
@@ -224,7 +226,10 @@ async def list_documents(_user: User = Depends(get_current_user)) -> DocumentLis
 
 
 @router.get("/documents/{doc_id}/file")
-async def get_document_file(doc_id: str, _user: User = Depends(get_current_user)):
+async def get_document_file(
+    doc_id: str,
+    _user: Annotated[User, Depends(get_current_user)],
+):
     storage = get_storage()
     objects = await storage.list()
     stored = _find_stored_pdf(objects, doc_id)
