@@ -1,6 +1,7 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import DOMPurify from "dompurify";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { CANVAS_WHEEL_IGNORE_ATTR } from "../../lib/canvasViewport";
 import {
   COLLAPSED_TUTOR_RIBBON_HEIGHT,
   deriveTutorBoardTitle,
@@ -224,7 +225,10 @@ export default function TutorObjectLayer({
             </div>
             {!isCollapsed ? (
               <>
-                <div className="tutor-object-body">
+                <div
+                  className="tutor-object-body"
+                  {...{ [CANVAS_WHEEL_IGNORE_ATTR]: "" }}
+                >
                   <BoardItem item={object.item} />
                 </div>
                 <button

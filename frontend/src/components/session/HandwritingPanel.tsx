@@ -23,6 +23,7 @@ interface Props {
   position: { x: number; y: number };
   size: { width: number; height: number };
   isCapturing: boolean;
+  selected?: boolean;
   inkTool: InkTool;
   inkColor: InkColor;
   inkCommand: InkCommand;
@@ -31,6 +32,7 @@ interface Props {
   onRename: (cardId: string, label: string) => void;
   onCaptureStateChange: (cardId: string, value: boolean) => void;
   onStrokeTargeted: (target: Extract<InkTarget, { kind: "student_card" }>) => void;
+  onSelect?: (cardId: string) => void;
 }
 
 const SNAPSHOT_INTERVAL_MS = 2000;
@@ -60,6 +62,7 @@ export default function HandwritingPanel({
   position,
   size,
   isCapturing,
+  selected = false,
   inkTool,
   inkColor,
   inkCommand,
@@ -68,6 +71,7 @@ export default function HandwritingPanel({
   onRename,
   onCaptureStateChange,
   onStrokeTargeted,
+  onSelect,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const positionRef = useRef(position);
@@ -291,6 +295,7 @@ export default function HandwritingPanel({
   const onDragHandlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
     if (e.button !== 0 || isSpacePan) return;
 
+    onSelect?.(cardId);
     const world = clientToWorld(e.clientX, e.clientY);
     dragRef.current = {
       pointerId: e.pointerId,
@@ -323,6 +328,7 @@ export default function HandwritingPanel({
 
   const onResizePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
+    onSelect?.(cardId);
     resizeRef.current = {
       pointerId: e.pointerId,
       startX: e.clientX,
@@ -356,16 +362,25 @@ export default function HandwritingPanel({
 
   return (
     <section
-      className={`handwriting-panel ${isCapturing ? "capturing" : ""}`}
+      className={`handwriting-panel ${isCapturing ? "capturing" : ""}${
+        selected ? " is-selected" : ""
+      }`}
       style={{
         left: position.x,
         top: position.y,
         width: size.width,
         height: size.height,
       }}
+      data-student-card-id={cardId}
       aria-label={`${label} handwriting card`}
     >
-      <div className="handwriting-panel-head">
+      <div
+        className="handwriting-panel-head"
+        onPointerDown={(event) => {
+          if ((event.target as HTMLElement).closest(".handwriting-topic-input")) return;
+          onSelect?.(cardId);
+        }}
+      >
         <button
           type="button"
           className="handwriting-drag-grip handwriting-panel-drag-handle"

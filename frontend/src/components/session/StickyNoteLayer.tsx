@@ -5,6 +5,8 @@ import type { Point, Size, StickyNoteState } from "./workspaceTypes";
 
 interface Props {
   notes: StickyNoteState[];
+  selectedNoteId: string | null;
+  onSelectNote: (id: string) => void;
   onMoveNote: (id: string, position: Point) => void;
   onResizeNote: (id: string, size: Size) => void;
   onTextChange: (id: string, text: string) => void;
@@ -39,6 +41,8 @@ function keyboardResizeStep(event: KeyboardEvent<HTMLButtonElement>): number {
 
 export default function StickyNoteLayer({
   notes,
+  selectedNoteId,
+  onSelectNote,
   onMoveNote,
   onResizeNote,
   onTextChange,
@@ -60,6 +64,7 @@ export default function StickyNoteLayer({
   ) => {
     if (event.button !== 0) return;
     event.stopPropagation();
+    onSelectNote(note.id);
     const world = clientToWorld(event.clientX, event.clientY);
     dragRef.current = {
       noteId: note.id,
@@ -97,6 +102,7 @@ export default function StickyNoteLayer({
   ) => {
     if (event.button !== 0) return;
     event.stopPropagation();
+    onSelectNote(note.id);
     resizeRef.current = {
       noteId: note.id,
       pointerId: event.pointerId,
@@ -148,7 +154,7 @@ export default function StickyNoteLayer({
       {notes.map((note) => (
         <section
           key={note.id}
-          className="sticky-note"
+          className={`sticky-note${selectedNoteId === note.id ? " is-selected" : ""}`}
           style={{
             left: note.position.x,
             top: note.position.y,
@@ -156,6 +162,10 @@ export default function StickyNoteLayer({
             height: note.size.height,
           }}
           data-sticky-note-id={note.id}
+          onPointerDown={(event) => {
+            if ((event.target as HTMLElement).closest(".sticky-note-text")) return;
+            onSelectNote(note.id);
+          }}
         >
           <header
             className="sticky-note-handle"

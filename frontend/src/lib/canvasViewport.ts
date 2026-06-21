@@ -54,6 +54,17 @@ export function formatZoomPercent(zoom: number): string {
   return `${Math.round(zoom * 100)}%`;
 }
 
+export function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+}
+
+/** Mac keyboards label Backspace as Delete; extended keyboards also send Delete. */
+export function isDeleteShortcutKey(key: string): boolean {
+  return key === "Delete" || key === "Backspace";
+}
+
 export function shouldHandleCanvasWheelTarget(target: EventTarget | null): boolean {
   const maybeElement = target as { closest?: (selector: string) => unknown } | null;
   if (typeof maybeElement?.closest !== "function") return true;

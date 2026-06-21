@@ -293,6 +293,13 @@
   pointer-events: auto;
 }
 
+.sticky-note.is-selected {
+  box-shadow:
+    0 8px 0 rgba(151, 114, 18, 0.18),
+    0 14px 26px rgba(32, 54, 47, 0.14),
+    0 0 0 3px rgba(255, 119, 95, 0.45);
+}
+
 .sticky-note-handle {
   display: flex;
   align-items: center;
@@ -371,6 +378,13 @@
 
 .handwriting-panel.capturing {
   outline: 3px solid rgba(255, 119, 95, 0.28);
+}
+
+.handwriting-panel.is-selected {
+  box-shadow:
+    0 8px 0 var(--mb-green),
+    0 14px 34px rgba(32, 54, 47, 0.16),
+    0 0 0 3px rgba(255, 119, 95, 0.45);
 }
 
 .handwriting-panel-head {

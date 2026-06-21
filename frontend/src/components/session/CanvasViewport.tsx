@@ -8,6 +8,7 @@ import {
 } from "react";
 import {
   clientToWorld as toWorld,
+  isEditableTarget,
   panBy,
   shouldHandleCanvasWheelTarget,
   zoomAtPoint,
@@ -28,12 +29,6 @@ type PanDragState = {
   startY: number;
   startPan: { x: number; y: number };
 };
-
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
-}
 
 export default function CanvasViewport({
   boardRef,

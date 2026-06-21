@@ -19,10 +19,14 @@ const sandbox = {
 
 vm.runInNewContext(compiled, sandbox, { filename: "canvasViewport.ts" });
 
-const { CANVAS_WHEEL_IGNORE_ATTR, shouldHandleCanvasWheelTarget } = sandbox.exports;
+const { CANVAS_WHEEL_IGNORE_ATTR, isDeleteShortcutKey, shouldHandleCanvasWheelTarget } =
+  sandbox.exports;
 
 assert.equal(CANVAS_WHEEL_IGNORE_ATTR, "data-canvas-wheel-ignore");
 assert.equal(typeof shouldHandleCanvasWheelTarget, "function");
+assert.equal(isDeleteShortcutKey("Delete"), true);
+assert.equal(isDeleteShortcutKey("Backspace"), true);
+assert.equal(isDeleteShortcutKey("Enter"), false);
 
 const ignoredTarget = {
   closest(selector) {

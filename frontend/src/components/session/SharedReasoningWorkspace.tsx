@@ -1,11 +1,11 @@
-import { useCallback, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import {
   FileText,
   FileX,
   SquarePen,
   StickyNote as StickyNoteIcon,
 } from "lucide-react";
-import { zoomAtPoint } from "../../lib/canvasViewport";
+import { isDeleteShortcutKey, isEditableTarget, zoomAtPoint } from "../../lib/canvasViewport";
 import {
   pdfDockWidth,
   textbookDisplayMode,
@@ -56,6 +56,10 @@ interface Props {
   onEnd: () => void;
 }
 
+type WorkspaceSelection =
+  | { kind: "student_card"; id: string }
+  | { kind: "sticky_note"; id: string };
+
 export default function SharedReasoningWorkspace({
   status,
   activeDocId,
@@ -67,6 +71,9 @@ export default function SharedReasoningWorkspace({
     initialWorkspaceState,
   );
   const [inkCommand, setInkCommand] = useState<InkCommand>(null);
+  const [selection, setSelection] = useState<WorkspaceSelection | null>(null);
+  const selectionRef = useRef<WorkspaceSelection | null>(null);
+  selectionRef.current = selection;
   const [workspaceSize, setWorkspaceSize] = useState<WorkspaceSize>(() => ({
     width: typeof window === "undefined" ? 0 : window.innerWidth,
     height: typeof window === "undefined" ? 0 : window.innerHeight,
@@ -178,6 +185,26 @@ export default function SharedReasoningWorkspace({
 
   const updateStickyNoteText = useCallback((id: string, text: string) => {
     dispatch({ type: "update_sticky_note_text", id, text });
+  }, []);
+
+  const deleteStudentCard = useCallback((id: string) => {
+    dispatch({ type: "delete_student_card", id });
+  }, []);
+
+  const deleteStickyNote = useCallback((id: string) => {
+    dispatch({ type: "delete_sticky_note", id });
+  }, []);
+
+  const selectStudentCard = useCallback((id: string) => {
+    setSelection({ kind: "student_card", id });
+  }, []);
+
+  const selectStickyNote = useCallback((id: string) => {
+    setSelection({ kind: "sticky_note", id });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelection(null);
   }, []);
 
   const setInkTool = useCallback((tool: InkTool) => {
@@ -304,6 +331,56 @@ export default function SharedReasoningWorkspace({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!selection) return;
+    if (
+      selection.kind === "student_card"
+      && !state.studentCards.some((card) => card.id === selection.id)
+    ) {
+      setSelection(null);
+      return;
+    }
+    if (
+      selection.kind === "sticky_note"
+      && !state.stickyNotes.some((note) => note.id === selection.id)
+    ) {
+      setSelection(null);
+    }
+  }, [selection, state.studentCards, state.stickyNotes]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const current = selectionRef.current;
+      if (!isDeleteShortcutKey(event.key) || !current || isEditableTarget(event.target)) {
+        return;
+      }
+      event.preventDefault();
+      if (current.kind === "student_card") {
+        deleteStudentCard(current.id);
+      } else {
+        deleteStickyNote(current.id);
+      }
+      setSelection(null);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [deleteStudentCard, deleteStickyNote]);
+
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.closest("[data-student-card-id], [data-sticky-note-id]")) return;
+      clearSelection();
+    };
+
+    board.addEventListener("pointerdown", onPointerDown);
+    return () => board.removeEventListener("pointerdown", onPointerDown);
+  }, [clearSelection]);
+
   return (
     <section
       className={
@@ -419,6 +496,10 @@ export default function SharedReasoningWorkspace({
             />
             <StickyNoteLayer
               notes={state.stickyNotes}
+              selectedNoteId={
+                selection?.kind === "sticky_note" ? selection.id : null
+              }
+              onSelectNote={selectStickyNote}
               onMoveNote={moveStickyNote}
               onResizeNote={resizeStickyNote}
               onTextChange={updateStickyNoteText}
@@ -431,6 +512,9 @@ export default function SharedReasoningWorkspace({
                 position={card.position}
                 size={card.size}
                 isCapturing={card.isCapturing}
+                selected={
+                  selection?.kind === "student_card" && selection.id === card.id
+                }
                 inkTool={state.ink.tool}
                 inkColor={state.ink.color}
                 inkCommand={inkCommand}
@@ -439,6 +523,7 @@ export default function SharedReasoningWorkspace({
                 onRename={renameStudentCard}
                 onCaptureStateChange={setStudentCardCaptureActive}
                 onStrokeTargeted={setActiveInkTarget}
+                onSelect={selectStudentCard}
               />
             ))}
           </CanvasViewport>

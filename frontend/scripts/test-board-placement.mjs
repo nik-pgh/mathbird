@@ -255,6 +255,10 @@ assert.deepEqual(
   plain(resizedTutor.objects.find((object) => object.id === thirdTextItem.id).size),
   { width: 720, height: 520 },
 );
+assert.deepEqual(
+  plain(resizedTutor.objects.map((object) => object.position)),
+  plain(flowState.objects.map((object) => object.position)),
+);
 
 const firstTutorMoved = workspaceReducer(resizedTutor, {
   type: "move_object",

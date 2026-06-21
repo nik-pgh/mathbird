@@ -79,16 +79,20 @@ export function workspaceReducer(
         ),
       };
     }
-    case "resize_object":
+    case "resize_object": {
+      const size = clampTutorCardSize(action.size);
+      const existing = state.objects.find((obj) => obj.id === action.id);
+      const previousSize = existing?.size ?? (existing ? tutorCardSizeForKind(existing.kind) : null);
+      if (!existing || !previousSize || sizesEqual(previousSize, size)) {
+        return state;
+      }
       return {
         ...state,
-        objects: reflowTutorObjects(
-          state.objects.map((obj) =>
-            obj.id === action.id ? { ...obj, size: clampTutorCardSize(action.size) } : obj,
-          ),
-          action.boardSize,
+        objects: state.objects.map((obj) =>
+          obj.id === action.id ? { ...obj, size } : obj,
         ),
       };
+    }
     case "activate_object":
       return {
         ...state,
@@ -180,6 +184,27 @@ export function workspaceReducer(
         stickyNotes: state.stickyNotes.map((note) =>
           note.id === action.id ? { ...note, text: action.text } : note,
         ),
+      };
+    }
+    case "delete_student_card": {
+      const existing = state.studentCards.find((card) => card.id === action.id);
+      if (!existing) return state;
+      const ink =
+        state.ink.activeTarget.kind === "student_card"
+        && state.ink.activeTarget.cardId === action.id
+          ? { ...state.ink, activeTarget: { kind: "private_board" as const } }
+          : state.ink;
+      return {
+        ...state,
+        studentCards: state.studentCards.filter((card) => card.id !== action.id),
+        ink,
+      };
+    }
+    case "delete_sticky_note": {
+      if (!state.stickyNotes.some((note) => note.id === action.id)) return state;
+      return {
+        ...state,
+        stickyNotes: state.stickyNotes.filter((note) => note.id !== action.id),
       };
     }
     case "set_ink_tool":

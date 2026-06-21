@@ -108,6 +108,8 @@ export type WorkspaceAction =
   | { type: "move_sticky_note"; id: string; position: Point }
   | { type: "resize_sticky_note"; id: string; size: Size }
   | { type: "update_sticky_note_text"; id: string; text: string }
+  | { type: "delete_student_card"; id: string }
+  | { type: "delete_sticky_note"; id: string }
   | { type: "set_ink_tool"; tool: InkTool }
   | { type: "set_ink_color"; color: InkColor }
   | { type: "set_active_ink_target"; target: InkTarget }
