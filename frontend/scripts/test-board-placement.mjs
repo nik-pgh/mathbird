@@ -16,7 +16,8 @@ const compileTs = (sourceText) => ts.transpileModule(sourceText, {
 const sandbox = { exports: {} };
 vm.runInNewContext(compileTs(source), sandbox, { filename: "boardPlacement.ts" });
 
-const { findOpenBoardPosition, rectsOverlap, tutorCardSizeForKind } = sandbox.exports;
+const { findOpenBoardPosition, rectsOverlap, truncateTutorBoardTitle, tutorCardSizeForKind } =
+  sandbox.exports;
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const rectAt = (position, size) => ({ ...plain(position), ...size });
 const assertNoOverlap = (candidate, occupied) => {
@@ -138,6 +139,14 @@ assert.equal(
   deriveTutorBoardTitle({ kind: "text", id: "text-4", markdown: longMathTitle }, 7),
   longMathTitle,
 );
+assert.deepEqual(plain(truncateTutorBoardTitle("Short title")), {
+  display: "Short title",
+  truncated: false,
+});
+const truncated = plain(truncateTutorBoardTitle(`${longMathTitle} extra tail`));
+assert.equal(truncated.truncated, true);
+assert.equal(truncated.display.length, 52);
+assert.match(truncated.display, /…$/);
 assert.equal(
   deriveTutorBoardTitle({ kind: "shape", id: "shape-1", svg: "<svg></svg>" }, 6),
   "Sketch 6",
@@ -429,6 +438,7 @@ const tutorLayerPath = new URL("../src/components/session/TutorObjectLayer.tsx",
 const tutorLayerSource = fs.readFileSync(tutorLayerPath, "utf8");
 assert.match(tutorLayerSource, /objects\.map/);
 assert.match(tutorLayerSource, /deriveTutorBoardTitle/);
+assert.match(tutorLayerSource, /truncateTutorBoardTitle/);
 assert.match(tutorLayerSource, /renderMathTextToHtml/);
 assert.match(tutorLayerSource, /DOMPurify\.sanitize/);
 assert.match(tutorLayerSource, /onResizeObject/);
@@ -633,6 +643,7 @@ assert.match(sessionCss, /\.sticky-note-resize\s*\{/s);
 assert.match(sessionCss, /\.tutor-object\s*\{[^}]*position:\s*absolute;/s);
 assert.doesNotMatch(sessionCss, /\.tutor-object-collapsed\s*\{[^}]*cursor:\s*pointer;/s);
 assert.match(sessionCss, /\.tutor-object-collapsed\s+\.tutor-object-handle\s*\{[^}]*cursor:\s*grab;/s);
+assert.match(sessionCss, /\.tutor-object-handle\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*auto;/s);
 assert.match(sessionCss, /\.tutor-object-title-html\s*\{[^}]*overflow:\s*hidden;/s);
 assert.match(sessionCss, /\.tutor-object-title-actions\s*\{[^}]*display:\s*inline-flex;/s);
 assert.match(sessionCss, /\.tutor-object-title-action\s*\{[^}]*touch-action:\s*manipulation;/s);

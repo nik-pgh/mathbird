@@ -5,6 +5,7 @@ import { CANVAS_WHEEL_IGNORE_ATTR } from "../../lib/canvasViewport";
 import {
   COLLAPSED_TUTOR_RIBBON_HEIGHT,
   deriveTutorBoardTitle,
+  truncateTutorBoardTitle,
   tutorCardSizeForKind,
 } from "../../lib/boardPlacement";
 import { renderMathTextToHtml } from "../../lib/mathText";
@@ -123,10 +124,14 @@ export default function TutorObjectLayer({
       {objects.map((object, index) => {
         const size = object.size ?? tutorCardSizeForKind(object.kind);
         const title = deriveTutorBoardTitle(object.item, index + 1);
-        const titleHtml = DOMPurify.sanitize(
-          renderMathTextToHtml(title, { lineBreaks: "collapse" }),
-          { USE_PROFILES: { html: true, mathMl: true, svg: true } },
-        );
+        const { display: headerTitle, truncated: titleTruncated } =
+          truncateTutorBoardTitle(title);
+        const titleHtml = titleTruncated
+          ? DOMPurify.sanitize(headerTitle)
+          : DOMPurify.sanitize(
+              renderMathTextToHtml(headerTitle, { lineBreaks: "collapse" }),
+              { USE_PROFILES: { html: true, mathMl: true, svg: true } },
+            );
         const isCollapsed = object.collapsed === true;
 
         return (

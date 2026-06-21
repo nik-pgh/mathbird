@@ -120,6 +120,23 @@ export function deriveTutorBoardTitle(
   return `Tutor Board ${index}`;
 }
 
+const TUTOR_HEADER_TITLE_MAX = 52;
+
+/** Shorten long tutor card titles so the header can clip without covering controls. */
+export function truncateTutorBoardTitle(title: string, maxLength = TUTOR_HEADER_TITLE_MAX): {
+  display: string;
+  truncated: boolean;
+} {
+  const trimmed = title.trim();
+  if (trimmed.length <= maxLength) {
+    return { display: trimmed, truncated: false };
+  }
+  return {
+    display: `${trimmed.slice(0, maxLength - 1).trimEnd()}…`,
+    truncated: true,
+  };
+}
+
 export function findOpenBoardPosition({
   size,
   occupied,

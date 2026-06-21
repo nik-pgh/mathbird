@@ -509,10 +509,11 @@
 }
 
 .tutor-object-handle {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
+  min-width: 0;
   min-height: 0;
   padding: 4px 8px;
   background: rgba(244, 232, 248, 0.92);
@@ -530,7 +531,8 @@
 .tutor-object-title {
   display: block;
   min-width: 0;
-  flex: 1;
+  max-width: 100%;
+  overflow: hidden;
   font-size: 10px;
   font-weight: 600;
   color: #5b3565;
@@ -539,12 +541,18 @@
 .tutor-object-title-html {
   display: block;
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .tutor-object-title-html .katex {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
   font-size: 1em;
   line-height: 1;
 }
@@ -560,6 +568,7 @@
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
+  justify-self: end;
 }
 
 .tutor-object-kind-pill {
