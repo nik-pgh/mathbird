@@ -66,3 +66,5 @@ ruvector.db
 .superpowers/
 
 materials/
+
+backend/auth.db
