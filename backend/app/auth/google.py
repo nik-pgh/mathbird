@@ -11,7 +11,7 @@ from app.config import Settings, get_settings
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
 
 def _require_oauth_config(settings: Settings) -> None:
@@ -66,8 +66,10 @@ async def exchange_code_for_profile(
         )
         user_res.raise_for_status()
         profile = user_res.json()
-        if not profile.get("sub"):
+        google_sub = profile.get("sub") or profile.get("id")
+        if not google_sub:
             raise RuntimeError("Google profile missing sub")
+        profile["sub"] = google_sub
         return profile
     finally:
         if owns_client:
