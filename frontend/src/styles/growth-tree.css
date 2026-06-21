@@ -1,48 +1,23 @@
-/* ─── Growth tree progress panel (session, bottom-right) ─────────────── */
+/* ─── Growth tree on shared board (bottom-right, line art only) ──────── */
 
 .growth-tree-panel {
-  position: fixed;
-  right: 16px;
-  bottom: 88px;
-  z-index: 11;
-  width: min(220px, calc(100vw - 32px));
-  display: grid;
-  gap: 8px;
-  padding: 10px 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background:
-    linear-gradient(165deg, rgba(251, 250, 246, 0.96), rgba(247, 244, 238, 0.92)),
-    var(--mb-paper);
-  box-shadow: var(--shadow-lifted);
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2;
+  width: min(128px, 22vw);
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
   pointer-events: none;
   user-select: none;
-}
-
-.growth-tree-head {
-  display: grid;
-  gap: 2px;
-}
-
-.growth-tree-title {
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: 0.01em;
-  color: var(--text);
-}
-
-.growth-tree-meta {
-  font-size: 11px;
-  color: var(--text-3);
 }
 
 .growth-tree-frame {
   position: relative;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-radius: 10px;
-  background: #faf7f2;
-  box-shadow: inset 0 0 0 1px rgba(32, 54, 47, 0.06);
 }
 
 .growth-tree-art {
@@ -52,6 +27,7 @@
   object-fit: contain;
   object-position: center bottom;
   transform-origin: center bottom;
+  opacity: 0.88;
 }
 
 .growth-tree-art--revealing {
@@ -83,18 +59,12 @@
 @keyframes growth-tree-sketch-reveal {
   from {
     clip-path: inset(100% 0 0 0);
-    filter: contrast(1.12) brightness(1.03);
-    opacity: 0.92;
-  }
-
-  70% {
-    filter: contrast(1.04) brightness(1.01);
+    opacity: 0.45;
   }
 
   to {
     clip-path: inset(0 0 0 0);
-    filter: none;
-    opacity: 1;
+    opacity: 0.88;
   }
 }
 
@@ -113,12 +83,12 @@
   0%,
   100% {
     transform: rotate(-0.2deg) scale(1);
-    filter: contrast(1);
+    opacity: 0.82;
   }
 
   50% {
     transform: rotate(0.2deg) scale(1.006);
-    filter: contrast(1.06);
+    opacity: 0.92;
   }
 }
 
@@ -145,24 +115,14 @@
 
   .growth-tree-art--revealing {
     clip-path: inset(0 0 0 0);
-    filter: none;
-    opacity: 1;
+    opacity: 0.88;
   }
 }
 
 @media (max-width: 720px) {
   .growth-tree-panel {
-    right: 10px;
-    bottom: 82px;
-    width: 148px;
-    padding: 8px;
-  }
-
-  .growth-tree-title {
-    font-size: 11px;
-  }
-
-  .growth-tree-meta {
-    font-size: 10px;
+    right: 12px;
+    bottom: 12px;
+    width: 96px;
   }
 }

@@ -33,23 +33,14 @@ export default function GrowthTreePanel() {
   }, [growth.stageIndex, growth.stageT]);
 
   const stage = GROWTH_STAGES[displayIndex];
-  const summary = snapshot?.summary;
-  const progressLabel =
-    summary && summary.total > 0
-      ? `${summary.mastered} of ${summary.total} mastered`
-      : "Ready to grow";
 
   return (
-    <aside
+    <div
       className="growth-tree-panel"
-      aria-label="Session progress tree"
+      aria-hidden="true"
       data-stage={stage.id}
       data-working={working || undefined}
     >
-      <header className="growth-tree-head">
-        <span className="growth-tree-title">{stage.label}</span>
-        <span className="growth-tree-meta">{progressLabel}</span>
-      </header>
       <div className="growth-tree-frame">
         <img
           key={displayIndex}
@@ -61,6 +52,6 @@ export default function GrowthTreePanel() {
         />
         {working && <span className="growth-tree-sketch-shimmer" aria-hidden="true" />}
       </div>
-    </aside>
+    </div>
   );
 }

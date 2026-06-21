@@ -25,6 +25,7 @@ import StickyNoteLayer from "./StickyNoteLayer";
 import TextbookOverlay from "./TextbookOverlay";
 import TranscriptOverlay from "./TranscriptOverlay";
 import TutorObjectLayer from "./TutorObjectLayer";
+import SessionProgressBridge from "../progress/SessionProgressBridge";
 import VoiceComposer from "./VoiceComposer";
 import {
   initialWorkspaceState,
@@ -397,6 +398,7 @@ export default function SharedReasoningWorkspace({
             onUndo={undoActiveInk}
             onClear={clearActiveInk}
           />
+          <SessionProgressBridge />
           <CanvasViewport
             boardRef={boardRef}
             viewport={state.viewport}
