@@ -1,5 +1,6 @@
 import rawChunkingReport from "./chunkingEval.generated.json";
 import rawEmbeddingReport from "./embeddingEval.generated.json";
+import rawStructuredReport from "./structuredEval.generated.json";
 
 export interface EvalMetrics {
   hitAt1: number;
@@ -205,6 +206,11 @@ export const retrievalEvalReports: RetrievalEvalReportTab[] = [
     id: "chunking",
     label: "Chunking Experiments",
     report: normalizeReport(rawChunkingReport),
+  },
+  {
+    id: "structured",
+    label: "Structured Lookup",
+    report: normalizeReport(rawStructuredReport),
   },
 ];
 

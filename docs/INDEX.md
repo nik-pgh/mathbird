@@ -27,8 +27,10 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
 | `backend/evals/README.md` | Agent-facing guide to the retrieval evaluation pipeline, reports, chunking policies, dashboard wiring, and extension workflow. |
 | `backend/evals/golden/goodfellow_ch2_retrieval.jsonl` | 40-row golden retrieval set for Goodfellow chapter 2. |
+| `backend/evals/golden/goodfellow_ch2_structured.jsonl` | 16-row golden set for structured lookup (page/section/figure/equation/example). |
 | `backend/scripts/eval_retrieval.py` | CLI to compare retrieval quality across embedding collections. |
 | `backend/scripts/eval_chunking.py` | CLI to parse once, index multiple chunking policies, evaluate them, and optionally update the frontend dashboard JSON. |
+| `backend/scripts/eval_structured.py` | CLI to compare production, structured-only, and semantic-only retrieval paths; optional dashboard JSON output. |
 
 ### `backend/app/` — shared package
 
@@ -105,6 +107,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `frontend/.env.example` | Template for above. |
 | `frontend/src/data/embeddingEval.generated.json` | Generated embedding comparison report consumed by the eval dashboard. Update via `scripts.eval_retrieval --frontend-output`. |
 | `frontend/src/data/chunkingEval.generated.json` | Generated chunking comparison report consumed by the eval dashboard. Update via `scripts.eval_chunking --frontend-output`. |
+| `frontend/src/data/structuredEval.generated.json` | Generated structured lookup comparison report consumed by the eval dashboard. Update via `scripts.eval_structured --frontend-output`. |
 
 ### `frontend/src/`
 

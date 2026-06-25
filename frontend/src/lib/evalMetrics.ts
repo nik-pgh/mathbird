@@ -35,7 +35,22 @@ export function targetDetail(target: Pick<EvalTarget, "provider" | "model">): st
 export function comparisonTitle(axis: string): string {
   if (axis === "chunk_policy") return "Chunking policy comparison";
   if (axis === "embedding_model") return "Embedding model comparison";
+  if (axis === "structured_lookup") return "Structured lookup comparison";
   return "Retrieval target comparison";
+}
+
+export function goldenSetSummary(axis: string): string {
+  if (axis === "structured_lookup") {
+    return "Page, section, figure, equation, and example lookups";
+  }
+  return "Definitions, formulas, figures, concepts, student-style prompts";
+}
+
+export function failureSummary(axis: string): string {
+  if (axis === "structured_lookup") {
+    return "Missing collection or failed retrieval path";
+  }
+  return "Missing or unavailable embedding collections";
 }
 
 export function rankTargets(targets: readonly EvalTarget[]): EvalTarget[] {

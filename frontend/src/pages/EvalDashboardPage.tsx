@@ -15,6 +15,8 @@ import {
   formatReportTime,
   formatScore,
   comparisonTitle,
+  failureSummary,
+  goldenSetSummary,
   rankTargets,
   targetLabel,
 } from "../lib/evalMetrics";
@@ -86,12 +88,12 @@ function ReportView({ report }: { report: RetrievalEvalReport }) {
         <article className="eval-summary-card">
           <span>Golden cases</span>
           <strong>{bestTarget.caseCount}</strong>
-          <p>Definitions, formulas, figures, concepts, student-style prompts</p>
+          <p>{goldenSetSummary(report.comparisonAxis)}</p>
         </article>
         <article className="eval-summary-card">
           <span>Failed targets</span>
           <strong>{report.failures.length}</strong>
-          <p>Missing or unavailable embedding collections</p>
+          <p>{failureSummary(report.comparisonAxis)}</p>
         </article>
       </section>
 

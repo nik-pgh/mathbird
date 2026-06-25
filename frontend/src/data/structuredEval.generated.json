@@ -1,0 +1,9 @@
+{
+  "schema_version": 2,
+  "comparison_axis": "structured_lookup",
+  "created_at": "20260625T000000Z",
+  "golden_path": "evals/golden/goodfellow_ch2_structured.jsonl",
+  "top_k": 5,
+  "targets": [],
+  "failures": []
+}

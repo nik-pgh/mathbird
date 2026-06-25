@@ -16,6 +16,9 @@ Current evaluation axes:
   embedding provider/model collections.
 - **Chunking policy comparison**: same parser and embedding model, different
   node construction policies.
+- **Structured lookup comparison**: same indexed collection, compares
+  production `retrieve()`, structured Qdrant filters only, and semantic search
+  only on page/section/figure/equation/example queries.
 
 The pipeline is retrieval-only. It does not grade final LLM answers. The core
 question is: "Did retrieval return the expected source pages and enough expected
@@ -27,6 +30,9 @@ Backend eval data and CLIs:
 
 - `backend/evals/golden/goodfellow_ch2_retrieval.jsonl`
   - 40-case golden retrieval set for Goodfellow chapter 2.
+- `backend/evals/golden/goodfellow_ch2_structured.jsonl`
+  - 16-case golden set for structured lookup (page, section, figure, equation,
+    example, chapter, and negative routing cases).
 - `backend/evals/results/`
   - Timestamped JSON and Markdown reports produced by eval scripts.
 - `backend/scripts/eval_retrieval.py`
@@ -34,6 +40,9 @@ Backend eval data and CLIs:
 - `backend/scripts/eval_chunking.py`
   - Parses once, indexes multiple chunking policies, evaluates them, and can
     update the frontend dashboard JSON.
+- `backend/scripts/eval_structured.py`
+  - Evaluates structured lookup paths against the active Qdrant collection and
+    can update the frontend dashboard JSON.
 
 Backend RAG/eval internals:
 
@@ -60,6 +69,8 @@ Frontend dashboard:
   - Generated embedding comparison report consumed by the dashboard.
 - `frontend/src/data/chunkingEval.generated.json`
   - Generated chunking comparison report consumed by the dashboard.
+- `frontend/src/data/structuredEval.generated.json`
+  - Generated structured lookup comparison report consumed by the dashboard.
 - `frontend/src/data/retrievalEval.ts`
   - Normalizes backend snake_case JSON into dashboard-friendly TypeScript types.
 - `frontend/src/pages/EvalDashboardPage.tsx`
@@ -164,6 +175,55 @@ uv run python -m scripts.eval_chunking \
   --policy block \
   --policy page_section_window_512
 ```
+
+### Structured Lookup Comparison
+
+Structured lookup eval compares three retrieval paths against the **active**
+settings collection (`EMBEDDING_PROVIDER`, `EMBEDDING_MODEL`,
+`QDRANT_COLLECTION`):
+
+1. `path:production` — full `retrieve()` (structured filter when applicable,
+   semantic fallback otherwise).
+2. `path:structured_only` — Qdrant payload filters only (no embedding).
+3. `path:semantic_only` — vector search only.
+
+**Re-ingest required:** structured cases depend on indexed metadata such as
+`printed_page_number`, `section_number`, `figure_number`, and `equation_number`.
+Re-index Goodfellow chapter 2 after metadata changes before running this eval.
+
+CLI:
+
+```bash
+cd backend
+uv run python -m scripts.eval_structured \
+  --golden evals/golden/goodfellow_ch2_structured.jsonl \
+  --top-k 5 \
+  --frontend-output ../frontend/src/data/structuredEval.generated.json
+```
+
+Golden case format (structured JSONL):
+
+```json
+{
+  "id": "goodfellow-ch2-s004",
+  "doc_id": "goodfellow-ch2",
+  "query": "section 2.7",
+  "query_type": "structured_section",
+  "expects_structured_route": true,
+  "expected": {
+    "printed_pages": [44],
+    "must_contain": ["eigenvector"]
+  },
+  "golden_answer": "Section 2.7 defines eigendecomposition."
+}
+```
+
+Per-case structured metrics in report JSON:
+
+- `retrieval_path`: `structured`, `semantic`, or `structured_fallback_semantic`
+- `routing_correct`: query parser routed as expected
+- `structured_hit_at_1`: structured-only path Hit@1
+- `structured_latency_ms` / `semantic_latency_ms`
 
 ## Built-In Chunk Policies
 
@@ -290,6 +350,8 @@ Top-level fields:
 
 For chunking reports, `comparison_axis` is `chunk_policy`.
 
+For structured lookup reports, `comparison_axis` is `structured_lookup`.
+
 Each target includes:
 
 ```json
@@ -322,6 +384,7 @@ The dashboard reads two generated report files:
 ```text
 frontend/src/data/embeddingEval.generated.json
 frontend/src/data/chunkingEval.generated.json
+frontend/src/data/structuredEval.generated.json
 ```
 
 To update `/evals`, write each eval axis to its matching generated file:
@@ -333,6 +396,9 @@ uv run python -m scripts.eval_retrieval \
 uv run python -m scripts.eval_chunking \
   --evaluate-existing \
   --frontend-output ../frontend/src/data/chunkingEval.generated.json
+
+uv run python -m scripts.eval_structured \
+  --frontend-output ../frontend/src/data/structuredEval.generated.json
 ```
 
 The dashboard is intentionally generic:
@@ -472,9 +538,11 @@ Golden scoring reports Hit@5, so eval scripts require `--top-k >= 5`.
 
 ### Dashboard still shows old results
 
-The frontend reads `frontend/src/data/embeddingEval.generated.json` and
-`frontend/src/data/chunkingEval.generated.json`. Re-run the relevant eval script
-with `--frontend-output` or replace the matching generated file explicitly.
+The frontend reads `frontend/src/data/embeddingEval.generated.json`,
+`frontend/src/data/chunkingEval.generated.json`, and
+`frontend/src/data/structuredEval.generated.json`. Re-run the relevant eval
+script with `--frontend-output` or replace the matching generated file
+explicitly.
 
 ### Tests pass locally only with `PYTHONPATH=.`
 
