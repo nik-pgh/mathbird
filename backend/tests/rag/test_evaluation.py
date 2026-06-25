@@ -614,3 +614,70 @@ def test_report_to_dict_serializes_target_metadata_for_dashboard() -> None:
         "embedding_model": "embed-v4.0",
         "node_count": 120,
     }
+
+
+def test_score_case_matches_printed_page_in_source() -> None:
+    case = GoldenCase(
+        id="case-printed",
+        doc_id="goodfellow-ch2",
+        query="page 37",
+        query_type="structured_page",
+        expected_pages=(7,),
+        expected_printed_pages=(37,),
+        expected_section_titles=(),
+        expected_block_types=(),
+        must_contain=("theoretical tool",),
+        golden_answer="Inverse caution on printed page 37.",
+    )
+
+    score = score_case(
+        case,
+        [
+            RetrievedChunk(
+                "The inverse is mainly a theoretical tool.",
+                "book.pdf, chapter 2, page 37",
+                1.0,
+            )
+        ],
+    )
+
+    assert score.hit_at_1 is True
+
+
+def test_load_structured_golden_cases_parses_jsonl(tmp_path: Path) -> None:
+    from app.rag.evaluation import StructuredGoldenCase, load_structured_golden_cases
+
+    golden_path = tmp_path / "structured.jsonl"
+    _write_jsonl(
+        golden_path,
+        [
+            {
+                "id": "case-1",
+                "doc_id": "goodfellow-ch2",
+                "query": "section 2.7",
+                "query_type": "structured_section",
+                "expects_structured_route": True,
+                "expected": {
+                    "printed_pages": [44],
+                    "must_contain": ["eigenvector"],
+                },
+                "golden_answer": "Section 2.7 covers eigendecomposition.",
+            }
+        ],
+    )
+
+    cases = load_structured_golden_cases(golden_path)
+
+    assert cases == [
+        StructuredGoldenCase(
+            id="case-1",
+            doc_id="goodfellow-ch2",
+            query="section 2.7",
+            query_type="structured_section",
+            expected_pages=(),
+            expected_printed_pages=(44,),
+            must_contain=("eigenvector",),
+            golden_answer="Section 2.7 covers eigendecomposition.",
+            expects_structured_route=True,
+        )
+    ]

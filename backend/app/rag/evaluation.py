@@ -11,11 +11,14 @@ from pathlib import Path
 from typing import Any
 
 from app.config import EmbeddingProvider, Settings
+from app.rag.formatter import format_records_as_chunks
 from app.rag.llamaindex_qdrant import (
     LlamaIndexQdrantRetriever,
     build_qdrant_index_stack,
     close_qdrant_client,
 )
+from app.rag.parsing import RetrievalRequest
+from app.rag.query_parser import parse_retrieval_query
 from app.rag.retriever import RetrievedChunk
 
 
@@ -133,7 +136,8 @@ def _matched_terms(texts: list[str], terms: tuple[str, ...]) -> tuple[str, ...]:
 
 
 def _chunk_matches(case: GoldenCase, chunk: RetrievedChunk) -> bool:
-    page_match = _source_has_page(chunk.source, case.expected_pages)
+    page_numbers = case.expected_pages + case.expected_printed_pages
+    page_match = _source_has_page(chunk.source, page_numbers) if page_numbers else True
     if case.must_contain:
         chunk_text = chunk.text.lower()
         return page_match and any(term.lower() in chunk_text for term in case.must_contain)
@@ -423,3 +427,311 @@ def report_to_dict(
         },
         "cases": [_case_payload(score) for score in report.scores],
     }
+
+
+@dataclass(frozen=True)
+class StructuredGoldenCase:
+    id: str
+    doc_id: str
+    query: str
+    query_type: str
+    expected_pages: tuple[int, ...]
+    expected_printed_pages: tuple[int, ...]
+    must_contain: tuple[str, ...]
+    golden_answer: str
+    expects_structured_route: bool = True
+
+
+def _structured_case_from_row(row: dict[str, Any], *, line_number: int) -> StructuredGoldenCase:
+    case_id = str(row.get("id") or "").strip()
+    if not case_id:
+        raise ValueError(f"Line {line_number}: missing id")
+
+    expected = row.get("expected")
+    if not isinstance(expected, dict):
+        raise ValueError(f"{case_id}: expected must be an object")
+
+    golden_answer = str(row.get("golden_answer") or "").strip()
+    if not golden_answer:
+        raise ValueError(f"{case_id}: golden_answer is required")
+
+    pages = _tuple_int(expected.get("pages"))
+    printed_pages = _tuple_int(expected.get("printed_pages"))
+    if not pages and not printed_pages:
+        raise ValueError(f"{case_id}: expected.pages or expected.printed_pages is required")
+
+    doc_id = str(row.get("doc_id") or "").strip()
+    if not doc_id:
+        raise ValueError(f"{case_id}: doc_id is required")
+    query = str(row.get("query") or "").strip()
+    if not query:
+        raise ValueError(f"{case_id}: query is required")
+
+    expects_structured_route = row.get("expects_structured_route", True)
+    if not isinstance(expects_structured_route, bool):
+        raise ValueError(f"{case_id}: expects_structured_route must be a boolean")
+
+    return StructuredGoldenCase(
+        id=case_id,
+        doc_id=doc_id,
+        query=query,
+        query_type=str(row.get("query_type") or "unknown").strip() or "unknown",
+        expected_pages=pages,
+        expected_printed_pages=printed_pages,
+        must_contain=_tuple_str(expected.get("must_contain")),
+        golden_answer=golden_answer,
+        expects_structured_route=expects_structured_route,
+    )
+
+
+def load_structured_golden_cases(path: str | Path) -> list[StructuredGoldenCase]:
+    cases: list[StructuredGoldenCase] = []
+    seen: set[str] = set()
+    source = Path(path)
+
+    for line_number, line in enumerate(source.read_text().splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if not isinstance(row, dict):
+            raise ValueError(f"Line {line_number}: expected JSON object")
+        case = _structured_case_from_row(row, line_number=line_number)
+        if case.id in seen:
+            raise ValueError(f"Duplicate golden case id: {case.id}")
+        seen.add(case.id)
+        cases.append(case)
+
+    if not cases:
+        raise ValueError(f"No golden cases found in {source}")
+    return cases
+
+
+@dataclass(frozen=True)
+class StructuredCaseScore(CaseScore):
+    retrieval_path: str
+    routing_correct: bool
+    structured_route: bool
+    structured_hit_at_1: bool
+    structured_latency_ms: float
+    semantic_latency_ms: float | None
+
+
+def structured_case_to_golden(case: StructuredGoldenCase) -> GoldenCase:
+    return GoldenCase(
+        id=case.id,
+        doc_id=case.doc_id,
+        query=case.query,
+        query_type=case.query_type,
+        expected_pages=case.expected_pages,
+        expected_printed_pages=case.expected_printed_pages,
+        expected_section_titles=(),
+        expected_block_types=(),
+        must_contain=case.must_contain,
+        golden_answer=case.golden_answer,
+    )
+
+
+def _retrieval_request_for_case(
+    case: StructuredGoldenCase,
+    *,
+    top_k: int,
+) -> RetrievalRequest:
+    parsed = parse_retrieval_query(case.query)
+    return RetrievalRequest(
+        query=case.query,
+        top_k=top_k,
+        doc_ids=(case.doc_id,),
+        page_number=parsed.page_number,
+        chapter_number=parsed.chapter_number,
+        section_number=parsed.section_number,
+        exercise_number=parsed.exercise_number,
+        example_number=parsed.example_number,
+        figure_number=parsed.figure_number,
+        equation_number=parsed.equation_number,
+    )
+
+
+def _structured_case_payload(
+    score: StructuredCaseScore,
+    *,
+    case: StructuredGoldenCase | None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "case_id": score.case_id,
+        "query_type": score.query_type,
+        "hit_at_1": score.hit_at_1,
+        "hit_at_3": score.hit_at_3,
+        "hit_at_5": score.hit_at_5,
+        "reciprocal_rank": score.reciprocal_rank,
+        "best_rank": score.best_rank,
+        "best_score": score.best_score,
+        "content_match_ratio": score.content_match_ratio,
+        "matched_terms": list(score.matched_terms),
+        "returned_sources": list(score.returned_sources),
+        "retrieval_path": score.retrieval_path,
+        "routing_correct": score.routing_correct,
+        "structured_route": score.structured_route,
+        "structured_hit_at_1": score.structured_hit_at_1,
+        "structured_latency_ms": score.structured_latency_ms,
+        "semantic_latency_ms": score.semantic_latency_ms,
+    }
+    if case is not None:
+        payload.update(
+            {
+                "doc_id": case.doc_id,
+                "query": case.query,
+                "expects_structured_route": case.expects_structured_route,
+                "expected": {
+                    "pages": list(case.expected_pages),
+                    "printed_pages": list(case.expected_printed_pages),
+                    "must_contain": list(case.must_contain),
+                },
+                "golden_answer": case.golden_answer,
+            }
+        )
+    return payload
+
+
+def structured_report_to_dict(
+    report: TargetReport,
+    *,
+    cases: list[StructuredGoldenCase] | None = None,
+) -> dict[str, Any]:
+    case_by_id = {case.id: case for case in cases or []}
+    base = report_to_dict(report, cases=None)
+    base["cases"] = [
+        _structured_case_payload(score, case=case_by_id.get(score.case_id))
+        for score in report.scores
+        if isinstance(score, StructuredCaseScore)
+    ]
+    return base
+
+
+async def evaluate_structured_paths(
+    cases: list[StructuredGoldenCase],
+    *,
+    base_settings: Settings,
+    top_k: int,
+) -> list[TargetReport]:
+    stack = build_qdrant_index_stack(base_settings)
+    retriever = LlamaIndexQdrantRetriever(
+        parser=None,  # type: ignore[arg-type]
+        index=stack.index,
+        store=stack.store,
+    )
+    golden_cases = [structured_case_to_golden(case) for case in cases]
+
+    production_scores: list[StructuredCaseScore] = []
+    structured_scores: list[CaseScore] = []
+    semantic_scores: list[CaseScore] = []
+    production_latencies: list[float] = []
+    structured_latencies: list[float] = []
+    semantic_latencies: list[float] = []
+
+    try:
+        for case, golden in zip(cases, golden_cases, strict=True):
+            parsed = parse_retrieval_query(case.query)
+            request = _retrieval_request_for_case(case, top_k=top_k)
+            routing_correct = parsed.is_structured_lookup == case.expects_structured_route
+
+            structured_started = time.perf_counter()
+            structured_records = (
+                await stack.store.structured_lookup(request)
+                if parsed.is_structured_lookup
+                else []
+            )
+            structured_latency_ms = (time.perf_counter() - structured_started) * 1000
+            structured_chunks = format_records_as_chunks(structured_records)
+            structured_case_score = score_case(golden, structured_chunks)
+            structured_latencies.append(structured_latency_ms)
+
+            semantic_started = time.perf_counter()
+            semantic_records = await stack.store.semantic_search(request)
+            semantic_latency_ms = (time.perf_counter() - semantic_started) * 1000
+            semantic_chunks = format_records_as_chunks(semantic_records)
+            semantic_case_score = score_case(golden, semantic_chunks)
+            semantic_latencies.append(semantic_latency_ms)
+
+            production_started = time.perf_counter()
+            production_chunks = await retriever.retrieve(
+                case.query,
+                top_k=top_k,
+                doc_ids=(case.doc_id,),
+            )
+            production_latency_ms = (time.perf_counter() - production_started) * 1000
+            production_case_score = score_case(golden, production_chunks)
+            production_latencies.append(production_latency_ms)
+
+            if not parsed.is_structured_lookup:
+                retrieval_path = "semantic"
+            elif structured_chunks:
+                retrieval_path = "structured"
+            else:
+                retrieval_path = "structured_fallback_semantic"
+
+            production_scores.append(
+                StructuredCaseScore(
+                    case_id=production_case_score.case_id,
+                    query_type=production_case_score.query_type,
+                    hit_at_1=production_case_score.hit_at_1,
+                    hit_at_3=production_case_score.hit_at_3,
+                    hit_at_5=production_case_score.hit_at_5,
+                    reciprocal_rank=production_case_score.reciprocal_rank,
+                    best_rank=production_case_score.best_rank,
+                    best_score=production_case_score.best_score,
+                    content_match_ratio=production_case_score.content_match_ratio,
+                    matched_terms=production_case_score.matched_terms,
+                    returned_sources=production_case_score.returned_sources,
+                    retrieval_path=retrieval_path,
+                    routing_correct=routing_correct,
+                    structured_route=parsed.is_structured_lookup,
+                    structured_hit_at_1=structured_case_score.hit_at_1,
+                    structured_latency_ms=structured_latency_ms,
+                    semantic_latency_ms=(
+                        None if retrieval_path == "structured" else semantic_latency_ms
+                    ),
+                )
+            )
+            structured_scores.append(structured_case_score)
+            semantic_scores.append(semantic_case_score)
+
+        provider = base_settings.embedding_provider
+        model = base_settings.embedding_model
+        collection = stack.collection_name
+        return [
+            aggregate_scores(
+                provider=provider,
+                model=model,
+                collection_name=collection,
+                scores=production_scores,
+                latency_ms=tuple(production_latencies),
+                target_id="path:production",
+                label="Production retrieve()",
+                comparison_axis="structured_lookup",
+                metadata={"path": "production"},
+            ),
+            aggregate_scores(
+                provider=provider,
+                model=model,
+                collection_name=collection,
+                scores=structured_scores,
+                latency_ms=tuple(structured_latencies),
+                target_id="path:structured_only",
+                label="Structured lookup only",
+                comparison_axis="structured_lookup",
+                metadata={"path": "structured_only"},
+            ),
+            aggregate_scores(
+                provider=provider,
+                model=model,
+                collection_name=collection,
+                scores=semantic_scores,
+                latency_ms=tuple(semantic_latencies),
+                target_id="path:semantic_only",
+                label="Semantic search only",
+                comparison_axis="structured_lookup",
+                metadata={"path": "semantic_only"},
+            ),
+        ]
+    finally:
+        await close_qdrant_client(stack.qdrant_client)
