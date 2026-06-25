@@ -131,3 +131,31 @@ def test_parse_chapter_two_wording() -> None:
 
     assert parsed.chapter_number == 12
     assert parsed.is_structured_lookup is True
+
+
+def test_parse_section_number() -> None:
+    parsed = parse_retrieval_query("summarize section 2.7 on eigendecomposition")
+
+    assert parsed.section_number == "2.7"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_figure_number() -> None:
+    parsed = parse_retrieval_query("what does figure 2.1 show")
+
+    assert parsed.figure_number == "2.1"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_equation_number() -> None:
+    parsed = parse_retrieval_query("show equation 2.5")
+
+    assert parsed.equation_number == "2.5"
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_dotted_example_number() -> None:
+    parsed = parse_retrieval_query("explain example 2.12 on PCA")
+
+    assert parsed.example_number == "2.12"
+    assert parsed.is_structured_lookup is True

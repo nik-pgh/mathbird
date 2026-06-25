@@ -50,9 +50,13 @@ class ParsedBlock:
     image_refs: tuple[str, ...] = ()
     bbox: tuple[float, float, float, float] | None = None
     section_title: str = ""
+    section_number: str = ""
     chapter_number: int = 0
+    printed_page_number: int = 0
     exercise_number: str = ""
     example_number: str = ""
+    figure_number: str = ""
+    equation_number: str = ""
     neighboring_block_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -73,11 +77,20 @@ class ParsedBlock:
         label = filename
         if self.chapter_number:
             label += f", chapter {self.chapter_number}"
-        label += f", page {self.page_number}"
+        if self.printed_page_number and self.printed_page_number != self.page_number:
+            label += f", page {self.printed_page_number}"
+        else:
+            label += f", page {self.page_number}"
         if self.exercise_number:
             label += f", problem {self.exercise_number}"
         elif self.example_number:
             label += f", example {self.example_number}"
+        elif self.figure_number:
+            label += f", figure {self.figure_number}"
+        elif self.equation_number:
+            label += f", equation {self.equation_number}"
+        elif self.section_number:
+            label += f", section {self.section_number}"
         elif self.section_title:
             label += f", {self.section_title}"
         return label
@@ -87,6 +100,7 @@ class ParsedBlock:
 class ParsedPage:
     page_number: int
     text: str
+    printed_page_number: int = 0
     blocks: tuple[ParsedBlock, ...] = ()
 
     def __post_init__(self) -> None:
@@ -114,8 +128,11 @@ class RetrievalRequest:
     doc_ids: tuple[str, ...] = ()
     page_number: int | None = None
     chapter_number: int | None = None
+    section_number: str = ""
     exercise_number: str = ""
     example_number: str = ""
+    figure_number: str = ""
+    equation_number: str = ""
     student_context: Mapping[str, Any] = field(default_factory=_empty_mapping)
     requested_modalities: tuple[str, ...] = ("text",)
 
@@ -136,8 +153,12 @@ class RetrievedRecord:
     block_type: BlockType = "unknown"
     exercise_number: str = ""
     example_number: str = ""
+    figure_number: str = ""
+    equation_number: str = ""
+    section_number: str = ""
     section_title: str = ""
     chapter_number: int = 0
+    printed_page_number: int = 0
     visual_refs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -148,11 +169,20 @@ class RetrievedRecord:
         label = self.filename
         if self.chapter_number:
             label += f", chapter {self.chapter_number}"
-        label += f", page {self.page_number}"
+        if self.printed_page_number and self.printed_page_number != self.page_number:
+            label += f", page {self.printed_page_number}"
+        else:
+            label += f", page {self.page_number}"
         if self.exercise_number:
             label += f", problem {self.exercise_number}"
         elif self.example_number:
             label += f", example {self.example_number}"
+        elif self.figure_number:
+            label += f", figure {self.figure_number}"
+        elif self.equation_number:
+            label += f", equation {self.equation_number}"
+        elif self.section_number:
+            label += f", section {self.section_number}"
         elif self.section_title:
             label += f", {self.section_title}"
         return label

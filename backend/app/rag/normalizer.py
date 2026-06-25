@@ -8,15 +8,22 @@ from urllib.parse import unquote, urlparse
 
 from app.rag.chapter import parse_chapter_number
 from app.rag.parsing import BlockType, ParsedBlock, ParsedDocument, ParsedPage
+from app.rag.reference_ids import (
+    EXAMPLE_RE,
+    EXERCISE_LABEL_RE,
+    EXERCISE_LIST_RE,
+    extract_equation_number,
+    extract_example_number,
+    extract_exercise_number,
+    extract_figure_number,
+    parse_section_number,
+)
 
+EQUATION_RE = re.compile(r"(\$\$.*?\$\$|\$.*?\$|\\\(|\\\[|\\begin\{equation\})", re.S)
 EXERCISE_RE = re.compile(
-    r"\b(?:problem|exercise|question)\s+([A-Za-z]?\d+[A-Za-z]?)\b"
-    r"|(?:^|\n)\s*\(([A-Za-z]?\d+[A-Za-z]?)\)\s+"
-    r"|(?:^|\n)\s*([A-Za-z]?\d+[A-Za-z]?)[.)]\s+",
+    rf"{EXERCISE_LABEL_RE.pattern}|{EXERCISE_LIST_RE.pattern}",
     re.I,
 )
-EXAMPLE_RE = re.compile(r"\bexample\s+([A-Za-z]?\d+[A-Za-z]?)\b", re.I)
-EQUATION_RE = re.compile(r"(\$\$.*?\$\$|\$.*?\$|\\\(|\\\[|\\begin\{equation\})", re.S)
 
 
 def _get(obj: Any, key: str, default: Any = None) -> Any:
@@ -40,6 +47,25 @@ def _page_number(page: Any, fallback: int) -> int:
     return int(value)
 
 
+def _printed_page_number(page: Any, *, pdf_page_number: int) -> int:
+    for key in (
+        "printed_page_number",
+        "printed_page",
+        "printedPageNumber",
+        "page_label",
+        "pageLabel",
+    ):
+        value = _get(page, key, None)
+        if value is None:
+            continue
+        if isinstance(value, int | float):
+            return int(value)
+        digits = re.search(r"\d+", str(value))
+        if digits:
+            return int(digits.group())
+    return pdf_page_number
+
+
 def _pages_payload(payload: Any) -> Any:
     items = _get(payload, "items", None)
     pages = _get(items, "pages", None) if items is not None else None
@@ -58,31 +84,21 @@ def _classify_item(item: Any, text: str, markdown: str) -> BlockType:
     item_type = str(_get(item, "type", "") or "").lower()
     haystack = f"{text}\n{markdown}"
 
+    if EXAMPLE_RE.search(haystack):
+        return "example"
+    if EXERCISE_RE.search(haystack):
+        return "exercise"
     if item_type == "heading":
         return "heading"
     if item_type in {"image", "figure"}:
         return "image"
     if item_type == "table":
         return "table"
-    if EXAMPLE_RE.search(haystack):
-        return "example"
-    if EXERCISE_RE.search(haystack):
-        return "exercise"
     if EQUATION_RE.search(haystack):
         return "equation"
     if item_type == "text":
         return "paragraph"
     return "unknown"
-
-
-def _exercise_number(text: str, markdown: str) -> str:
-    match = EXERCISE_RE.search(f"{text}\n{markdown}")
-    return next((group for group in match.groups() if group), "") if match else ""
-
-
-def _example_number(text: str, markdown: str) -> str:
-    match = EXAMPLE_RE.search(f"{text}\n{markdown}")
-    return match.group(1) if match else ""
 
 
 def _stable_ref_name(value: Any) -> str:
@@ -140,14 +156,32 @@ def _bbox(item: Any) -> tuple[float, float, float, float] | None:
     return tuple(float(value) for value in values)
 
 
+def _block_reference_ids(text: str, markdown: str, *, block_type: BlockType) -> dict[str, str]:
+    haystack = f"{text}\n{markdown}"
+    return {
+        "exercise_number": extract_exercise_number(
+            haystack,
+            allow_list_style=block_type == "exercise",
+        ),
+        "example_number": extract_example_number(haystack),
+        "figure_number": extract_figure_number(haystack),
+        "equation_number": extract_equation_number(haystack),
+    }
+
+
 def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> ParsedDocument:
     pages_payload = _pages_payload(payload)
     pages: list[ParsedPage] = []
     current_section = ""
+    current_section_number = ""
     current_chapter = 0
 
     for page_index, page_payload in enumerate(pages_payload, start=1):
         page_number = _page_number(page_payload, page_index)
+        printed_page_number = _printed_page_number(
+            page_payload,
+            pdf_page_number=page_number,
+        )
         raw_items = _get(page_payload, "items", []) or []
         page_image_names = _page_image_names(page_payload)
         page_image_index = 0
@@ -160,12 +194,19 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
                 continue
 
             block_type = _classify_item(item, text, markdown)
+            heading_text = text or markdown.lstrip("#").strip()
             if block_type == "heading":
-                current_section = text or markdown.lstrip("#").strip()
+                current_section = heading_text
 
             detected_chapter = parse_chapter_number(f"{text}\n{markdown}")
             if detected_chapter is not None:
                 current_chapter = detected_chapter
+
+            reference_ids = _block_reference_ids(text, markdown, block_type=block_type)
+            section_from_text = parse_section_number(f"{text}\n{markdown}")
+            section_number = section_from_text or current_section_number
+            if section_from_text:
+                current_section_number = section_from_text
 
             block_id = f"{doc_id}:p{page_number}:b{len(blocks)}"
             previous_block_id = blocks[-1].block_id if blocks else ""
@@ -186,13 +227,13 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
                     image_refs=_image_refs(item, doc_id, page_image_name),
                     bbox=_bbox(item),
                     section_title=current_section,
+                    section_number=section_number,
                     chapter_number=current_chapter,
-                    exercise_number=(
-                        _exercise_number(text, markdown) if block_type == "exercise" else ""
-                    ),
-                    example_number=(
-                        _example_number(text, markdown) if block_type == "example" else ""
-                    ),
+                    printed_page_number=printed_page_number,
+                    exercise_number=reference_ids["exercise_number"],
+                    example_number=reference_ids["example_number"],
+                    figure_number=reference_ids["figure_number"],
+                    equation_number=reference_ids["equation_number"],
                     neighboring_block_ids=neighboring_block_ids,
                 )
             )
@@ -200,6 +241,7 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
         pages.append(
             ParsedPage(
                 page_number=page_number,
+                printed_page_number=printed_page_number,
                 text="\n\n".join(block.text for block in blocks),
                 blocks=blocks,
             )

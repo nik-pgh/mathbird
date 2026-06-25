@@ -697,3 +697,81 @@ def test_parsed_block_source_label_includes_chapter_number() -> None:
         "deep_learning_ch2.pdf, chapter 2, page 8"
     )
     assert record.source == "deep_learning_ch2.pdf, chapter 2, page 8"
+
+
+def test_normalize_llamaparse_items_extracts_textbook_reference_metadata() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 3,
+                "printed_page_number": 33,
+                "items": [
+                    {
+                        "type": "heading",
+                        "value": "2.1 Scalars, Vectors, Matrices and Tensors",
+                        "md": "## 2.1 Scalars, Vectors, Matrices and Tensors",
+                    },
+                    {
+                        "type": "text",
+                        "value": "Figure 2.1 illustrates the transpose of a matrix.",
+                        "md": "Figure 2.1 illustrates the transpose of a matrix.",
+                    },
+                    {
+                        "type": "text",
+                        "value": "",
+                        "md": "The matrix product entries are given in (2.5).",
+                    },
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(
+        payload,
+        doc_id="goodfellow-ch2",
+        filename="deep_learning_ian_goodfellow_chapter_2.pdf",
+    )
+
+    heading, figure_paragraph, equation_paragraph = doc.pages[0].blocks
+    assert doc.pages[0].printed_page_number == 33
+    assert heading.section_number == "2.1"
+    assert figure_paragraph.section_number == "2.1"
+    assert figure_paragraph.figure_number == "2.1"
+    assert figure_paragraph.block_type == "paragraph"
+    assert equation_paragraph.equation_number == "2.5"
+
+
+def test_normalize_llamaparse_items_extracts_section_style_example_number() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 18,
+                "printed_page_number": 48,
+                "items": [
+                    {
+                        "type": "heading",
+                        "value": "2.12 Example: Principal Components Analysis",
+                        "md": "## 2.12 Example: Principal Components Analysis",
+                    },
+                    {
+                        "type": "text",
+                        "value": "PCA finds an orthogonal basis.",
+                        "md": "PCA finds an orthogonal basis.",
+                    },
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(
+        payload,
+        doc_id="goodfellow-ch2",
+        filename="deep_learning_ian_goodfellow_chapter_2.pdf",
+    )
+
+    heading, body = doc.pages[0].blocks
+    assert heading.block_type == "example"
+    assert heading.example_number == "2.12"
+    assert heading.section_number == "2.12"
+    assert body.section_number == "2.12"
+    assert body.printed_page_number == 48

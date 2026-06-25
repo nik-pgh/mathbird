@@ -45,9 +45,13 @@ VALID_BLOCK_TYPES: frozenset[str] = frozenset(
 )
 QDRANT_PAYLOAD_INDEXES: tuple[tuple[str, str], ...] = (
     ("page_number", "integer"),
+    ("printed_page_number", "integer"),
     ("chapter_number", "integer"),
+    ("section_number", "keyword"),
     ("exercise_number", "keyword"),
     ("example_number", "keyword"),
+    ("figure_number", "keyword"),
+    ("equation_number", "keyword"),
     ("textbook_doc_id", "keyword"),
 )
 
@@ -79,6 +83,12 @@ def _annotate_retrieved_documents(span: Any, records: list[RetrievedRecord]) -> 
             span.set_attribute(f"{meta}.exercise_number", rec.exercise_number)
         if rec.example_number:
             span.set_attribute(f"{meta}.example_number", rec.example_number)
+        if rec.section_number:
+            span.set_attribute(f"{meta}.section_number", rec.section_number)
+        if rec.figure_number:
+            span.set_attribute(f"{meta}.figure_number", rec.figure_number)
+        if rec.equation_number:
+            span.set_attribute(f"{meta}.equation_number", rec.equation_number)
         if rec.section_title:
             span.set_attribute(f"{meta}.section_title", rec.section_title)
         if rec.chapter_number:
@@ -92,6 +102,32 @@ def _block_type_from_metadata(value: Any) -> BlockType:
     if block_type not in VALID_BLOCK_TYPES:
         return "unknown"
     return cast(BlockType, block_type)
+
+
+def _record_from_metadata(
+    metadata: dict[str, Any],
+    *,
+    text: str,
+    score: float | None,
+) -> RetrievedRecord:
+    return RetrievedRecord(
+        text=str(text),
+        filename=str(metadata.get("filename", "document.pdf")),
+        page_number=int(metadata.get("page_number", 0) or 0),
+        printed_page_number=int(metadata.get("printed_page_number", 0) or 0),
+        score=score,
+        doc_id=str(metadata.get("textbook_doc_id") or metadata.get("doc_id", "")),
+        block_id=str(metadata.get("block_id", "")),
+        block_type=_block_type_from_metadata(metadata.get("block_type", "unknown")),
+        exercise_number=str(metadata.get("exercise_number", "")),
+        example_number=str(metadata.get("example_number", "")),
+        figure_number=str(metadata.get("figure_number", "")),
+        equation_number=str(metadata.get("equation_number", "")),
+        section_number=str(metadata.get("section_number", "")),
+        section_title=str(metadata.get("section_title", "")),
+        chapter_number=int(metadata.get("chapter_number", 0) or 0),
+        visual_refs=tuple(metadata.get("visual_refs", []) or []),
+    )
 
 
 @dataclass(frozen=True)
@@ -194,8 +230,11 @@ class LlamaIndexQdrantRetriever:
             doc_ids=doc_ids,
             page_number=parsed.page_number,
             chapter_number=parsed.chapter_number,
+            section_number=parsed.section_number,
             exercise_number=parsed.exercise_number,
             example_number=parsed.example_number,
+            figure_number=parsed.figure_number,
+            equation_number=parsed.equation_number,
         )
 
         if parsed.is_structured_lookup:
@@ -251,6 +290,12 @@ class QdrantTextbookStore:
                 span.set_attribute("filter.exercise_number", request.exercise_number)
             if request.example_number:
                 span.set_attribute("filter.example_number", request.example_number)
+            if request.section_number:
+                span.set_attribute("filter.section_number", request.section_number)
+            if request.figure_number:
+                span.set_attribute("filter.figure_number", request.figure_number)
+            if request.equation_number:
+                span.set_attribute("filter.equation_number", request.equation_number)
             if request.doc_ids:
                 span.set_attribute("filter.doc_ids", list(request.doc_ids))
 
@@ -265,10 +310,19 @@ class QdrantTextbookStore:
 
         must: list[Any] = []
         if request.page_number is not None:
+            page = request.page_number
             must.append(
-                models.FieldCondition(
-                    key="page_number",
-                    match=models.MatchValue(value=request.page_number),
+                models.Filter(
+                    should=[
+                        models.FieldCondition(
+                            key="page_number",
+                            match=models.MatchValue(value=page),
+                        ),
+                        models.FieldCondition(
+                            key="printed_page_number",
+                            match=models.MatchValue(value=page),
+                        ),
+                    ]
                 )
             )
         if request.chapter_number is not None:
@@ -276,6 +330,13 @@ class QdrantTextbookStore:
                 models.FieldCondition(
                     key="chapter_number",
                     match=models.MatchValue(value=request.chapter_number),
+                )
+            )
+        if request.section_number:
+            must.append(
+                models.FieldCondition(
+                    key="section_number",
+                    match=models.MatchValue(value=request.section_number),
                 )
             )
         if request.exercise_number:
@@ -290,6 +351,20 @@ class QdrantTextbookStore:
                 models.FieldCondition(
                     key="example_number",
                     match=models.MatchValue(value=request.example_number),
+                )
+            )
+        if request.figure_number:
+            must.append(
+                models.FieldCondition(
+                    key="figure_number",
+                    match=models.MatchValue(value=request.figure_number),
+                )
+            )
+        if request.equation_number:
+            must.append(
+                models.FieldCondition(
+                    key="equation_number",
+                    match=models.MatchValue(value=request.equation_number),
                 )
             )
         if request.doc_ids:
@@ -342,19 +417,10 @@ class QdrantTextbookStore:
             node = node_with_score.node
             metadata = dict(node.metadata or {})
             records.append(
-                RetrievedRecord(
+                _record_from_metadata(
+                    metadata,
                     text=node.get_content(),
-                    filename=str(metadata.get("filename", "document.pdf")),
-                    page_number=int(metadata.get("page_number", 0) or 0),
                     score=node_with_score.score,
-                    doc_id=str(metadata.get("textbook_doc_id") or metadata.get("doc_id", "")),
-                    block_id=str(metadata.get("block_id", "")),
-                    block_type=_block_type_from_metadata(metadata.get("block_type", "unknown")),
-                    exercise_number=str(metadata.get("exercise_number", "")),
-                    example_number=str(metadata.get("example_number", "")),
-                    section_title=str(metadata.get("section_title", "")),
-                    chapter_number=int(metadata.get("chapter_number", 0) or 0),
-                    visual_refs=tuple(metadata.get("visual_refs", []) or []),
                 )
             )
         return records
@@ -368,20 +434,7 @@ class QdrantTextbookStore:
         else:
             metadata = payload.get("metadata", payload)
             text = payload.get("text") or payload.get("document", "")
-        return RetrievedRecord(
-            text=str(text),
-            filename=str(metadata.get("filename", "document.pdf")),
-            page_number=int(metadata.get("page_number", 0) or 0),
-            score=score,
-            doc_id=str(metadata.get("textbook_doc_id") or metadata.get("doc_id", "")),
-            block_id=str(metadata.get("block_id", "")),
-            block_type=_block_type_from_metadata(metadata.get("block_type", "unknown")),
-            exercise_number=str(metadata.get("exercise_number", "")),
-            example_number=str(metadata.get("example_number", "")),
-            section_title=str(metadata.get("section_title", "")),
-            chapter_number=int(metadata.get("chapter_number", 0) or 0),
-            visual_refs=tuple(metadata.get("visual_refs", []) or []),
-        )
+        return _record_from_metadata(metadata, text=str(text), score=score)
 
     def _node_from_payload(self, payload: dict[str, Any]) -> Any | None:
         if not payload.get("_node_content"):

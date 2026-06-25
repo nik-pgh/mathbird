@@ -103,6 +103,9 @@ async def _run_retriever(query: str, doc_id: str | None) -> None:
     print(f"  chapter_number={parsed.chapter_number!r}")
     print(f"  exercise_number={parsed.exercise_number!r}")
     print(f"  example_number={parsed.example_number!r}")
+    print(f"  section_number={parsed.section_number!r}")
+    print(f"  figure_number={parsed.figure_number!r}")
+    print(f"  equation_number={parsed.equation_number!r}")
     print(f"  is_structured_lookup={parsed.is_structured_lookup}")
 
     doc_ids = (doc_id,) if doc_id else ()
@@ -113,8 +116,11 @@ async def _run_retriever(query: str, doc_id: str | None) -> None:
         doc_ids=doc_ids,
         page_number=parsed.page_number,
         chapter_number=parsed.chapter_number,
+        section_number=parsed.section_number,
         exercise_number=parsed.exercise_number,
         example_number=parsed.example_number,
+        figure_number=parsed.figure_number,
+        equation_number=parsed.equation_number,
     )
 
     store = getattr(retriever, "store", None)

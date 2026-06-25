@@ -9,11 +9,13 @@ def test_parsed_document_to_nodes_preserves_metadata() -> None:
         pages=[
             ParsedPage(
                 page_number=37,
+                printed_page_number=37,
                 text="",
                 blocks=[
                     ParsedBlock(
                         block_id="doc-1:p37:b0",
                         page_number=37,
+                        printed_page_number=37,
                         block_type="example",
                         text="Example 8. Solve 2x + 3 = 9.",
                         markdown="Example 8. Solve 2x + 3 = 9.",
@@ -37,6 +39,7 @@ def test_parsed_document_to_nodes_preserves_metadata() -> None:
     assert nodes[0].metadata["block_type"] == "example"
     assert nodes[0].metadata["example_number"] == "8"
     assert nodes[0].metadata["chapter_number"] == 2
+    assert nodes[0].metadata["printed_page_number"] == 37
     assert nodes[0].metadata["neighboring_block_ids"] == ["doc-1:p37:b-1"]
 
 

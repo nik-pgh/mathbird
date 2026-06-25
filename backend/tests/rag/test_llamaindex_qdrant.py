@@ -356,7 +356,12 @@ async def test_structured_lookup_uses_top_level_qdrant_filter_keys() -> None:
     )
 
     filter_conditions = qdrant_client.scroll_calls[0]["scroll_filter"].must
-    assert [condition.key for condition in filter_conditions] == ["page_number", "exercise_number"]
+    page_filter = filter_conditions[0]
+    assert {condition.key for condition in page_filter.should} == {
+        "page_number",
+        "printed_page_number",
+    }
+    assert filter_conditions[1].key == "exercise_number"
 
 
 @pytest.mark.asyncio
@@ -382,9 +387,13 @@ async def test_structured_lookup_creates_required_qdrant_payload_indexes() -> No
         for call in qdrant_client.create_payload_index_calls
     ] == [
         ("page_number", "integer"),
+        ("printed_page_number", "integer"),
         ("chapter_number", "integer"),
+        ("section_number", "keyword"),
         ("exercise_number", "keyword"),
         ("example_number", "keyword"),
+        ("figure_number", "keyword"),
+        ("equation_number", "keyword"),
         ("textbook_doc_id", "keyword"),
     ]
 
@@ -460,7 +469,12 @@ async def test_structured_lookup_filters_by_example_number() -> None:
     )
 
     filter_conditions = qdrant_client.scroll_calls[0]["scroll_filter"].must
-    assert [condition.key for condition in filter_conditions] == ["page_number", "example_number"]
+    page_filter = filter_conditions[0]
+    assert {condition.key for condition in page_filter.should} == {
+        "page_number",
+        "printed_page_number",
+    }
+    assert filter_conditions[1].key == "example_number"
     assert records[0].source == "book.pdf, page 20, example 3"
 
 
@@ -485,12 +499,14 @@ async def test_structured_lookup_filters_by_textbook_doc_id() -> None:
     )
 
     filter_conditions = qdrant_client.scroll_calls[0]["scroll_filter"].must
-    assert [condition.key for condition in filter_conditions] == [
+    page_filter = filter_conditions[0]
+    assert {condition.key for condition in page_filter.should} == {
         "page_number",
-        "exercise_number",
-        "textbook_doc_id",
-    ]
-    assert filter_conditions[-1].match.value == "textbook-doc"
+        "printed_page_number",
+    }
+    assert filter_conditions[1].key == "exercise_number"
+    assert filter_conditions[2].key == "textbook_doc_id"
+    assert filter_conditions[2].match.value == "textbook-doc"
 
 
 @pytest.mark.asyncio
@@ -515,6 +531,99 @@ async def test_structured_lookup_decodes_node_content_and_original_metadata() ->
     assert not records[0].text.startswith("{")
     assert records[0].doc_id == "textbook-doc"
     assert records[0].block_type == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_filters_by_section_number() -> None:
+    document = ParsedDocument(
+        doc_id="textbook-doc",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=12,
+                printed_page_number=42,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="textbook-doc:p12:b0",
+                        page_number=12,
+                        printed_page_number=42,
+                        block_type="paragraph",
+                        text="An eigenvector is a nonzero vector v.",
+                        section_number="2.7",
+                        section_title="2.7 Eigendecomposition",
+                        chapter_number=2,
+                    )
+                ],
+            )
+        ],
+    )
+    node = parsed_document_to_nodes(document)[0]
+    payload = node_to_metadata_dict(node, remove_text=False, flat_metadata=False)
+    point = SimpleNamespace(payload=payload)
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=[point]),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        request=RetrievalRequest(
+            query="section 2.7",
+            top_k=4,
+            section_number="2.7",
+        )
+    )
+
+    filter_conditions = store.qdrant_client.scroll_calls[0]["scroll_filter"].must
+    assert filter_conditions[0].key == "section_number"
+    assert records[0].section_number == "2.7"
+    assert records[0].source == "deep_learning_ch2.pdf, chapter 2, page 42, section 2.7"
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_matches_printed_page_number() -> None:
+    document = ParsedDocument(
+        doc_id="textbook-doc",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=14,
+                printed_page_number=44,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="textbook-doc:p14:b0",
+                        page_number=14,
+                        printed_page_number=44,
+                        block_type="paragraph",
+                        text="A real symmetric matrix has an eigendecomposition.",
+                        chapter_number=2,
+                    )
+                ],
+            )
+        ],
+    )
+    node = parsed_document_to_nodes(document)[0]
+    payload = node_to_metadata_dict(node, remove_text=False, flat_metadata=False)
+    point = SimpleNamespace(payload=payload)
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=[point]),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        request=RetrievalRequest(
+            query="page 44",
+            top_k=4,
+            page_number=44,
+        )
+    )
+
+    assert len(records) == 1
+    assert records[0].printed_page_number == 44
+    assert records[0].source == "deep_learning_ch2.pdf, chapter 2, page 44"
 
 
 @pytest.mark.asyncio
