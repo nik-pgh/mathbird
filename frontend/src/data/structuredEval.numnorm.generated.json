@@ -1,0 +1,4852 @@
+{
+  "schema_version": 2,
+  "comparison_axis": "structured_lookup",
+  "created_at": "20260626T205703Z",
+  "golden_path": "evals/golden/goodfellow_ch2_structured.jsonl",
+  "top_k": 5,
+  "targets": [
+    {
+      "target_id": "path:production",
+      "label": "Production retrieve()",
+      "comparison_axis": "structured_lookup",
+      "metadata": {
+        "path": "production"
+      },
+      "provider": "google",
+      "model": "gemini-embedding-001",
+      "collection_name": "mathbird_chunk_math_object_window_google_gemini_embedding_001",
+      "case_count": 40,
+      "metrics": {
+        "hit_at_1": 0.65,
+        "hit_at_3": 0.825,
+        "hit_at_5": 0.875,
+        "mrr": 0.7416666666666666,
+        "avg_content_match": 0.7833333333333334,
+        "avg_latency_ms": 302.3651000992686
+      },
+      "cases": [
+        {
+          "case_id": "goodfellow-ch2-s001",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "theoretical tool",
+            "limited precision"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 2185.589542001253,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "page 37",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "must_contain": [
+              "theoretical tool",
+              "limited precision"
+            ]
+          },
+          "golden_answer": "Page 37 discusses why explicit matrix inverses are mainly theoretical and often avoided in software because of limited numerical precision."
+        },
+        {
+          "case_id": "goodfellow-ch2-s002",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "real symmetric matrix",
+            "eigendecomposition"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 149.59066698793322,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "page 44",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "must_contain": [
+              "real symmetric matrix",
+              "eigendecomposition"
+            ]
+          },
+          "golden_answer": "Page 44 covers the eigendecomposition of real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s003",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "theoretical tool"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 147.82266700058244,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "page seven",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "must_contain": [
+              "theoretical tool"
+            ]
+          },
+          "golden_answer": "Page 37 discusses treating explicit inverses as a theoretical tool."
+        },
+        {
+          "case_id": "goodfellow-ch2-s004",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "eigenvector",
+            "eigenvalue"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 153.6411659908481,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.7",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              12,
+              13,
+              14
+            ],
+            "printed_pages": [
+              42,
+              43,
+              44
+            ],
+            "must_contain": [
+              "eigenvector",
+              "eigenvalue"
+            ]
+          },
+          "golden_answer": "Section 2.7 defines eigenvectors, eigenvalues, and eigendecomposition."
+        },
+        {
+          "case_id": "goodfellow-ch2-s005",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.6666666666666666,
+          "matched_terms": [
+            "scalar",
+            "vector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 155.75841697864234,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.1",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              1,
+              2,
+              3
+            ],
+            "printed_pages": [
+              31,
+              32,
+              33
+            ],
+            "must_contain": [
+              "scalar",
+              "vector",
+              "tensor"
+            ]
+          },
+          "golden_answer": "Section 2.1 introduces scalars, vectors, matrices, and tensors."
+        },
+        {
+          "case_id": "goodfellow-ch2-s006",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.1",
+            "transpose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 189.21091701486148,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "figure 2.1",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              3
+            ],
+            "printed_pages": [
+              33
+            ],
+            "must_contain": [
+              "Figure 2.1",
+              "transpose"
+            ]
+          },
+          "golden_answer": "Figure 2.1 illustrates matrix transposition across the main diagonal."
+        },
+        {
+          "case_id": "goodfellow-ch2-s007",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.2",
+            "identity matrix"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 151.12545900046825,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "fig 2.2",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              6
+            ],
+            "printed_pages": [
+              36
+            ],
+            "must_contain": [
+              "Figure 2.2",
+              "identity matrix"
+            ]
+          },
+          "golden_answer": "Figure 2.2 shows the 3x3 identity matrix."
+        },
+        {
+          "case_id": "goodfellow-ch2-s008",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "C_{i,j}",
+            "sum"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 153.2162499788683,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.5",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "must_contain": [
+              "C_{i,j}",
+              "sum"
+            ]
+          },
+          "golden_answer": "Equation 2.5 gives the summation formula for matrix product entries."
+        },
+        {
+          "case_id": "goodfellow-ch2-s009",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.72700024,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "eigenvector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.36"
+          ],
+          "retrieval_path": "structured_fallback_semantic",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 149.05129099497572,
+          "semantic_latency_ms": 619.9190830229782,
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.39",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              12
+            ],
+            "printed_pages": [
+              42
+            ],
+            "must_contain": [
+              "eigenvector",
+              "lambda v"
+            ]
+          },
+          "golden_answer": "Equation 2.39 defines eigenvectors via Av = lambda v."
+        },
+        {
+          "case_id": "goodfellow-ch2-s010",
+          "query_type": "structured_example",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "PCA"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, example 2.12"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 160.95074999611825,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "example 2.12",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              18,
+              19,
+              20
+            ],
+            "printed_pages": [
+              48,
+              49,
+              50
+            ],
+            "must_contain": [
+              "PCA",
+              "D^T x"
+            ]
+          },
+          "golden_answer": "Example 2.12 walks through principal components analysis and efficient encoding with D^T x."
+        },
+        {
+          "case_id": "goodfellow-ch2-s011",
+          "query_type": "structured_chapter",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "scalar"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 315.05158299114555,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "chapter 2",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "must_contain": [
+              "scalar"
+            ]
+          },
+          "golden_answer": "Chapter 2 covers linear algebra for deep learning."
+        },
+        {
+          "case_id": "goodfellow-ch2-s012",
+          "query_type": "structured_mixed",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "symmetric",
+            "eigenvector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 166.5092920011375,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "help me with page 44 on symmetric eigendecomposition",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "must_contain": [
+              "symmetric",
+              "eigenvector"
+            ]
+          },
+          "golden_answer": "Page 44 explains eigendecomposition for real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s013",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7628592,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "singular value decomposition"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43"
+          ],
+          "retrieval_path": "structured_fallback_semantic",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 149.31695800623856,
+          "semantic_latency_ms": 569.0487090032548,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.8 singular value decomposition",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              14,
+              15
+            ],
+            "printed_pages": [
+              44,
+              45
+            ],
+            "must_contain": [
+              "singular value decomposition",
+              "U D V"
+            ]
+          },
+          "golden_answer": "Section 2.8 introduces singular value decomposition."
+        },
+        {
+          "case_id": "goodfellow-ch2-s014",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.3",
+            "unit circle"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 148.0608330166433,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "figure 2.3",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              13,
+              14
+            ],
+            "printed_pages": [
+              43,
+              44
+            ],
+            "must_contain": [
+              "Figure 2.3",
+              "unit circle"
+            ]
+          },
+          "golden_answer": "Figure 2.3 shows how eigenvalues scale the unit circle."
+        },
+        {
+          "case_id": "goodfellow-ch2-s015",
+          "query_type": "semantic_only",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7526016,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "broadcasting",
+            "each row"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1"
+          ],
+          "retrieval_path": "semantic",
+          "routing_correct": true,
+          "structured_route": false,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 0.006249989382922649,
+          "semantic_latency_ms": 572.9008330090437,
+          "doc_id": "goodfellow-ch2",
+          "query": "what is broadcasting when adding a vector to a matrix",
+          "expects_structured_route": false,
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "must_contain": [
+              "broadcasting",
+              "each row"
+            ]
+          },
+          "golden_answer": "Broadcasting adds a vector to each row of a matrix without explicit copying."
+        },
+        {
+          "case_id": "goodfellow-ch2-s016",
+          "query_type": "negative_routing",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.63",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.64",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+          ],
+          "retrieval_path": "semantic",
+          "routing_correct": true,
+          "structured_route": false,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 0.00029199873097240925,
+          "semantic_latency_ms": 544.510417006677,
+          "doc_id": "goodfellow-ch2",
+          "query": "help with the second problem",
+          "expects_structured_route": false,
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "must_contain": [
+              "matrix"
+            ]
+          },
+          "golden_answer": "This query should not route to structured lookup."
+        },
+        {
+          "case_id": "goodfellow-ch2-s017",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "scalar",
+            "linear algebra"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1"
+          ],
+          "retrieval_path": "structured_fallback_semantic",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 150.9535419754684,
+          "semantic_latency_ms": 573.2839160191361,
+          "doc_id": "goodfellow-ch2",
+          "query": "page 31",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "must_contain": [
+              "scalar",
+              "linear algebra"
+            ]
+          },
+          "golden_answer": "Printed page 31 introduces chapter 2 and the scalar definition in section 2.1."
+        },
+        {
+          "case_id": "goodfellow-ch2-s018",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "vector",
+            "subscript"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 168.48970801220275,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "page 32",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              2
+            ],
+            "printed_pages": [
+              32
+            ],
+            "must_contain": [
+              "vector",
+              "subscript"
+            ]
+          },
+          "golden_answer": "Printed page 32 defines vectors and how elements are indexed with subscripts."
+        },
+        {
+          "case_id": "goodfellow-ch2-s019",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "broadcasting"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 151.54829100356437,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "page 34",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "must_contain": [
+              "broadcasting",
+              "matrix product"
+            ]
+          },
+          "golden_answer": "Printed page 34 covers broadcasting notation and the definition of matrix products."
+        },
+        {
+          "case_id": "goodfellow-ch2-s020",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "L^p",
+            "norm"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 149.90645801299252,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "pg. 39",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              9
+            ],
+            "printed_pages": [
+              39
+            ],
+            "must_contain": [
+              "L^p",
+              "norm"
+            ]
+          },
+          "golden_answer": "Printed page 39 introduces the Lp norm and norm axioms."
+        },
+        {
+          "case_id": "goodfellow-ch2-s021",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "L^1"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 150.0688339874614,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "p. 40",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              10
+            ],
+            "printed_pages": [
+              40
+            ],
+            "must_contain": [
+              "Frobenius",
+              "L^1"
+            ]
+          },
+          "golden_answer": "Printed page 40 discusses the Frobenius norm and L1 norm properties."
+        },
+        {
+          "case_id": "goodfellow-ch2-s022",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.3333333333333333,
+          "best_rank": 3,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "eigenvector",
+            "eigenvalue"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 150.31929200631566,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "page 42",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              12
+            ],
+            "printed_pages": [
+              42
+            ],
+            "must_contain": [
+              "eigenvector",
+              "eigenvalue"
+            ]
+          },
+          "golden_answer": "Printed page 42 defines eigenvectors, eigenvalues, and equation 2.39."
+        },
+        {
+          "case_id": "goodfellow-ch2-s023",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "max norm"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 151.18054201593623,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "page forty",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              10
+            ],
+            "printed_pages": [
+              40
+            ],
+            "must_contain": [
+              "max norm",
+              "Frobenius"
+            ]
+          },
+          "golden_answer": "Printed page 40 covers max norm and Frobenius norm material."
+        },
+        {
+          "case_id": "goodfellow-ch2-s024",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "matrix product",
+            "columns",
+            "rows"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 156.08729200903326,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.2",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              4,
+              5,
+              6
+            ],
+            "printed_pages": [
+              34,
+              35,
+              36
+            ],
+            "must_contain": [
+              "matrix product",
+              "columns",
+              "rows"
+            ]
+          },
+          "golden_answer": "Section 2.2 defines matrix-vector and matrix-matrix multiplication."
+        },
+        {
+          "case_id": "goodfellow-ch2-s025",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "identity matrix",
+            "inverse"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 148.113832983654,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.3",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              6,
+              7
+            ],
+            "printed_pages": [
+              36,
+              37
+            ],
+            "must_contain": [
+              "identity matrix",
+              "inverse"
+            ]
+          },
+          "golden_answer": "Section 2.3 introduces identity matrices and matrix inverses."
+        },
+        {
+          "case_id": "goodfellow-ch2-s026",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "span"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 153.72295799897984,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.4",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              7,
+              8,
+              9
+            ],
+            "printed_pages": [
+              37,
+              38,
+              39
+            ],
+            "must_contain": [
+              "span",
+              "linearly independent"
+            ]
+          },
+          "golden_answer": "Section 2.4 covers linear dependence, span, and inverse existence conditions."
+        },
+        {
+          "case_id": "goodfellow-ch2-s027",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "norm",
+            "L^2"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 154.3867500149645,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.5",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              9,
+              10
+            ],
+            "printed_pages": [
+              39,
+              40
+            ],
+            "must_contain": [
+              "norm",
+              "L^2"
+            ]
+          },
+          "golden_answer": "Section 2.5 defines vector and matrix norms including L2 and Frobenius norms."
+        },
+        {
+          "case_id": "goodfellow-ch2-s028",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.3333333333333333,
+          "best_rank": 3,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "symmetric"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 151.2112090131268,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.6",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              11,
+              12
+            ],
+            "printed_pages": [
+              41,
+              42
+            ],
+            "must_contain": [
+              "orthogonal",
+              "symmetric"
+            ]
+          },
+          "golden_answer": "Section 2.6 describes orthogonal, symmetric, and diagonal matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s029",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "pseudoinverse",
+            "Moore-Penrose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 153.42391698504798,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.9",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              16
+            ],
+            "printed_pages": [
+              46
+            ],
+            "must_contain": [
+              "pseudoinverse",
+              "Moore-Penrose"
+            ]
+          },
+          "golden_answer": "Section 2.9 defines the Moore-Penrose pseudoinverse."
+        },
+        {
+          "case_id": "goodfellow-ch2-s030",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "determinant",
+            "eigenvalues"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.11"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 151.88449999550357,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.11",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              17
+            ],
+            "printed_pages": [
+              47
+            ],
+            "must_contain": [
+              "determinant",
+              "eigenvalues"
+            ]
+          },
+          "golden_answer": "Section 2.11 relates determinants to eigenvalues and volume scaling."
+        },
+        {
+          "case_id": "goodfellow-ch2-s031",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.6666666666666666,
+          "matched_terms": [
+            "b",
+            "solution"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 150.97529100603424,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.11",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              5,
+              6
+            ],
+            "printed_pages": [
+              35,
+              36
+            ],
+            "must_contain": [
+              "Ax",
+              "b",
+              "solution"
+            ]
+          },
+          "golden_answer": "Equation 2.11 expresses the matrix equation Ax = b as a system of linear equations."
+        },
+        {
+          "case_id": "goodfellow-ch2-s032",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7265007,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "b"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+          ],
+          "retrieval_path": "structured_fallback_semantic",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 153.64933299133554,
+          "semantic_latency_ms": 500.4909170093015,
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.25",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "must_contain": [
+              "A^{-1}",
+              "b"
+            ]
+          },
+          "golden_answer": "Equation 2.25 gives x = A^{-1} b for solving linear systems with an inverse."
+        },
+        {
+          "case_id": "goodfellow-ch2-s033",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 148.374792013783,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.30",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              9
+            ],
+            "printed_pages": [
+              39
+            ],
+            "must_contain": [
+              "L^p",
+              "sum"
+            ]
+          },
+          "golden_answer": "Equation 2.30 defines the Lp norm as a sum of absolute values raised to p."
+        },
+        {
+          "case_id": "goodfellow-ch2-s034",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7246693,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Q",
+            "Lambda",
+            "symmetric"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.56",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+          ],
+          "retrieval_path": "structured_fallback_semantic",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 149.779082974419,
+          "semantic_latency_ms": 557.2563339956105,
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.41",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "must_contain": [
+              "Q",
+              "Lambda",
+              "symmetric"
+            ]
+          },
+          "golden_answer": "Equation 2.41 writes A = Q Lambda Q^T for real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s035",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7318903,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "transpose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4"
+          ],
+          "retrieval_path": "structured_fallback_semantic",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 149.68691597459838,
+          "semantic_latency_ms": 621.8002499954309,
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.3",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              3
+            ],
+            "printed_pages": [
+              33
+            ],
+            "must_contain": [
+              "transpose",
+              "A^T"
+            ]
+          },
+          "golden_answer": "Equation 2.3 states the transpose entry relation (A^T)_{i,j} = A_{j,i}."
+        },
+        {
+          "case_id": "goodfellow-ch2-s036",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7172322,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "linear combination",
+            "columns"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.56",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+          ],
+          "retrieval_path": "structured_fallback_semantic",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 149.46000001509674,
+          "semantic_latency_ms": 548.4548749809619,
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.27",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              7,
+              8
+            ],
+            "printed_pages": [
+              37,
+              38
+            ],
+            "must_contain": [
+              "linear combination",
+              "columns"
+            ]
+          },
+          "golden_answer": "Equation 2.27 expresses Ax as a linear combination of the columns of A."
+        },
+        {
+          "case_id": "goodfellow-ch2-s037",
+          "query_type": "structured_mixed",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "linearly independent",
+            "column space"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 148.6106660158839,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "what is on page 38 about linear dependence",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              8
+            ],
+            "printed_pages": [
+              38
+            ],
+            "must_contain": [
+              "linearly independent",
+              "column space"
+            ]
+          },
+          "golden_answer": "Printed page 38 explains linear dependence and when Ax = b has solutions."
+        },
+        {
+          "case_id": "goodfellow-ch2-s038",
+          "query_type": "structured_mixed",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "trace",
+            "Tr"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 148.31895899260417,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.10 trace operator",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              17
+            ],
+            "printed_pages": [
+              47
+            ],
+            "must_contain": [
+              "trace",
+              "Tr"
+            ]
+          },
+          "golden_answer": "Section 2.10 introduces the trace operator and its useful identities."
+        },
+        {
+          "case_id": "goodfellow-ch2-s039",
+          "query_type": "structured_chapter",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+          ],
+          "retrieval_path": "structured",
+          "routing_correct": true,
+          "structured_route": true,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 297.4239579925779,
+          "semantic_latency_ms": null,
+          "doc_id": "goodfellow-ch2",
+          "query": "chapter two",
+          "expects_structured_route": true,
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "must_contain": [
+              "Linear Algebra"
+            ]
+          },
+          "golden_answer": "Chapter 2 covers linear algebra for deep learning."
+        },
+        {
+          "case_id": "goodfellow-ch2-s040",
+          "query_type": "semantic_only",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.6931839,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "positive semidefinite",
+            "eigenvalues"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, section 2.6"
+          ],
+          "retrieval_path": "semantic",
+          "routing_correct": true,
+          "structured_route": false,
+          "structured_hit_at_1": false,
+          "structured_latency_ms": 0.0040000013541430235,
+          "semantic_latency_ms": 562.9092919989489,
+          "doc_id": "goodfellow-ch2",
+          "query": "what is positive semidefinite matrix",
+          "expects_structured_route": false,
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "must_contain": [
+              "positive semidefinite",
+              "eigenvalues"
+            ]
+          },
+          "golden_answer": "A positive semidefinite matrix has eigenvalues that are positive or zero and satisfies x^T A x >= 0 for all x."
+        }
+      ]
+    },
+    {
+      "target_id": "path:structured_only",
+      "label": "Structured lookup only",
+      "comparison_axis": "structured_lookup",
+      "metadata": {
+        "path": "structured_only"
+      },
+      "provider": "google",
+      "model": "gemini-embedding-001",
+      "collection_name": "mathbird_chunk_math_object_window_google_gemini_embedding_001",
+      "case_count": 40,
+      "metrics": {
+        "hit_at_1": 0.45,
+        "hit_at_3": 0.625,
+        "hit_at_5": 0.675,
+        "mrr": 0.5416666666666667,
+        "avg_content_match": 0.6083333333333334,
+        "avg_latency_ms": 200.3120614484942
+      },
+      "cases": [
+        {
+          "case_id": "goodfellow-ch2-s001",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "theoretical tool",
+            "limited precision"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 37",
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "theoretical tool",
+              "limited precision"
+            ]
+          },
+          "golden_answer": "Page 37 discusses why explicit matrix inverses are mainly theoretical and often avoided in software because of limited numerical precision."
+        },
+        {
+          "case_id": "goodfellow-ch2-s002",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "real symmetric matrix",
+            "eigendecomposition"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 44",
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "real symmetric matrix",
+              "eigendecomposition"
+            ]
+          },
+          "golden_answer": "Page 44 covers the eigendecomposition of real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s003",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "theoretical tool"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page seven",
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "theoretical tool"
+            ]
+          },
+          "golden_answer": "Page 37 discusses treating explicit inverses as a theoretical tool."
+        },
+        {
+          "case_id": "goodfellow-ch2-s004",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "eigenvector",
+            "eigenvalue"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.7",
+          "expected": {
+            "pages": [
+              12,
+              13,
+              14
+            ],
+            "printed_pages": [
+              42,
+              43,
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "eigenvector",
+              "eigenvalue"
+            ]
+          },
+          "golden_answer": "Section 2.7 defines eigenvectors, eigenvalues, and eigendecomposition."
+        },
+        {
+          "case_id": "goodfellow-ch2-s005",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.6666666666666666,
+          "matched_terms": [
+            "scalar",
+            "vector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.1",
+          "expected": {
+            "pages": [
+              1,
+              2,
+              3
+            ],
+            "printed_pages": [
+              31,
+              32,
+              33
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "scalar",
+              "vector",
+              "tensor"
+            ]
+          },
+          "golden_answer": "Section 2.1 introduces scalars, vectors, matrices, and tensors."
+        },
+        {
+          "case_id": "goodfellow-ch2-s006",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.1",
+            "transpose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "figure 2.1",
+          "expected": {
+            "pages": [
+              3
+            ],
+            "printed_pages": [
+              33
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Figure 2.1",
+              "transpose"
+            ]
+          },
+          "golden_answer": "Figure 2.1 illustrates matrix transposition across the main diagonal."
+        },
+        {
+          "case_id": "goodfellow-ch2-s007",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.2",
+            "identity matrix"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "fig 2.2",
+          "expected": {
+            "pages": [
+              6
+            ],
+            "printed_pages": [
+              36
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Figure 2.2",
+              "identity matrix"
+            ]
+          },
+          "golden_answer": "Figure 2.2 shows the 3x3 identity matrix."
+        },
+        {
+          "case_id": "goodfellow-ch2-s008",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "C_{i,j}",
+            "sum"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.5",
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "C_{i,j}",
+              "sum"
+            ]
+          },
+          "golden_answer": "Equation 2.5 gives the summation formula for matrix product entries."
+        },
+        {
+          "case_id": "goodfellow-ch2-s009",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.39",
+          "expected": {
+            "pages": [
+              12
+            ],
+            "printed_pages": [
+              42
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "eigenvector",
+              "lambda v"
+            ]
+          },
+          "golden_answer": "Equation 2.39 defines eigenvectors via Av = lambda v."
+        },
+        {
+          "case_id": "goodfellow-ch2-s010",
+          "query_type": "structured_example",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "PCA"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, example 2.12"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "example 2.12",
+          "expected": {
+            "pages": [
+              18,
+              19,
+              20
+            ],
+            "printed_pages": [
+              48,
+              49,
+              50
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "PCA",
+              "D^T x"
+            ]
+          },
+          "golden_answer": "Example 2.12 walks through principal components analysis and efficient encoding with D^T x."
+        },
+        {
+          "case_id": "goodfellow-ch2-s011",
+          "query_type": "structured_chapter",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "scalar"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "chapter 2",
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "scalar"
+            ]
+          },
+          "golden_answer": "Chapter 2 covers linear algebra for deep learning."
+        },
+        {
+          "case_id": "goodfellow-ch2-s012",
+          "query_type": "structured_mixed",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "symmetric",
+            "eigenvector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "help me with page 44 on symmetric eigendecomposition",
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "symmetric",
+              "eigenvector"
+            ]
+          },
+          "golden_answer": "Page 44 explains eigendecomposition for real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s013",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.8 singular value decomposition",
+          "expected": {
+            "pages": [
+              14,
+              15
+            ],
+            "printed_pages": [
+              44,
+              45
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "singular value decomposition",
+              "U D V"
+            ]
+          },
+          "golden_answer": "Section 2.8 introduces singular value decomposition."
+        },
+        {
+          "case_id": "goodfellow-ch2-s014",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.3",
+            "unit circle"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "figure 2.3",
+          "expected": {
+            "pages": [
+              13,
+              14
+            ],
+            "printed_pages": [
+              43,
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Figure 2.3",
+              "unit circle"
+            ]
+          },
+          "golden_answer": "Figure 2.3 shows how eigenvalues scale the unit circle."
+        },
+        {
+          "case_id": "goodfellow-ch2-s015",
+          "query_type": "semantic_only",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "what is broadcasting when adding a vector to a matrix",
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "broadcasting",
+              "each row"
+            ]
+          },
+          "golden_answer": "Broadcasting adds a vector to each row of a matrix without explicit copying."
+        },
+        {
+          "case_id": "goodfellow-ch2-s016",
+          "query_type": "negative_routing",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "help with the second problem",
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "matrix"
+            ]
+          },
+          "golden_answer": "This query should not route to structured lookup."
+        },
+        {
+          "case_id": "goodfellow-ch2-s017",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 31",
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "scalar",
+              "linear algebra"
+            ]
+          },
+          "golden_answer": "Printed page 31 introduces chapter 2 and the scalar definition in section 2.1."
+        },
+        {
+          "case_id": "goodfellow-ch2-s018",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "vector",
+            "subscript"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 32",
+          "expected": {
+            "pages": [
+              2
+            ],
+            "printed_pages": [
+              32
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "vector",
+              "subscript"
+            ]
+          },
+          "golden_answer": "Printed page 32 defines vectors and how elements are indexed with subscripts."
+        },
+        {
+          "case_id": "goodfellow-ch2-s019",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "broadcasting"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 34",
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "broadcasting",
+              "matrix product"
+            ]
+          },
+          "golden_answer": "Printed page 34 covers broadcasting notation and the definition of matrix products."
+        },
+        {
+          "case_id": "goodfellow-ch2-s020",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "L^p",
+            "norm"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "pg. 39",
+          "expected": {
+            "pages": [
+              9
+            ],
+            "printed_pages": [
+              39
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "L^p",
+              "norm"
+            ]
+          },
+          "golden_answer": "Printed page 39 introduces the Lp norm and norm axioms."
+        },
+        {
+          "case_id": "goodfellow-ch2-s021",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "L^1"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "p. 40",
+          "expected": {
+            "pages": [
+              10
+            ],
+            "printed_pages": [
+              40
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Frobenius",
+              "L^1"
+            ]
+          },
+          "golden_answer": "Printed page 40 discusses the Frobenius norm and L1 norm properties."
+        },
+        {
+          "case_id": "goodfellow-ch2-s022",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.3333333333333333,
+          "best_rank": 3,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "eigenvector",
+            "eigenvalue"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 42",
+          "expected": {
+            "pages": [
+              12
+            ],
+            "printed_pages": [
+              42
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "eigenvector",
+              "eigenvalue"
+            ]
+          },
+          "golden_answer": "Printed page 42 defines eigenvectors, eigenvalues, and equation 2.39."
+        },
+        {
+          "case_id": "goodfellow-ch2-s023",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "max norm"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page forty",
+          "expected": {
+            "pages": [
+              10
+            ],
+            "printed_pages": [
+              40
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "max norm",
+              "Frobenius"
+            ]
+          },
+          "golden_answer": "Printed page 40 covers max norm and Frobenius norm material."
+        },
+        {
+          "case_id": "goodfellow-ch2-s024",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "matrix product",
+            "columns",
+            "rows"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.2",
+          "expected": {
+            "pages": [
+              4,
+              5,
+              6
+            ],
+            "printed_pages": [
+              34,
+              35,
+              36
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "matrix product",
+              "columns",
+              "rows"
+            ]
+          },
+          "golden_answer": "Section 2.2 defines matrix-vector and matrix-matrix multiplication."
+        },
+        {
+          "case_id": "goodfellow-ch2-s025",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "identity matrix",
+            "inverse"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.3",
+          "expected": {
+            "pages": [
+              6,
+              7
+            ],
+            "printed_pages": [
+              36,
+              37
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "identity matrix",
+              "inverse"
+            ]
+          },
+          "golden_answer": "Section 2.3 introduces identity matrices and matrix inverses."
+        },
+        {
+          "case_id": "goodfellow-ch2-s026",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "span"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.4",
+          "expected": {
+            "pages": [
+              7,
+              8,
+              9
+            ],
+            "printed_pages": [
+              37,
+              38,
+              39
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "span",
+              "linearly independent"
+            ]
+          },
+          "golden_answer": "Section 2.4 covers linear dependence, span, and inverse existence conditions."
+        },
+        {
+          "case_id": "goodfellow-ch2-s027",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "norm",
+            "L^2"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.5",
+          "expected": {
+            "pages": [
+              9,
+              10
+            ],
+            "printed_pages": [
+              39,
+              40
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "norm",
+              "L^2"
+            ]
+          },
+          "golden_answer": "Section 2.5 defines vector and matrix norms including L2 and Frobenius norms."
+        },
+        {
+          "case_id": "goodfellow-ch2-s028",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.3333333333333333,
+          "best_rank": 3,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "symmetric"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.6",
+          "expected": {
+            "pages": [
+              11,
+              12
+            ],
+            "printed_pages": [
+              41,
+              42
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "orthogonal",
+              "symmetric"
+            ]
+          },
+          "golden_answer": "Section 2.6 describes orthogonal, symmetric, and diagonal matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s029",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "pseudoinverse",
+            "Moore-Penrose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.9",
+          "expected": {
+            "pages": [
+              16
+            ],
+            "printed_pages": [
+              46
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "pseudoinverse",
+              "Moore-Penrose"
+            ]
+          },
+          "golden_answer": "Section 2.9 defines the Moore-Penrose pseudoinverse."
+        },
+        {
+          "case_id": "goodfellow-ch2-s030",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "determinant",
+            "eigenvalues"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.11"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.11",
+          "expected": {
+            "pages": [
+              17
+            ],
+            "printed_pages": [
+              47
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "determinant",
+              "eigenvalues"
+            ]
+          },
+          "golden_answer": "Section 2.11 relates determinants to eigenvalues and volume scaling."
+        },
+        {
+          "case_id": "goodfellow-ch2-s031",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.6666666666666666,
+          "matched_terms": [
+            "b",
+            "solution"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.11",
+          "expected": {
+            "pages": [
+              5,
+              6
+            ],
+            "printed_pages": [
+              35,
+              36
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Ax",
+              "b",
+              "solution"
+            ]
+          },
+          "golden_answer": "Equation 2.11 expresses the matrix equation Ax = b as a system of linear equations."
+        },
+        {
+          "case_id": "goodfellow-ch2-s032",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.25",
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "A^{-1}",
+              "b"
+            ]
+          },
+          "golden_answer": "Equation 2.25 gives x = A^{-1} b for solving linear systems with an inverse."
+        },
+        {
+          "case_id": "goodfellow-ch2-s033",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.30",
+          "expected": {
+            "pages": [
+              9
+            ],
+            "printed_pages": [
+              39
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "L^p",
+              "sum"
+            ]
+          },
+          "golden_answer": "Equation 2.30 defines the Lp norm as a sum of absolute values raised to p."
+        },
+        {
+          "case_id": "goodfellow-ch2-s034",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.41",
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Q",
+              "Lambda",
+              "symmetric"
+            ]
+          },
+          "golden_answer": "Equation 2.41 writes A = Q Lambda Q^T for real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s035",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.3",
+          "expected": {
+            "pages": [
+              3
+            ],
+            "printed_pages": [
+              33
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "transpose",
+              "A^T"
+            ]
+          },
+          "golden_answer": "Equation 2.3 states the transpose entry relation (A^T)_{i,j} = A_{j,i}."
+        },
+        {
+          "case_id": "goodfellow-ch2-s036",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.27",
+          "expected": {
+            "pages": [
+              7,
+              8
+            ],
+            "printed_pages": [
+              37,
+              38
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "linear combination",
+              "columns"
+            ]
+          },
+          "golden_answer": "Equation 2.27 expresses Ax as a linear combination of the columns of A."
+        },
+        {
+          "case_id": "goodfellow-ch2-s037",
+          "query_type": "structured_mixed",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "linearly independent",
+            "column space"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "what is on page 38 about linear dependence",
+          "expected": {
+            "pages": [
+              8
+            ],
+            "printed_pages": [
+              38
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "linearly independent",
+              "column space"
+            ]
+          },
+          "golden_answer": "Printed page 38 explains linear dependence and when Ax = b has solutions."
+        },
+        {
+          "case_id": "goodfellow-ch2-s038",
+          "query_type": "structured_mixed",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "trace",
+            "Tr"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.10 trace operator",
+          "expected": {
+            "pages": [
+              17
+            ],
+            "printed_pages": [
+              47
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "trace",
+              "Tr"
+            ]
+          },
+          "golden_answer": "Section 2.10 introduces the trace operator and its useful identities."
+        },
+        {
+          "case_id": "goodfellow-ch2-s039",
+          "query_type": "structured_chapter",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "chapter two",
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Linear Algebra"
+            ]
+          },
+          "golden_answer": "Chapter 2 covers linear algebra for deep learning."
+        },
+        {
+          "case_id": "goodfellow-ch2-s040",
+          "query_type": "semantic_only",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [],
+          "doc_id": "goodfellow-ch2",
+          "query": "what is positive semidefinite matrix",
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "positive semidefinite",
+              "eigenvalues"
+            ]
+          },
+          "golden_answer": "A positive semidefinite matrix has eigenvalues that are positive or zero and satisfies x^T A x >= 0 for all x."
+        }
+      ]
+    },
+    {
+      "target_id": "path:semantic_only",
+      "label": "Semantic search only",
+      "comparison_axis": "structured_lookup",
+      "metadata": {
+        "path": "semantic_only"
+      },
+      "provider": "google",
+      "model": "gemini-embedding-001",
+      "collection_name": "mathbird_chunk_math_object_window_google_gemini_embedding_001",
+      "case_count": 40,
+      "metrics": {
+        "hit_at_1": 0.5,
+        "hit_at_3": 0.6,
+        "hit_at_5": 0.7,
+        "mrr": 0.5695833333333333,
+        "avg_content_match": 0.6958333333333333,
+        "avg_latency_ms": 608.8411072487361
+      },
+      "cases": [
+        {
+          "case_id": "goodfellow-ch2-s001",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 37",
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "theoretical tool",
+              "limited precision"
+            ]
+          },
+          "golden_answer": "Page 37 discusses why explicit matrix inverses are mainly theoretical and often avoided in software because of limited numerical precision."
+        },
+        {
+          "case_id": "goodfellow-ch2-s002",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 44",
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "real symmetric matrix",
+              "eigendecomposition"
+            ]
+          },
+          "golden_answer": "Page 44 covers the eigendecomposition of real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s003",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.64",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page seven",
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "theoretical tool"
+            ]
+          },
+          "golden_answer": "Page 37 discusses treating explicit inverses as a theoretical tool."
+        },
+        {
+          "case_id": "goodfellow-ch2-s004",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7099831,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "eigenvector",
+            "eigenvalue"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.7",
+          "expected": {
+            "pages": [
+              12,
+              13,
+              14
+            ],
+            "printed_pages": [
+              42,
+              43,
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "eigenvector",
+              "eigenvalue"
+            ]
+          },
+          "golden_answer": "Section 2.7 defines eigenvectors, eigenvalues, and eigendecomposition."
+        },
+        {
+          "case_id": "goodfellow-ch2-s005",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7257414,
+          "content_match_ratio": 0.6666666666666666,
+          "matched_terms": [
+            "scalar",
+            "vector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.1",
+          "expected": {
+            "pages": [
+              1,
+              2,
+              3
+            ],
+            "printed_pages": [
+              31,
+              32,
+              33
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "scalar",
+              "vector",
+              "tensor"
+            ]
+          },
+          "golden_answer": "Section 2.1 introduces scalars, vectors, matrices, and tensors."
+        },
+        {
+          "case_id": "goodfellow-ch2-s006",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7179649,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.1",
+            "transpose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "figure 2.1",
+          "expected": {
+            "pages": [
+              3
+            ],
+            "printed_pages": [
+              33
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Figure 2.1",
+              "transpose"
+            ]
+          },
+          "golden_answer": "Figure 2.1 illustrates matrix transposition across the main diagonal."
+        },
+        {
+          "case_id": "goodfellow-ch2-s007",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7240764,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.2",
+            "identity matrix"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "fig 2.2",
+          "expected": {
+            "pages": [
+              6
+            ],
+            "printed_pages": [
+              36
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Figure 2.2",
+              "identity matrix"
+            ]
+          },
+          "golden_answer": "Figure 2.2 shows the 3x3 identity matrix."
+        },
+        {
+          "case_id": "goodfellow-ch2-s008",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.75734174,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "C_{i,j}",
+            "sum"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.55"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.5",
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "C_{i,j}",
+              "sum"
+            ]
+          },
+          "golden_answer": "Equation 2.5 gives the summation formula for matrix product entries."
+        },
+        {
+          "case_id": "goodfellow-ch2-s009",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.72700024,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "eigenvector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.36"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.39",
+          "expected": {
+            "pages": [
+              12
+            ],
+            "printed_pages": [
+              42
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "eigenvector",
+              "lambda v"
+            ]
+          },
+          "golden_answer": "Equation 2.39 defines eigenvectors via Av = lambda v."
+        },
+        {
+          "case_id": "goodfellow-ch2-s010",
+          "query_type": "structured_example",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7417499,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "PCA"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, example 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.56"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "example 2.12",
+          "expected": {
+            "pages": [
+              18,
+              19,
+              20
+            ],
+            "printed_pages": [
+              48,
+              49,
+              50
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "PCA",
+              "D^T x"
+            ]
+          },
+          "golden_answer": "Example 2.12 walks through principal components analysis and efficient encoding with D^T x."
+        },
+        {
+          "case_id": "goodfellow-ch2-s011",
+          "query_type": "structured_chapter",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "scalar"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "chapter 2",
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "scalar"
+            ]
+          },
+          "golden_answer": "Chapter 2 covers linear algebra for deep learning."
+        },
+        {
+          "case_id": "goodfellow-ch2-s012",
+          "query_type": "structured_mixed",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7582038,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "symmetric",
+            "eigenvector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "help me with page 44 on symmetric eigendecomposition",
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "symmetric",
+              "eigenvector"
+            ]
+          },
+          "golden_answer": "Page 44 explains eigendecomposition for real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s013",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7628592,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "singular value decomposition"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.8 singular value decomposition",
+          "expected": {
+            "pages": [
+              14,
+              15
+            ],
+            "printed_pages": [
+              44,
+              45
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "singular value decomposition",
+              "U D V"
+            ]
+          },
+          "golden_answer": "Section 2.8 introduces singular value decomposition."
+        },
+        {
+          "case_id": "goodfellow-ch2-s014",
+          "query_type": "structured_figure",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.71956587,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Figure 2.3",
+            "unit circle"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "figure 2.3",
+          "expected": {
+            "pages": [
+              13,
+              14
+            ],
+            "printed_pages": [
+              43,
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Figure 2.3",
+              "unit circle"
+            ]
+          },
+          "golden_answer": "Figure 2.3 shows how eigenvalues scale the unit circle."
+        },
+        {
+          "case_id": "goodfellow-ch2-s015",
+          "query_type": "semantic_only",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7526016,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "broadcasting",
+            "each row"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "what is broadcasting when adding a vector to a matrix",
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "broadcasting",
+              "each row"
+            ]
+          },
+          "golden_answer": "Broadcasting adds a vector to each row of a matrix without explicit copying."
+        },
+        {
+          "case_id": "goodfellow-ch2-s016",
+          "query_type": "negative_routing",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.63",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.64",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "help with the second problem",
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "matrix"
+            ]
+          },
+          "golden_answer": "This query should not route to structured lookup."
+        },
+        {
+          "case_id": "goodfellow-ch2-s017",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "scalar",
+            "linear algebra"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 31",
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "scalar",
+              "linear algebra"
+            ]
+          },
+          "golden_answer": "Printed page 31 introduces chapter 2 and the scalar definition in section 2.1."
+        },
+        {
+          "case_id": "goodfellow-ch2-s018",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
+          "best_score": 0.64874554,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "vector",
+            "subscript"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.33"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 32",
+          "expected": {
+            "pages": [
+              2
+            ],
+            "printed_pages": [
+              32
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "vector",
+              "subscript"
+            ]
+          },
+          "golden_answer": "Printed page 32 defines vectors and how elements are indexed with subscripts."
+        },
+        {
+          "case_id": "goodfellow-ch2-s019",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
+          "best_score": 0.65086985,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "matrix product"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.34",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.34",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 34",
+          "expected": {
+            "pages": [
+              4
+            ],
+            "printed_pages": [
+              34
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "broadcasting",
+              "matrix product"
+            ]
+          },
+          "golden_answer": "Printed page 34 covers broadcasting notation and the definition of matrix products."
+        },
+        {
+          "case_id": "goodfellow-ch2-s020",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.6652181,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "L^p",
+            "norm"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "pg. 39",
+          "expected": {
+            "pages": [
+              9
+            ],
+            "printed_pages": [
+              39
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "L^p",
+              "norm"
+            ]
+          },
+          "golden_answer": "Printed page 39 introduces the Lp norm and norm axioms."
+        },
+        {
+          "case_id": "goodfellow-ch2-s021",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "p. 40",
+          "expected": {
+            "pages": [
+              10
+            ],
+            "printed_pages": [
+              40
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Frobenius",
+              "L^1"
+            ]
+          },
+          "golden_answer": "Printed page 40 discusses the Frobenius norm and L1 norm properties."
+        },
+        {
+          "case_id": "goodfellow-ch2-s022",
+          "query_type": "structured_page",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.6486788,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "eigenvector",
+            "eigenvalue"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page 42",
+          "expected": {
+            "pages": [
+              12
+            ],
+            "printed_pages": [
+              42
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "eigenvector",
+              "eigenvalue"
+            ]
+          },
+          "golden_answer": "Printed page 42 defines eigenvectors, eigenvalues, and equation 2.39."
+        },
+        {
+          "case_id": "goodfellow-ch2-s023",
+          "query_type": "structured_page",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.2,
+          "best_rank": 5,
+          "best_score": 0.626547,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "max norm",
+            "Frobenius"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.64",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, section 4.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "page forty",
+          "expected": {
+            "pages": [
+              10
+            ],
+            "printed_pages": [
+              40
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "max norm",
+              "Frobenius"
+            ]
+          },
+          "golden_answer": "Printed page 40 covers max norm and Frobenius norm material."
+        },
+        {
+          "case_id": "goodfellow-ch2-s024",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.2",
+          "expected": {
+            "pages": [
+              4,
+              5,
+              6
+            ],
+            "printed_pages": [
+              34,
+              35,
+              36
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "matrix product",
+              "columns",
+              "rows"
+            ]
+          },
+          "golden_answer": "Section 2.2 defines matrix-vector and matrix-matrix multiplication."
+        },
+        {
+          "case_id": "goodfellow-ch2-s025",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
+          "best_score": 0.6986061,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "identity matrix",
+            "inverse"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.3",
+          "expected": {
+            "pages": [
+              6,
+              7
+            ],
+            "printed_pages": [
+              36,
+              37
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "identity matrix",
+              "inverse"
+            ]
+          },
+          "golden_answer": "Section 2.3 introduces identity matrices and matrix inverses."
+        },
+        {
+          "case_id": "goodfellow-ch2-s026",
+          "query_type": "structured_section",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.6886973,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "span",
+            "linearly independent"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.4",
+          "expected": {
+            "pages": [
+              7,
+              8,
+              9
+            ],
+            "printed_pages": [
+              37,
+              38,
+              39
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "span",
+              "linearly independent"
+            ]
+          },
+          "golden_answer": "Section 2.4 covers linear dependence, span, and inverse existence conditions."
+        },
+        {
+          "case_id": "goodfellow-ch2-s027",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 0.698714,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "norm"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.5",
+          "expected": {
+            "pages": [
+              9,
+              10
+            ],
+            "printed_pages": [
+              39,
+              40
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "norm",
+              "L^2"
+            ]
+          },
+          "golden_answer": "Section 2.5 defines vector and matrix norms including L2 and Frobenius norms."
+        },
+        {
+          "case_id": "goodfellow-ch2-s028",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.6",
+          "expected": {
+            "pages": [
+              11,
+              12
+            ],
+            "printed_pages": [
+              41,
+              42
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "orthogonal",
+              "symmetric"
+            ]
+          },
+          "golden_answer": "Section 2.6 describes orthogonal, symmetric, and diagonal matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s029",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.3333333333333333,
+          "best_rank": 3,
+          "best_score": 0.7004802,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "pseudoinverse",
+            "Moore-Penrose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.59"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.9",
+          "expected": {
+            "pages": [
+              16
+            ],
+            "printed_pages": [
+              46
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "pseudoinverse",
+              "Moore-Penrose"
+            ]
+          },
+          "golden_answer": "Section 2.9 defines the Moore-Penrose pseudoinverse."
+        },
+        {
+          "case_id": "goodfellow-ch2-s030",
+          "query_type": "structured_section",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.11",
+          "expected": {
+            "pages": [
+              17
+            ],
+            "printed_pages": [
+              47
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "determinant",
+              "eigenvalues"
+            ]
+          },
+          "golden_answer": "Section 2.11 relates determinants to eigenvalues and volume scaling."
+        },
+        {
+          "case_id": "goodfellow-ch2-s031",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.6666666666666666,
+          "matched_terms": [
+            "b",
+            "solution"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.56",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, section 2.12"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.11",
+          "expected": {
+            "pages": [
+              5,
+              6
+            ],
+            "printed_pages": [
+              35,
+              36
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Ax",
+              "b",
+              "solution"
+            ]
+          },
+          "golden_answer": "Equation 2.11 expresses the matrix equation Ax = b as a system of linear equations."
+        },
+        {
+          "case_id": "goodfellow-ch2-s032",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7265007,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "b"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.25",
+          "expected": {
+            "pages": [
+              7
+            ],
+            "printed_pages": [
+              37
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "A^{-1}",
+              "b"
+            ]
+          },
+          "golden_answer": "Equation 2.25 gives x = A^{-1} b for solving linear systems with an inverse."
+        },
+        {
+          "case_id": "goodfellow-ch2-s033",
+          "query_type": "structured_equation",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 0.7344179,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "L^p",
+            "sum"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.56"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.30",
+          "expected": {
+            "pages": [
+              9
+            ],
+            "printed_pages": [
+              39
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "L^p",
+              "sum"
+            ]
+          },
+          "golden_answer": "Equation 2.30 defines the Lp norm as a sum of absolute values raised to p."
+        },
+        {
+          "case_id": "goodfellow-ch2-s034",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7246693,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Q",
+            "Lambda",
+            "symmetric"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.56",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.41",
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Q",
+              "Lambda",
+              "symmetric"
+            ]
+          },
+          "golden_answer": "Equation 2.41 writes A = Q Lambda Q^T for real symmetric matrices."
+        },
+        {
+          "case_id": "goodfellow-ch2-s035",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7318903,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "transpose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "equation 2.3",
+          "expected": {
+            "pages": [
+              3
+            ],
+            "printed_pages": [
+              33
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "transpose",
+              "A^T"
+            ]
+          },
+          "golden_answer": "Equation 2.3 states the transpose entry relation (A^T)_{i,j} = A_{j,i}."
+        },
+        {
+          "case_id": "goodfellow-ch2-s036",
+          "query_type": "structured_equation",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7172322,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "linear combination",
+            "columns"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.56",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "eq 2.27",
+          "expected": {
+            "pages": [
+              7,
+              8
+            ],
+            "printed_pages": [
+              37,
+              38
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "linear combination",
+              "columns"
+            ]
+          },
+          "golden_answer": "Equation 2.27 expresses Ax as a linear combination of the columns of A."
+        },
+        {
+          "case_id": "goodfellow-ch2-s037",
+          "query_type": "structured_mixed",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.7611051,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "linearly independent",
+            "column space"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "what is on page 38 about linear dependence",
+          "expected": {
+            "pages": [
+              8
+            ],
+            "printed_pages": [
+              38
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "linearly independent",
+              "column space"
+            ]
+          },
+          "golden_answer": "Printed page 38 explains linear dependence and when Ax = b has solutions."
+        },
+        {
+          "case_id": "goodfellow-ch2-s038",
+          "query_type": "structured_mixed",
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
+          "best_score": 0.7567625,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "trace",
+            "Tr"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "section 2.10 trace operator",
+          "expected": {
+            "pages": [
+              17
+            ],
+            "printed_pages": [
+              47
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "trace",
+              "Tr"
+            ]
+          },
+          "golden_answer": "Section 2.10 introduces the trace operator and its useful identities."
+        },
+        {
+          "case_id": "goodfellow-ch2-s039",
+          "query_type": "structured_chapter",
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Linear Algebra"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "chapter two",
+          "expected": {
+            "pages": [
+              1
+            ],
+            "printed_pages": [
+              31
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "Linear Algebra"
+            ]
+          },
+          "golden_answer": "Chapter 2 covers linear algebra for deep learning."
+        },
+        {
+          "case_id": "goodfellow-ch2-s040",
+          "query_type": "semantic_only",
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.6931839,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "positive semidefinite",
+            "eigenvalues"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, section 2.6"
+          ],
+          "doc_id": "goodfellow-ch2",
+          "query": "what is positive semidefinite matrix",
+          "expected": {
+            "pages": [
+              14
+            ],
+            "printed_pages": [
+              44
+            ],
+            "section_titles": [],
+            "block_types": [],
+            "must_contain": [
+              "positive semidefinite",
+              "eigenvalues"
+            ]
+          },
+          "golden_answer": "A positive semidefinite matrix has eigenvalues that are positive or zero and satisfies x^T A x >= 0 for all x."
+        }
+      ]
+    }
+  ],
+  "failures": []
+}
