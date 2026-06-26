@@ -15,6 +15,7 @@ class Problem(BaseModel):
     label: str
     block_id: str
     page_number: int
+    printed_page_number: int = 0
     exercise_number: str = ""
     example_number: str = ""
 

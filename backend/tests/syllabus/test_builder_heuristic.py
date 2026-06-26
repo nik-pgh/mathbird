@@ -34,6 +34,7 @@ def _sample_document() -> ParsedDocument:
                     ParsedBlock(
                         block_id="doc-1:p10:b2",
                         page_number=10,
+                        printed_page_number=44,
                         block_type="exercise",
                         text="Problem 3. Simplify 4/8.",
                         chapter_number=2,
@@ -79,4 +80,5 @@ def test_build_heuristic_syllabus_groups_chapters_concepts_and_problems() -> Non
     assert syllabus.chapters[0].concepts[0].block_ids == ("doc-1:p10:b1",)
     assert len(syllabus.chapters[0].concepts[0].problems) == 1
     assert syllabus.chapters[0].concepts[0].problems[0].exercise_number == "3"
+    assert syllabus.chapters[0].concepts[0].problems[0].printed_page_number == 44
     assert syllabus.chapters[1].concepts[0].problems[0].kind == "example"

@@ -121,6 +121,7 @@ def build_heuristic_syllabus(document: ParsedDocument) -> Syllabus:
                     label=_problem_label(block),
                     block_id=block.block_id,
                     page_number=block.page_number,
+                    printed_page_number=block.printed_page_number,
                     exercise_number=block.exercise_number,
                     example_number=block.example_number,
                 )
