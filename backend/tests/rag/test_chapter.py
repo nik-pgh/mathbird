@@ -10,6 +10,8 @@ from app.rag.chapter import parse_chapter_number
         ("Chapter2 Linear Algebra", 2),
         ("CHAPTER2.LINEARALGEBRA", 2),
         ("read ch. 5 on backprop", 5),
+        ("what does chapter two cover", 2),
+        ("open ch twelve", 12),
         ("no chapter here", None),
     ],
 )

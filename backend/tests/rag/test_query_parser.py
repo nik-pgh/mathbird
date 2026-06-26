@@ -159,3 +159,32 @@ def test_parse_dotted_example_number() -> None:
 
     assert parsed.example_number == "2.12"
     assert parsed.is_structured_lookup is True
+
+
+def test_parse_spelled_out_page_forty() -> None:
+    parsed = parse_retrieval_query("page forty")
+
+    assert parsed.page_number == 40
+    assert parsed.is_structured_lookup is True
+
+
+def test_parse_spelled_out_page_forty_two() -> None:
+    parsed = parse_retrieval_query("look at page forty-two")
+
+    assert parsed.page_number == 42
+    assert parsed.is_structured_lookup is True
+
+
+def test_concept_query_with_one_does_not_structured_route() -> None:
+    parsed = parse_retrieval_query("explain one important approach to gradients")
+
+    assert parsed.page_number is None
+    assert parsed.exercise_number == ""
+    assert parsed.is_structured_lookup is False
+
+
+def test_page_seven_on_does_not_consume_following_words() -> None:
+    parsed = parse_retrieval_query("page seven on linear algebra")
+
+    assert parsed.page_number == 7
+    assert parsed.is_structured_lookup is True
