@@ -177,6 +177,7 @@ export function buildStructuredComparisonReport(
     topK: source.report.topK,
     targets: selected.map((item) => ({
       ...item.target,
+      targetId: item.catalogId,
       label: item.shortLabel,
     })),
     failures: [],

@@ -1,4 +1,4 @@
-import { EvalCaseResult, EvalTarget, RetrievalEvalReport } from "../data/retrievalEval";
+import { EvalTarget, RetrievalEvalReport } from "../data/retrievalEval";
 
 export type MetricKey =
   | "hitAt1"
@@ -75,24 +75,14 @@ export function caseSummaries(
   const baseTarget = report.targets[0];
   if (!baseTarget) return [];
 
-  const resultsByTarget = new Map(
-    targets.map((target) => [
-      targetKey(target),
-      new Map(target.cases.map((item) => [item.caseId, item])),
-    ]),
-  );
-
   return baseTarget.cases.map((baseCase) => ({
     caseId: baseCase.caseId,
     queryType: baseCase.queryType,
     label: baseCase.label,
     results: targets.map((target) => {
-      const key = targetKey(target);
-      const result: EvalCaseResult | undefined = resultsByTarget
-        .get(key)
-        ?.get(baseCase.caseId);
+      const result = target.cases.find((item) => item.caseId === baseCase.caseId);
       return {
-        targetKey: key,
+        targetKey: targetKey(target),
         bestRank: result?.bestRank ?? null,
         hitAt1: result?.hitAt1 ?? false,
         hitAt3: result?.hitAt3 ?? false,
