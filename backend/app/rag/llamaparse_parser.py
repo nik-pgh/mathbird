@@ -84,7 +84,7 @@ class LlamaParseParser:
         return normalize_llamaparse_items(result, doc_id=doc_id, filename=filename)
 
     async def _poll_parse_result(self, client: Any, job_id: str) -> Any:
-        expand = ["items", "markdown", "images_content_metadata", "job_metadata"]
+        expand = ["items", "metadata", "markdown", "images_content_metadata", "job_metadata"]
         for poll_index in range(self.max_polls):
             result = await client.parsing.get(job_id, expand=expand)
             job = _get(result, "job", {}) or {}

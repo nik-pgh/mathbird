@@ -41,6 +41,7 @@ class FakeParsing:
         self.statuses = statuses
         self.error_message = error_message
         self.create_kwargs = {}
+        self.last_expand: list[str] | None = None
 
     async def create(self, **kwargs):
         self.create_kwargs = kwargs
@@ -53,6 +54,8 @@ class FakeParsing:
         self.calls += 1
         assert job_id == "job-123"
         assert "items" in expand
+        assert "metadata" in expand
+        self.last_expand = expand
         status_index = min(self.calls - 1, len(self.statuses) - 1)
         job = {"status": self.statuses[status_index]}
         if self.error_message:
@@ -775,3 +778,77 @@ def test_normalize_llamaparse_items_extracts_section_style_example_number() -> N
     assert heading.section_number == "2.12"
     assert body.section_number == "2.12"
     assert body.printed_page_number == 48
+
+
+def test_normalize_llamaparse_items_uses_metadata_expand_printed_pages() -> None:
+    payload = {
+        "items": {
+            "pages": [
+                {
+                    "page_number": 1,
+                    "items": [
+                        {
+                            "type": "text",
+                            "value": "Chapter 2 starts here.",
+                            "md": "Chapter 2 starts here.",
+                        }
+                    ],
+                },
+                {
+                    "page_number": 7,
+                    "items": [
+                        {
+                            "type": "text",
+                            "value": "Inverse matrices are mainly theoretical.",
+                            "md": "Inverse matrices are mainly theoretical.",
+                        }
+                    ],
+                },
+            ]
+        },
+        "metadata": {
+            "pages": [
+                {"page_number": 1, "printed_page_number": "31"},
+                {"page_number": 7, "printed_page_number": "2, 2, 2, 2, 37"},
+            ]
+        },
+    }
+
+    doc = normalize_llamaparse_items(
+        payload,
+        doc_id="goodfellow-ch2",
+        filename="deep_learning_ian_goodfellow_chapter_2.pdf",
+    )
+
+    assert doc.pages[0].printed_page_number == 31
+    assert doc.pages[0].blocks[0].printed_page_number == 31
+    assert doc.pages[1].printed_page_number == 37
+    assert doc.pages[1].blocks[0].printed_page_number == 37
+
+
+def test_normalize_llamaparse_items_prefers_metadata_over_inline_page_fields() -> None:
+    payload = {
+        "items": {
+            "pages": [
+                {
+                    "page_number": 14,
+                    "printed_page_number": 14,
+                    "items": [
+                        {
+                            "type": "text",
+                            "value": "Eigendecomposition section.",
+                            "md": "Eigendecomposition section.",
+                        }
+                    ],
+                }
+            ]
+        },
+        "metadata": {
+            "pages": [{"page_number": 14, "printed_page_number": "44"}]
+        },
+    }
+
+    doc = normalize_llamaparse_items(payload, doc_id="goodfellow-ch2", filename="book.pdf")
+
+    assert doc.pages[0].printed_page_number == 44
+    assert doc.pages[0].blocks[0].printed_page_number == 44

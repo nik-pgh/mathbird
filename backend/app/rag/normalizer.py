@@ -47,7 +47,60 @@ def _page_number(page: Any, fallback: int) -> int:
     return int(value)
 
 
-def _printed_page_number(page: Any, *, pdf_page_number: int) -> int:
+def _parse_printed_page_value(value: Any, *, pdf_page_number: int) -> int | None:
+    """Normalize LlamaParse printed-page strings such as ``31`` or ``2, 2, 2, 37``."""
+    if value is None:
+        return None
+    if isinstance(value, int | float):
+        return int(value)
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    numbers = [int(match) for match in re.findall(r"\d+", text)]
+    if not numbers:
+        return None
+    if len(numbers) == 1:
+        return numbers[0]
+
+    # When headers pollute the value (e.g. repeated chapter numbers), prefer the
+    # largest candidate that could plausibly be a book page for this PDF page.
+    plausible = [number for number in numbers if number >= pdf_page_number]
+    return max(plausible) if plausible else max(numbers)
+
+
+def _printed_page_metadata_map(payload: Any) -> dict[int, int]:
+    """Map PDF page index -> printed page from LlamaParse ``expand=metadata``."""
+    metadata = _get(payload, "metadata", None)
+    if metadata is not None and hasattr(metadata, "model_dump"):
+        metadata = metadata.model_dump()
+
+    mapping: dict[int, int] = {}
+    for entry in _get(metadata, "pages", None) or []:
+        if entry is not None and hasattr(entry, "model_dump"):
+            entry = entry.model_dump()
+        pdf_page_number = _page_number(entry, 0)
+        if pdf_page_number <= 0:
+            continue
+        parsed = _parse_printed_page_value(
+            _get(entry, "printed_page_number"),
+            pdf_page_number=pdf_page_number,
+        )
+        if parsed is not None:
+            mapping[pdf_page_number] = parsed
+    return mapping
+
+
+def _printed_page_number(
+    page: Any,
+    *,
+    pdf_page_number: int,
+    metadata_map: dict[int, int] | None = None,
+) -> int:
+    if metadata_map and pdf_page_number in metadata_map:
+        return metadata_map[pdf_page_number]
+
     for key in (
         "printed_page_number",
         "printed_page",
@@ -56,13 +109,9 @@ def _printed_page_number(page: Any, *, pdf_page_number: int) -> int:
         "pageLabel",
     ):
         value = _get(page, key, None)
-        if value is None:
-            continue
-        if isinstance(value, int | float):
-            return int(value)
-        digits = re.search(r"\d+", str(value))
-        if digits:
-            return int(digits.group())
+        parsed = _parse_printed_page_value(value, pdf_page_number=pdf_page_number)
+        if parsed is not None:
+            return parsed
     return pdf_page_number
 
 
@@ -171,6 +220,7 @@ def _block_reference_ids(text: str, markdown: str, *, block_type: BlockType) -> 
 
 def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> ParsedDocument:
     pages_payload = _pages_payload(payload)
+    printed_page_by_pdf_page = _printed_page_metadata_map(payload)
     pages: list[ParsedPage] = []
     current_section = ""
     current_section_number = ""
@@ -181,6 +231,7 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
         printed_page_number = _printed_page_number(
             page_payload,
             pdf_page_number=page_number,
+            metadata_map=printed_page_by_pdf_page,
         )
         raw_items = _get(page_payload, "items", []) or []
         page_image_names = _page_image_names(page_payload)
