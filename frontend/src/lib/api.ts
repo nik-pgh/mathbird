@@ -76,6 +76,16 @@ export async function fetchDocumentPdfBlob(docId: string): Promise<string> {
   return URL.createObjectURL(blob);
 }
 
+import type { Syllabus } from "./syllabus";
+
+export async function fetchDocumentSyllabus(docId: string): Promise<Syllabus> {
+  const res = await fetch(
+    `${API_BASE}/api/documents/${encodeURIComponent(docId)}/syllabus`,
+    fetchInit,
+  );
+  return jsonOrThrow<Syllabus>(res);
+}
+
 export async function requestToken(opts?: {
   identity?: string;
   room?: string;

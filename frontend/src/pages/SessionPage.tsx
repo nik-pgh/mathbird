@@ -8,6 +8,7 @@ import {
 } from "../lib/api";
 import { getActiveDocId } from "../lib/activeDoc";
 import SessionTopbar from "../components/session/SessionTopbar";
+import { SessionToolbarProvider } from "../components/session/SessionToolbarContext";
 import SharedReasoningWorkspace from "../components/session/SharedReasoningWorkspace";
 import "../styles/session.css";
 
@@ -77,7 +78,7 @@ export default function SessionPage() {
   }, [activeDoc]);
 
   return (
-    <>
+    <SessionToolbarProvider>
       <SessionTopbar session={{ status, label: "Session" }} />
       {conn ? (
         <LiveKitRoom
@@ -112,7 +113,7 @@ export default function SessionPage() {
       ) : (
         <SessionSkeleton error={error} onRetry={connect} />
       )}
-    </>
+    </SessionToolbarProvider>
   );
 }
 

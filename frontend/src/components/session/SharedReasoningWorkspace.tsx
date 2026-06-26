@@ -1,10 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
-import {
-  FileText,
-  FileX,
-  SquarePen,
-  StickyNote as StickyNoteIcon,
-} from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import { isDeleteShortcutKey, isEditableTarget, zoomAtPoint } from "../../lib/canvasViewport";
 import {
   pdfDockWidth,
@@ -17,7 +11,6 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
-import BoardInkToolbar from "./BoardInkToolbar";
 import CanvasViewport from "./CanvasViewport";
 import HandwritingPanel from "./HandwritingPanel";
 import PrivateBoardInkLayer from "./PrivateBoardInkLayer";
@@ -26,6 +19,8 @@ import TextbookOverlay from "./TextbookOverlay";
 import TranscriptOverlay from "./TranscriptOverlay";
 import TutorObjectLayer from "./TutorObjectLayer";
 import SessionProgressBridge from "../progress/SessionProgressBridge";
+import SessionBoardTools from "./SessionBoardTools";
+import { useRegisterSessionToolbar } from "./SessionToolbarContext";
 import VoiceComposer from "./VoiceComposer";
 import {
   initialWorkspaceState,
@@ -271,6 +266,48 @@ export default function SharedReasoningWorkspace({
     ? `Open textbook${filename ? `: ${filename}` : ""}`
     : `Close textbook${filename ? `: ${filename}` : ""}`;
 
+  const sessionToolbar = useMemo(
+    () => (
+      <SessionBoardTools
+        activeDocId={activeDocId}
+        textbookMode={textbookMode}
+        textbookToggleLabel={textbookToggleLabel}
+        onAddStudentCard={addStudentCard}
+        onAddStickyNote={addStickyNote}
+        onTextbookToggle={() =>
+          dispatch({
+            type: "set_textbook",
+            value: textbookMode === "collapsed" ? "large" : "small",
+          })
+        }
+        inkTool={state.ink.tool}
+        inkColor={state.ink.color}
+        canUndoInk={canChangeActiveInk}
+        canClearInk={canChangeActiveInk}
+        onInkToolChange={setInkTool}
+        onInkColorChange={setInkColor}
+        onInkUndo={undoActiveInk}
+        onInkClear={clearActiveInk}
+      />
+    ),
+    [
+      activeDocId,
+      addStickyNote,
+      addStudentCard,
+      canChangeActiveInk,
+      clearActiveInk,
+      setInkColor,
+      setInkTool,
+      state.ink.color,
+      state.ink.tool,
+      textbookMode,
+      textbookToggleLabel,
+      undoActiveInk,
+    ],
+  );
+
+  useRegisterSessionToolbar(sessionToolbar);
+
   const zoomFromCenter = useCallback(
     (factor: number) => {
       const board = boardRef.current;
@@ -414,45 +451,6 @@ export default function SharedReasoningWorkspace({
             } as React.CSSProperties
           }
         >
-          <div className="board-top-actions">
-            <button
-              type="button"
-              onClick={addStudentCard}
-              aria-label="Add student card"
-              title="Add student card"
-            >
-              <SquarePen size={17} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={addStickyNote}
-              aria-label="Add sticky note"
-              title="Add sticky note"
-            >
-              <StickyNoteIcon size={17} aria-hidden="true" />
-            </button>
-            {activeDocId && (
-              <button
-                type="button"
-                className={`textbook-control-button ${textbookMode !== "collapsed" ? "is-active" : ""}`.trim()}
-                onClick={() =>
-                  dispatch({
-                    type: "set_textbook",
-                    value: textbookMode === "collapsed" ? "large" : "small",
-                  })
-                }
-                aria-label={textbookToggleLabel}
-                title={textbookToggleLabel}
-                aria-pressed={textbookMode !== "collapsed"}
-              >
-                {textbookMode === "collapsed" ? (
-                  <FileText size={17} aria-hidden="true" />
-                ) : (
-                  <FileX size={17} aria-hidden="true" />
-                )}
-              </button>
-            )}
-          </div>
           {textbookMode === "overlay" && (
             <TextbookOverlay
               docId={activeDocId}
@@ -465,17 +463,7 @@ export default function SharedReasoningWorkspace({
             open={state.overlays.transcriptOpen}
             onToggle={() => dispatch({ type: "toggle_transcript" })}
           />
-          <BoardInkToolbar
-            tool={state.ink.tool}
-            color={state.ink.color}
-            canUndo={canChangeActiveInk}
-            canClear={canChangeActiveInk}
-            onToolChange={setInkTool}
-            onColorChange={setInkColor}
-            onUndo={undoActiveInk}
-            onClear={clearActiveInk}
-          />
-          <SessionProgressBridge />
+          <SessionProgressBridge activeDocId={activeDocId} />
           <CanvasViewport
             boardRef={boardRef}
             viewport={state.viewport}

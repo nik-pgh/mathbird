@@ -1,14 +1,24 @@
-import GrowthTreePanel from "./GrowthTreePanel";
+import RoadmapProgressPanel from "./RoadmapProgressPanel";
 import { ProgressSnapshotProvider } from "./ProgressSnapshotContext";
 import { useProgressChannel } from "./useProgressChannel";
+import { useSyllabus } from "./useSyllabus";
 
-/** Subscribes to session_progress and renders the growth-tree panel. */
-export default function SessionProgressBridge() {
+interface Props {
+  activeDocId: string | null;
+}
+
+/** Subscribes to session_progress and renders the syllabus roadmap panel. */
+export default function SessionProgressBridge({ activeDocId }: Props) {
   const snapshot = useProgressChannel();
+  const syllabus = useSyllabus(activeDocId);
+
+  if (!syllabus) {
+    return null;
+  }
 
   return (
     <ProgressSnapshotProvider snapshot={snapshot}>
-      <GrowthTreePanel />
+      <RoadmapProgressPanel syllabus={syllabus} />
     </ProgressSnapshotProvider>
   );
 }

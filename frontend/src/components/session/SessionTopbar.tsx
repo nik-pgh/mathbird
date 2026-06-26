@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useSessionToolbarContent } from "./SessionToolbarContext";
 
 /** Top bar shared by both routes. Pass `session` to render session-mode controls. */
 interface Props {
@@ -13,30 +14,17 @@ export default function SessionTopbar({ session }: Props) {
   const location = useLocation();
   const navigate = useNavigate();
   const onLibrary = location.pathname === "/";
+  const toolbarContent = useSessionToolbarContent();
 
-  return (
-    <header className="topbar">
-      <Link to="/" className="brand">
-        mathbird
-      </Link>
-      {!session && (
-        <nav className="topbar-nav" aria-label="Primary navigation">
-          <Link className={onLibrary ? "active" : ""} to="/">
-            Library
-          </Link>
-          <Link
-            className={location.pathname === "/evals" ? "active" : ""}
-            to="/evals"
-          >
-            Evals
-          </Link>
-        </nav>
-      )}
-      <div className="spacer" />
-
-      {session ? (
+  if (session) {
+    return (
+      <header className="topbar topbar--session">
+        <Link to="/" className="brand topbar-session-start">
+          mathbird
+        </Link>
+        <div className="topbar-session-center">{toolbarContent}</div>
         <span
-          className={`pill ${
+          className={`pill topbar-session-end ${
             session.status === "disconnected" ? "danger" : ""
           }`}
         >
@@ -44,18 +32,38 @@ export default function SessionTopbar({ session }: Props) {
           {session.status === "connecting"
             ? "Connecting…"
             : session.status === "disconnected"
-            ? "Disconnected"
-            : session.label ?? "Session"}
+              ? "Disconnected"
+              : session.label ?? "Session"}
         </span>
-      ) : (
-        <button
-          className="btn primary"
-          onClick={() => navigate("/session")}
+      </header>
+    );
+  }
+
+  return (
+    <header className="topbar">
+      <Link to="/" className="brand">
+        mathbird
+      </Link>
+      <nav className="topbar-nav" aria-label="Primary navigation">
+        <Link className={onLibrary ? "active" : ""} to="/">
+          Library
+        </Link>
+        <Link
+          className={location.pathname === "/evals" ? "active" : ""}
+          to="/evals"
         >
-          <span className="btn-label-full">Start session →</span>
-          <span className="btn-label-short">Start</span>
-        </button>
-      )}
+          Evals
+        </Link>
+      </nav>
+      <div className="spacer" />
+
+      <button
+        className="btn primary"
+        onClick={() => navigate("/session")}
+      >
+        <span className="btn-label-full">Start session →</span>
+        <span className="btn-label-short">Start</span>
+      </button>
     </header>
   );
 }
