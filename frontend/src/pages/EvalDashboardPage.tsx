@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import CaseOutcomeMatrix from "../components/evals/CaseOutcomeMatrix";
 import FailureList from "../components/evals/FailureList";
 import ModelComparisonTable from "../components/evals/ModelComparisonTable";
+import StructuredLookupReport from "../components/evals/StructuredLookupReport";
 import SessionTopbar from "../components/session/SessionTopbar";
 import {
   RetrievalEvalReport,
@@ -109,7 +110,7 @@ function reportTabLabel(tab: RetrievalEvalReportTab): string {
 }
 
 export default function EvalDashboardPage() {
-  const [activeTabId, setActiveTabId] = useState(retrievalEvalReports[0].id);
+  const [activeTabId, setActiveTabId] = useState(retrievalEvalReports[0]?.id ?? "structured");
   const activeTab = useMemo(
     () =>
       retrievalEvalReports.find((tab) => tab.id === activeTabId) ??
@@ -128,7 +129,7 @@ export default function EvalDashboardPage() {
                 type="button"
                 role="tab"
                 id={`eval-tab-${tab.id}`}
-                aria-selected={tab.id === activeTab.id}
+                aria-selected={tab.id === activeTabId}
                 aria-controls={`eval-panel-${tab.id}`}
                 className="eval-tab-button"
                 key={tab.id}
@@ -139,11 +140,15 @@ export default function EvalDashboardPage() {
             ))}
           </div>
           <div
-            id={`eval-panel-${activeTab.id}`}
+            id={`eval-panel-${activeTabId}`}
             role="tabpanel"
-            aria-labelledby={`eval-tab-${activeTab.id}`}
+            aria-labelledby={`eval-tab-${activeTabId}`}
           >
-            <ReportView report={activeTab.report} />
+            {activeTabId === "structured" ? (
+              <StructuredLookupReport />
+            ) : activeTab ? (
+              <ReportView report={activeTab.report} />
+            ) : null}
           </div>
         </section>
       </main>

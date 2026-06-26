@@ -13,20 +13,31 @@ import {
 
 interface Props {
   targets: readonly EvalTarget[];
+  heading?: string;
+  subtitle?: string;
+  targetColumnLabel?: string;
 }
 
-export default function ModelComparisonTable({ targets }: Props) {
+export default function ModelComparisonTable({
+  targets,
+  heading,
+  subtitle,
+  targetColumnLabel,
+}: Props) {
   const ranked = rankTargets(targets);
   const maxLatency = Math.max(1, ...ranked.map((target) => target.metrics.avgLatencyMs));
   const axis = ranked[0]?.comparisonAxis ?? "embedding_model";
-  const targetHeading = axis === "chunk_policy" ? "Policy" : "Target";
+  const resolvedHeading = targetColumnLabel ?? (axis === "chunk_policy" ? "Policy" : "Target");
+  const sectionTitle = heading ?? comparisonTitle(axis);
+  const sectionSubtitle =
+    subtitle ?? "Sorted by Hit@3, MRR, Hit@5, then latency.";
 
   return (
     <section className="eval-panel eval-ranking">
       <div className="eval-section-header">
         <div>
-          <h2>{comparisonTitle(axis)}</h2>
-          <p>Sorted by Hit@3, MRR, Hit@5, then latency.</p>
+          <h2>{sectionTitle}</h2>
+          <p>{sectionSubtitle}</p>
         </div>
       </div>
 
@@ -35,7 +46,7 @@ export default function ModelComparisonTable({ targets }: Props) {
           <thead>
             <tr>
               <th>Rank</th>
-              <th>{targetHeading}</th>
+              <th>{resolvedHeading}</th>
               <th>Hit@1</th>
               <th>Hit@3</th>
               <th>MRR</th>

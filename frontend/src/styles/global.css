@@ -902,6 +902,50 @@ main {
   overflow-wrap: anywhere;
 }
 
+.eval-config-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.eval-config-picker-label {
+  color: #57606a;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.eval-config-pill {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #d8dee4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #24292f;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.eval-config-pill:hover {
+  background: #f6f8fa;
+}
+
+.eval-config-pill.selected {
+  border-color: #0969da;
+  background: #dbeafe;
+  color: #0550ae;
+}
+
+.eval-config-pill:focus-visible {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+}
+
 @media (max-width: 920px) {
   .eval-hero,
   .eval-summary-grid,

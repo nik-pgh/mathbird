@@ -4,10 +4,16 @@ import { caseSummaries, targetKey, targetLabel } from "../../lib/evalMetrics";
 interface Props {
   report: RetrievalEvalReport;
   targets: readonly EvalTarget[];
+  targetHeader?: (target: EvalTarget) => string;
 }
 
-export default function CaseOutcomeMatrix({ report, targets }: Props) {
+export default function CaseOutcomeMatrix({
+  report,
+  targets,
+  targetHeader,
+}: Props) {
   const cases = caseSummaries(report, targets);
+  const headerFor = targetHeader ?? targetLabel;
 
   return (
     <section className="eval-panel eval-case-matrix">
@@ -26,7 +32,7 @@ export default function CaseOutcomeMatrix({ report, targets }: Props) {
               <th>Type</th>
               <th>Question focus</th>
               {targets.map((target) => (
-                <th key={targetKey(target)}>{targetLabel(target)}</th>
+                <th key={targetKey(target)}>{headerFor(target)}</th>
               ))}
             </tr>
           </thead>
