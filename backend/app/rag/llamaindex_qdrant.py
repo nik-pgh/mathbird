@@ -43,6 +43,37 @@ VALID_BLOCK_TYPES: frozenset[str] = frozenset(
         "unknown",
     }
 )
+# Scroll returns points in arbitrary order; fetch more than top_k and rank
+# heuristically before trimming (see ``_rank_structured_records``).
+_STRUCTURED_SCROLL_OVERSCAN = 32
+_STRUCTURED_SCROLL_MAX = 256
+
+# Lower rank = preferred for page/section structured lookups.
+_BLOCK_RANK_PAGE: dict[str, int] = {
+    "heading": 0,
+    "paragraph": 1,
+    "instruction": 2,
+    "example": 3,
+    "unknown": 4,
+    "table": 5,
+    "exercise": 6,
+    "image": 7,
+    "graph": 8,
+    "equation": 9,
+}
+_BLOCK_RANK_SECTION: dict[str, int] = {
+    "heading": 0,
+    "paragraph": 1,
+    "example": 2,
+    "instruction": 3,
+    "unknown": 4,
+    "table": 5,
+    "exercise": 6,
+    "image": 7,
+    "graph": 8,
+    "equation": 9,
+}
+
 QDRANT_PAYLOAD_INDEXES: tuple[tuple[str, str], ...] = (
     ("page_number", "integer"),
     ("printed_page_number", "integer"),
@@ -102,6 +133,61 @@ def _block_type_from_metadata(value: Any) -> BlockType:
     if block_type not in VALID_BLOCK_TYPES:
         return "unknown"
     return cast(BlockType, block_type)
+
+
+def _structured_scroll_limit(top_k: int) -> int:
+    return min(max(top_k * 8, _STRUCTURED_SCROLL_OVERSCAN), _STRUCTURED_SCROLL_MAX)
+
+
+def _effective_page(record: RetrievedRecord) -> int:
+    if record.printed_page_number:
+        return record.printed_page_number
+    return record.page_number
+
+
+def _block_index(record: RetrievedRecord) -> int:
+    block_id = record.block_id
+    if not block_id:
+        return 0
+    parts = block_id.rsplit(":b", 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        return int(parts[1])
+    return 0
+
+
+def _block_type_rank(block_type: BlockType, ranking: dict[str, int]) -> int:
+    return ranking.get(block_type, 50)
+
+
+def _structured_sort_key(record: RetrievedRecord, request: RetrievalRequest) -> tuple[int, ...]:
+    page = _effective_page(record)
+    block_idx = _block_index(record)
+
+    if request.page_number is not None:
+        return (_block_type_rank(record.block_type, _BLOCK_RANK_PAGE), page, block_idx)
+    if request.chapter_number is not None:
+        return (page, block_idx)
+    if request.section_number:
+        return (
+            page,
+            _block_type_rank(record.block_type, _BLOCK_RANK_SECTION),
+            block_idx,
+        )
+    if request.equation_number:
+        eq_rank = 0 if record.block_type == "equation" else 1
+        return (eq_rank, page, block_idx)
+    if request.figure_number:
+        visual_rank = 0 if record.block_type in ("image", "graph") else 1
+        return (visual_rank, page, block_idx)
+    return (page, block_idx)
+
+
+def _rank_structured_records(
+    records: list[RetrievedRecord],
+    request: RetrievalRequest,
+) -> list[RetrievedRecord]:
+    ranked = sorted(records, key=lambda record: _structured_sort_key(record, request))
+    return ranked[: request.top_k]
 
 
 def _record_from_metadata(
@@ -377,15 +463,17 @@ class QdrantTextbookStore:
         if not must:
             return []
 
+        scroll_limit = _structured_scroll_limit(request.top_k)
         result = await self.qdrant_client.scroll(
             collection_name=self.collection_name,
             scroll_filter=models.Filter(must=must),
-            limit=request.top_k,
+            limit=scroll_limit,
             with_payload=True,
             with_vectors=False,
         )
         points = result[0] if isinstance(result, tuple) else result
-        return [self._record_from_point(point, score=1.0) for point in points]
+        records = [self._record_from_point(point, score=1.0) for point in points]
+        return _rank_structured_records(records, request)
 
     async def semantic_search(self, request: RetrievalRequest) -> list[RetrievedRecord]:
         retriever_kwargs: dict[str, Any] = {"similarity_top_k": request.top_k}

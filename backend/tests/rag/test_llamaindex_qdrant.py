@@ -5,7 +5,11 @@ import pytest
 from llama_index.core.vector_stores.utils import node_to_metadata_dict
 
 from app.rag.indexing import parsed_document_to_nodes
-from app.rag.llamaindex_qdrant import LlamaIndexQdrantRetriever, QdrantTextbookStore
+from app.rag.llamaindex_qdrant import (
+    LlamaIndexQdrantRetriever,
+    QdrantTextbookStore,
+    _structured_scroll_limit,
+)
 from app.rag.parsing import (
     ParsedBlock,
     ParsedDocument,
@@ -624,6 +628,172 @@ async def test_structured_lookup_matches_printed_page_number() -> None:
     assert len(records) == 1
     assert records[0].printed_page_number == 44
     assert records[0].source == "deep_learning_ch2.pdf, chapter 2, page 44"
+
+
+def _points_from_page_blocks(
+    blocks: list[ParsedBlock],
+    *,
+    page_number: int = 37,
+    printed_page_number: int = 0,
+) -> list[SimpleNamespace]:
+    document = ParsedDocument(
+        doc_id="textbook-doc",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=page_number,
+                printed_page_number=printed_page_number or page_number,
+                text="",
+                blocks=blocks,
+            )
+        ],
+    )
+    nodes = parsed_document_to_nodes(document)
+    return [
+        SimpleNamespace(
+            payload=node_to_metadata_dict(node, remove_text=False, flat_metadata=False)
+        )
+        for node in nodes
+    ]
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_scroll_limit_overscans_top_k() -> None:
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=[]),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    await store.structured_lookup(
+        RetrievalRequest(query="page 37", top_k=4, page_number=37)
+    )
+
+    assert store.qdrant_client.scroll_calls[0]["limit"] == _structured_scroll_limit(4)
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_ranks_paragraph_before_equation_on_page_query() -> None:
+    points = _points_from_page_blocks(
+        [
+            ParsedBlock(
+                block_id="textbook-doc:p37:b0",
+                page_number=37,
+                printed_page_number=37,
+                block_type="equation",
+                text="A = Q \\Lambda Q^T",
+                equation_number="2.77",
+                chapter_number=2,
+            ),
+            ParsedBlock(
+                block_id="textbook-doc:p37:b1",
+                page_number=37,
+                printed_page_number=37,
+                block_type="paragraph",
+                text="An eigenvector is a nonzero vector v.",
+                chapter_number=2,
+            ),
+        ],
+        page_number=37,
+        printed_page_number=37,
+    )
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=list(reversed(points))),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        RetrievalRequest(query="page 37", top_k=2, page_number=37)
+    )
+
+    assert [record.block_type for record in records] == ["paragraph", "equation"]
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_ranks_heading_before_paragraph_on_section_query() -> None:
+    points = _points_from_page_blocks(
+        [
+            ParsedBlock(
+                block_id="textbook-doc:p12:b0",
+                page_number=12,
+                printed_page_number=42,
+                block_type="paragraph",
+                text="An eigenvector is a nonzero vector v.",
+                section_number="2.7",
+                section_title="2.7 Eigendecomposition",
+                chapter_number=2,
+            ),
+            ParsedBlock(
+                block_id="textbook-doc:p12:b1",
+                page_number=12,
+                printed_page_number=42,
+                block_type="heading",
+                text="2.7 Eigendecomposition",
+                section_number="2.7",
+                section_title="2.7 Eigendecomposition",
+                chapter_number=2,
+            ),
+        ],
+        page_number=12,
+        printed_page_number=42,
+    )
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=points),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        RetrievalRequest(query="section 2.7", top_k=2, section_number="2.7")
+    )
+
+    assert [record.block_type for record in records] == ["heading", "paragraph"]
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_ranks_chapter_blocks_by_page() -> None:
+    points = _points_from_page_blocks(
+        [
+            ParsedBlock(
+                block_id="textbook-doc:p20:b0",
+                page_number=20,
+                printed_page_number=50,
+                block_type="paragraph",
+                text="Later chapter content.",
+                chapter_number=2,
+            ),
+        ],
+        page_number=20,
+        printed_page_number=50,
+    )
+    points.extend(
+        _points_from_page_blocks(
+            [
+                ParsedBlock(
+                    block_id="textbook-doc:p10:b0",
+                    page_number=10,
+                    printed_page_number=40,
+                    block_type="paragraph",
+                    text="Earlier chapter content.",
+                    chapter_number=2,
+                ),
+            ],
+            page_number=10,
+            printed_page_number=40,
+        )
+    )
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=points),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        RetrievalRequest(query="chapter 2", top_k=2, chapter_number=2)
+    )
+
+    assert [record.printed_page_number for record in records] == [40, 50]
 
 
 @pytest.mark.asyncio
