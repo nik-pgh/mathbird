@@ -31,8 +31,8 @@ Backend eval data and CLIs:
 - `backend/evals/golden/goodfellow_ch2_retrieval.jsonl`
   - 40-case golden retrieval set for Goodfellow chapter 2.
 - `backend/evals/golden/goodfellow_ch2_structured.jsonl`
-  - 16-case golden set for structured lookup (page, section, figure, equation,
-    example, chapter, and negative routing cases).
+  - 40-case golden set for structured lookup (page, section, figure, equation,
+    example, chapter, mixed, and negative routing cases).
 - `backend/evals/results/`
   - Timestamped JSON and Markdown reports produced by eval scripts.
 - `backend/scripts/eval_retrieval.py`

@@ -27,7 +27,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
 | `backend/evals/README.md` | Agent-facing guide to the retrieval evaluation pipeline, reports, chunking policies, dashboard wiring, and extension workflow. |
 | `backend/evals/golden/goodfellow_ch2_retrieval.jsonl` | 40-row golden retrieval set for Goodfellow chapter 2. |
-| `backend/evals/golden/goodfellow_ch2_structured.jsonl` | 16-row golden set for structured lookup (page/section/figure/equation/example). |
+| `backend/evals/golden/goodfellow_ch2_structured.jsonl` | 40-row golden set for structured lookup (page/section/figure/equation/example/chapter/mixed). |
 | `backend/scripts/eval_retrieval.py` | CLI to compare retrieval quality across embedding collections. |
 | `backend/scripts/eval_chunking.py` | CLI to parse once, index multiple chunking policies, evaluate them, and optionally update the frontend dashboard JSON. |
 | `backend/scripts/eval_structured.py` | CLI to compare production, structured-only, and semantic-only retrieval paths; optional dashboard JSON output. |
