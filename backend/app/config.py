@@ -49,10 +49,14 @@ class Settings(BaseSettings):
 
     # Per-provider model overrides (empty = use plugin default)
     stt_model: str = "nova-3"
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = "gpt-4o"
     tts_model: str = "sonic-2"
     tts_voice: str = "794f9389-aac1-45b6-b726-9d9369183238"
     tts_language: str = ""
+
+    # Max tokens per LLM turn. Voice sessions need short responses;
+    # 150 caps a turn at ~3-5 sentences to prevent monologues.
+    llm_max_tokens: int = 150
 
     # Provider API keys
     deepgram_api_key: str = ""
