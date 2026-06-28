@@ -1,8 +1,14 @@
 /**
  * Session auth via Google OAuth + HttpOnly cookie.
+ *
+ * Guest mode: when GUEST_ENABLED is set in the build env (VITE_GUEST_ENABLED),
+ * the login page shows a "Try as guest" button. Guest sessions skip OAuth
+ * entirely — the token route issues an ephemeral identity.
  */
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+
+export const GUEST_ENABLED = import.meta.env.VITE_GUEST_ENABLED === "true";
 
 export interface User {
   id: string;

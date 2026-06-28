@@ -75,6 +75,11 @@ class Settings(BaseSettings):
     auth_cookie_name: str = "mathbird_session"
     frontend_url: str = "http://localhost:5173"
 
+    # Guest sessions — pre-indexed doc_id for "try without signup" flow.
+    # Leave empty to disable guest mode. When set, unauthenticated token
+    # requests fall back to this doc_id so the agent can search it.
+    guest_sample_doc_id: str = ""
+
     # Storage
     storage_backend: StorageBackendName = "local"
     storage_local_dir: str = "./uploads"
