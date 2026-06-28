@@ -205,7 +205,11 @@ For a hosted deployment, run the same three pieces:
 Set `VITE_API_BASE_URL` to the deployed backend URL and keep `VITE_LIVEKIT_URL`
 pointed at the same LiveKit Cloud project used by the backend and worker.
 
-## Additional Features
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
+
+### Additional Features
 
 ### Whiteboards
 
