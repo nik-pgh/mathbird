@@ -24,7 +24,7 @@ def build_tts(settings: Settings) -> tts_base.TTS:
         return elevenlabs.TTS(
             model=settings.tts_model,
             voice_id=settings.tts_voice,
-            language=settings.tts_language,
+            language=settings.tts_language or None,
             api_key=settings.eleven_api_key or None,
         )
 

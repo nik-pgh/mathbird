@@ -70,7 +70,10 @@ def test_google_callback_sets_session_cookie(mock_exchange: AsyncMock) -> None:
 
 def test_logout_clears_cookie() -> None:
     client = TestClient(app)
-    with patch("app.api.routes.auth.exchange_code_for_profile", new_callable=AsyncMock) as mock_exchange:
+    with patch(
+        "app.api.routes.auth.exchange_code_for_profile",
+        new_callable=AsyncMock,
+    ) as mock_exchange:
         mock_exchange.return_value = {
             "sub": "google-sub-2",
             "email": "bob@example.com",

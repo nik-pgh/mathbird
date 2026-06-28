@@ -63,8 +63,8 @@ EXERCISE_PATTERNS = [
 ]
 
 EXAMPLE_PATTERNS = [
-    re.compile(rf"\bexample\s+(?:number\s+)?(\d+(?:\.\d+)?[A-Za-z]?)\b", re.IGNORECASE),
-    re.compile(rf"\b(\d+\.\d+)\s+example\b", re.IGNORECASE),
+    re.compile(r"\bexample\s+(?:number\s+)?(\d+(?:\.\d+)?[A-Za-z]?)\b", re.IGNORECASE),
+    re.compile(r"\b(\d+\.\d+)\s+example\b", re.IGNORECASE),
     re.compile(rf"\bexample\s+(?:number\s+)?({CARDINAL_TOKEN})\b", re.IGNORECASE),
 ]
 

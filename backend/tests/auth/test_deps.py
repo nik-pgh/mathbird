@@ -14,9 +14,11 @@ from app.config import get_settings
 
 app = FastAPI()
 
+_current_user_dep = Depends(get_current_user)
+
 
 @app.get("/protected")
-def protected(user=Depends(get_current_user)) -> dict[str, str]:
+def protected(user=_current_user_dep) -> dict[str, str]:
     return {"id": user.id}
 
 
