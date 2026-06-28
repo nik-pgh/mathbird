@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import {
   UploadedDocument,
@@ -22,6 +22,9 @@ type Status = "connecting" | "connected" | "disconnected";
 
 export default function SessionPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const isGuest = params.get("guest") === "true";
+
   const [conn, setConn] = useState<Connection | null>(null);
   const [status, setStatus] = useState<Status>("connecting");
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +33,9 @@ export default function SessionPage() {
   const activeDocId = useMemo(() => getActiveDocId(), []);
 
   // Resolve filename for the textbook overlay title.
+  // Skip in guest mode — listDocuments requires auth.
   useEffect(() => {
-    if (!activeDocId) return;
+    if (!activeDocId || isGuest) return;
     listDocuments()
       .then((list) => {
         const found = list.find((d) => d.doc_id === activeDocId) ?? null;
@@ -40,7 +44,7 @@ export default function SessionPage() {
       .catch(() => {
         /* non-fatal — popover still works without a filename */
       });
-  }, [activeDocId]);
+  }, [activeDocId, isGuest]);
 
   const connect = useCallback(async () => {
     setError(null);
@@ -62,8 +66,8 @@ export default function SessionPage() {
 
   const handleEnd = useCallback(() => {
     setConn(null);
-    navigate("/");
-  }, [navigate]);
+    navigate(isGuest ? "/login" : "/");
+  }, [navigate, isGuest]);
 
   const handleUnexpectedDisconnect = useCallback(() => {
     setStatus("disconnected");

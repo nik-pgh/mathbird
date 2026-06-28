@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from livekit import api
 from pydantic import BaseModel, Field
 
-from app.auth import User, get_current_user
+from app.auth import User, get_optional_user
 from app.config import get_settings
 
 router = APIRouter()
@@ -48,7 +48,7 @@ class TokenResponse(BaseModel):
 @router.post("/token", response_model=TokenResponse)
 async def create_token(
     req: TokenRequest,
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User | None, Depends(get_optional_user)],
 ) -> TokenResponse:
     settings = get_settings()
     if not (settings.livekit_api_key and settings.livekit_api_secret and settings.livekit_url):
@@ -57,13 +57,20 @@ async def create_token(
             detail="LiveKit credentials are not configured on the server.",
         )
 
-    identity = user.id
+    is_guest = user is None
+    if is_guest and not settings.guest_sample_doc_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required. Guest mode is not configured.",
+        )
+
+    identity = user.id if user else f"guest-{uuid.uuid4().hex[:8]}"
     room = req.room or f"room-{uuid.uuid4().hex[:8]}"
 
     builder = (
         api.AccessToken(settings.livekit_api_key, settings.livekit_api_secret)
         .with_identity(identity)
-        .with_name(req.name or user.name or identity)
+        .with_name(req.name or (user.name if user else "Guest") or identity)
         .with_grants(
             api.VideoGrants(
                 room_join=True,
@@ -73,9 +80,15 @@ async def create_token(
             )
         )
     )
-    metadata: dict[str, str] = {"user_id": user.id}
-    if req.doc_id:
-        metadata["active_doc_id"] = req.doc_id
+    metadata: dict[str, str] = {}
+    if user:
+        metadata["user_id"] = user.id
+    # Use the requested doc_id, or fall back to the sample doc for guests.
+    doc_id = req.doc_id
+    if not doc_id and is_guest and settings.guest_sample_doc_id:
+        doc_id = settings.guest_sample_doc_id
+    if doc_id:
+        metadata["active_doc_id"] = doc_id
     builder = builder.with_metadata(json.dumps(metadata))
 
     return TokenResponse(
