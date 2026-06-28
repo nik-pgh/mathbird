@@ -26,6 +26,7 @@ from typing import Any
 
 from livekit.agents import Agent
 from livekit.agents.llm import ChatContext, ChatMessage
+from opentelemetry import trace
 
 from app.agent.math_speech import spoken_math_stream
 from app.agent.whiteboard.cache import BoardCache
@@ -37,6 +38,7 @@ from app.agent.whiteboard.state import BoardState
 from app.progress.engine import ProgressEngine
 
 logger = logging.getLogger("mathbird.agent.extractor")
+_tracer = trace.get_tracer("mathbird.session")
 
 _QUEUE_MAXSIZE = 20
 
@@ -72,19 +74,42 @@ class WhiteboardAgent(Agent):
         new_message: ChatMessage,  # noqa: ARG002 — required by framework hook
     ) -> None:
         state = self._board_state
-        if state.refreshed_at is not None:
-            age = state.age_seconds()
-            age_str = f"{age:.0f}s ago" if age is not None else "just now"
 
-            if state.is_blank:
-                body = f"[user whiteboard (refreshed {age_str}): blank]"
+        # Trace the session dynamics that shape this turn's LLM call.
+        # Uses NoOp tracer when Phoenix is disabled — zero cost when off.
+        with _tracer.start_as_current_span("session.turn_context") as span:
+            if state.refreshed_at is not None:
+                age = state.age_seconds()
+                age_str = f"{age:.0f}s ago" if age is not None else "just now"
+
+                span.set_attribute("session.turn.whiteboard_present", True)
+                span.set_attribute("session.turn.whiteboard_age_seconds", age or -1)
+                span.set_attribute("session.turn.whiteboard_blank", state.is_blank)
+                if not state.is_blank:
+                    span.set_attribute("session.turn.whiteboard_text", state.user_text[:500])
+
+                if state.is_blank:
+                    body = f"[user whiteboard (refreshed {age_str}): blank]"
+                else:
+                    body = f"[user whiteboard (refreshed {age_str}):\n{state.user_text}\n]"
+
+                turn_ctx.add_message(role="system", content=body)
             else:
-                body = f"[user whiteboard (refreshed {age_str}):\n{state.user_text}\n]"
+                span.set_attribute("session.turn.whiteboard_present", False)
 
-            turn_ctx.add_message(role="system", content=body)
+            if self._progress_engine is not None:
+                injection = self._progress_engine.format_injection()
+                turn_ctx.add_message(role="system", content=injection)
 
-        if self._progress_engine is not None:
-            turn_ctx.add_message(role="system", content=self._progress_engine.format_injection())
+                engine = self._progress_engine
+                summary = engine.summary()
+                focus = engine.state.focus
+                span.set_attribute("session.turn.progress_mastered", summary.mastered)
+                span.set_attribute("session.turn.progress_total", summary.total)
+                span.set_attribute("session.turn.progress_in_progress", summary.in_progress)
+                if focus:
+                    span.set_attribute("session.turn.focus_problem_id", focus.problem_id)
+                    span.set_attribute("session.turn.focus_chapter_id", focus.chapter_id)
 
     # ── lifecycle ──────────────────────────────────────────────────────
 
