@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.main import app
 from app.config import get_settings
 from app.rag import retriever as retriever_mod
 from app.storage import base as storage_mod

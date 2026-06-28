@@ -127,7 +127,10 @@ def test_ingest_builds_syllabus_when_parser_available(
 
     syllabus_res = client.get(f"/api/documents/{doc_id}/syllabus")
     assert syllabus_res.status_code == 200
-    assert syllabus_res.json()["chapters"][0]["concepts"][0]["problems"][0]["exercise_number"] == "1"
+    first_exercise = (
+        syllabus_res.json()["chapters"][0]["concepts"][0]["problems"][0]["exercise_number"]
+    )
+    assert first_exercise == "1"
 
 
 def test_ingest_failure_preserves_file_and_502(

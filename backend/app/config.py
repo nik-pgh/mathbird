@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     llm_model: str = "gpt-4o-mini"
     tts_model: str = "sonic-2"
     tts_voice: str = "794f9389-aac1-45b6-b726-9d9369183238"
-    tts_language: str = "ko"
+    tts_language: str = ""
 
     # Provider API keys
     deepgram_api_key: str = ""

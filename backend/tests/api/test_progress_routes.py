@@ -12,7 +12,7 @@ from app.api.main import app
 from app.auth import issue_token
 from app.auth.store import UserStore
 from app.config import get_settings
-from app.progress.models import FocusPointer, ProgressState, ProblemProgress
+from app.progress.models import FocusPointer, ProblemProgress, ProgressState
 from app.progress.store import get_progress_store, progress_key
 from app.storage import base as storage_mod
 
