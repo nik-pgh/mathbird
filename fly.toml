@@ -1,0 +1,72 @@
+# fly.toml — Mathbird backend on Fly.io
+#
+# Two process groups from the same Docker image:
+#   api     → FastAPI HTTP API (public-facing, port 8000)
+#   worker  → LiveKit agent worker (outbound client, no public ports)
+#
+# First-time setup:
+#   fly launch --no-deploy   # creates the app (skip if using this file)
+#   fly secrets set LIVEKIT_URL=wss://your-proj.livekit.cloud \
+#       LIVEKIT_API_KEY=... LIVEKIT_API_SECRET=... \
+#       OPENAI_API_KEY=... DEEPGRAM_API_KEY=... CARTESIA_API_KEY=...
+#   fly deploy
+#   fly scale count api=1 worker=1
+#
+# Persistent uploads volume (optional — use S3 in production instead):
+#   fly volumes create mathbird_uploads
+#   Then uncomment the [mount] section below.
+
+app = "mathbird"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[processes]
+  api = "uvicorn app.api.main:app --host 0.0.0.0 --port 8000"
+  worker = "python -m app.agent.main start"
+
+# ── API service (public) ──────────────────────────────────────
+[[services]]
+  processes = ["api"]
+  protocol = "tcp"
+  internal_port = 8000
+  auto_stop_machines = false
+  auto_start_machines = true
+
+  [services.concurrency]
+    type = "requests"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+    force_https = true
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.http_checks]]
+    interval = 10000
+    grace_period = "10s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    timeout = 2000
+
+# The worker process group has no [[services]] block — it is an
+# outbound-only client of LiveKit Cloud. Fly auto-restarts on crash.
+
+# ── Optional: persistent volume for local uploads ─────────────
+# Uncomment to use local storage instead of S3.
+# [mount]
+#   source = "mathbird_uploads"
+#   destination = "/app/backend/uploads"
+#   processes = ["api"]
+
+# ── VM sizing ─────────────────────────────────────────────────
+[[vm]]
+  memory = 512
+  cpu = 0.5

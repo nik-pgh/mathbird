@@ -205,11 +205,52 @@ For a hosted deployment, run the same three pieces:
 Set `VITE_API_BASE_URL` to the deployed backend URL and keep `VITE_LIVEKIT_URL`
 pointed at the same LiveKit Cloud project used by the backend and worker.
 
+#### Deploying the backend with Docker + Fly.io
+
+The repo includes a multi-stage `Dockerfile` and a `fly.toml` for
+[Fly.io](https://fly.io). The same image runs both the API and the worker
+as separate process groups.
+
+```bash
+# 1. Build and push the image, deploy both processes
+fly deploy
+
+# 2. Scale (one of each to start)
+fly scale count api=1 worker=1
+
+# 3. Set secrets (LiveKit + provider keys)
+fly secrets set LIVEKIT_URL=wss://your-project.livekit.cloud \
+  LIVEKIT_API_KEY=API... LIVEKIT_API_SECRET=... \
+  OPENAI_API_KEY=... DEEPGRAM_API_KEY=... CARTESIA_API_KEY=...
+```
+
+The API is exposed on ports 80/443 with a `/health` check. The worker is an
+outbound client of LiveKit Cloud — it has no public ports.
+
+To run the same image locally with Docker:
+
+```bash
+# Build
+docker build -t mathbird-backend .
+
+# Run the API
+docker run -p 8000:8000 --env-file .env mathbird-backend
+
+# Run the worker (separate terminal)
+docker run --env-file .env mathbird-backend python -m app.agent.main start
+```
+
+#### Deploying the frontend
+
+The frontend is a static Vite build. Deploy to Vercel, Netlify, or any static
+host. Set `VITE_API_BASE_URL` to the deployed backend URL and
+`VITE_LIVEKIT_URL` to your LiveKit Cloud project URL.
+
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).
 
-### Additional Features
+## Additional Features
 
 ### Whiteboards
 
