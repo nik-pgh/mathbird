@@ -3,6 +3,8 @@
 Usage (from ``backend/``)::
 
     uv run python -m scripts.agent_console
+
+Type ``exit`` or ``quit`` (or press Ctrl+D) to leave cleanly.
 """
 
 from __future__ import annotations
@@ -24,6 +26,12 @@ from app.agent.console.ui import (
 from app.agent.providers import ensure_livekit_plugins_registered
 from app.agent.session_factory import build_session_bundle, send_initial_greeting
 from app.config import get_settings
+
+_QUIT_COMMANDS = frozenset({"exit", "quit"})
+
+
+def _is_quit_command(text: str) -> bool:
+    return text.lower() in _QUIT_COMMANDS
 
 
 async def _read_user_input() -> str | None:
@@ -63,7 +71,7 @@ async def run_console() -> None:
 
             while True:
                 user_text = await _read_user_input()
-                if user_text is None:
+                if user_text is None or _is_quit_command(user_text):
                     print_dim("\n[dim]Goodbye.[/dim]")
                     break
                 if not user_text:
@@ -77,7 +85,7 @@ async def run_console() -> None:
         finally:
             await bundle.listener.aclose()
             await bundle.session.aclose()
-            room.disconnect()
+            await room.disconnect()
 
 
 def main() -> int:
