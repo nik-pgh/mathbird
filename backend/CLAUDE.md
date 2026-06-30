@@ -40,7 +40,7 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 4. **Function tools are the agent's API surface.** New LLM-callable capabilities = a new `@function_tool` async function in `app/agent/tools.py`, returned from `build_function_tools()`. The agent picks it up automatically. **Write the docstring carefully** — the LLM reads it. Current LLM-facing tools: `search_documents` (RAG) + `read_user_board` (student board reading). AiBoard writes are NOT done by the LLM — they come from the per-sentence `BoardExtractor` in `app/agent/whiteboard/extractor/` watching the agent's transcription stream.
 5. **`Settings` reads `.env` AND `../.env`.** The repo-root `.env` is the canonical location for shared secrets. `backend/README.md` says `cp ../.env.example ../.env`.
 6. **Singletons are cached.** `get_settings()`, `get_storage()`, `get_retriever()`, and `get_board_reader()` are all `lru_cache` or module-level. Restart the process to pick up env changes; clear caches in tests.
-7. **Whiteboard wire format is mirrored by hand.** Pydantic schemas in `app/agent/whiteboard/messages.py` are mirrored in `frontend/src/lib/whiteboard.ts`. No codegen — update both sides in the same change.
+7. **Whiteboard wire format is mirrored by hand.** Pydantic schemas in `app/agent/whiteboard/messages.py` are mirrored in `frontend/src/lib/whiteboard.ts`. No codegen — update both sides in the same change. **Same applies to the progress wire:** `app/progress/messages.py` is mirrored in `frontend/src/lib/progress.ts` and `frontend/src/lib/roadmapProgress.ts` (which duplicates the `ProblemStatus` type) — change all three in one commit.
 
 ## Quick "where to add..." map
 
@@ -49,6 +49,8 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 | New STT/LLM/TTS/VAD vendor | `app/agent/providers/<modality>.py` + `Literal` in `config.py` + dep in `pyproject.toml` |
 | New LLM capability | `app/agent/tools.py` (new `@function_tool`, add to `build_function_tools`) |
 | Built-in RAG implementation | Set `RAG_PROVIDER=llamaindex_qdrant`; add a new module under `app/rag/` only for another provider. |
+| New grader backend | `app/agent/grader/<name>.py` + `Literal` `GraderName` in `config.py` + branch in `factory.py` |
+| New progress field on the wire | `app/progress/messages.py` + mirror in `frontend/src/lib/progress.ts` + `frontend/src/lib/roadmapProgress.ts` (same commit) |
 | New HTTP endpoint | New file in `app/api/routes/`, mount in `app/api/main.py` |
 | New storage backend | New file in `app/storage/` implementing `StorageBackend`; branch in `get_storage()` + `Literal` |
 | New whiteboard item kind | Pydantic model in `app/agent/whiteboard/messages.py`, extend `AiBoardItem`; mirror in `frontend/src/lib/whiteboard.ts`; render in `BoardItem.tsx` |

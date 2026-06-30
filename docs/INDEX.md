@@ -49,8 +49,8 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `scripts/agent_console.py` | Interactive text REPL with readable tutor output. |
 | `agent/session_factory.py` | Production per-room wiring: `build_session_bundle`, `resolve_session_identity`, `send_initial_greeting`. |
 | `agent/console/` | Local text console + YAML sim helpers — `runtime.py` (local fake job + HTTP context), `identity.py` (stdin doc/user picker), `ui.py` (Rich formatters). |
-| `agent/simulation/scenarios.py` | YAML scenario loader (`ConversationScenario`, `load_scenario`). |
-| `agent/simulation/assertions.py` | Turn expectations checked against LiveKit `RunResult` events. |
+| `agent/simulation/scenarios.py` | YAML scenario loader (`ConversationScenario`, `load_scenario`). Turn expectations include per-turn progression fields (`node_level`, `focus_node`, `next_suggestion_node`, `misconceptions_contain`). |
+| `agent/simulation/assertions.py` | Turn expectations checked against LiveKit `RunResult` events + optional `ProgressEngine` state. |
 | `agent/tools.py` | `@function_tool` functions the LLM can call. `search_documents` is the RAG seam. `build_function_tools()` returns the list. |
 | `agent/providers/__init__.py` | Re-exports `build_stt/llm/tts/vad`. |
 | `agent/providers/register.py` | Eager LiveKit plugin imports on the main thread (required before local scripts). |
@@ -72,6 +72,44 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `whiteboard/reader/__init__.py` | `BoardReader` Protocol + `get_board_reader()` factory. |
 | `whiteboard/reader/null.py` | `NullBoardReader` — no-op default. |
 | `whiteboard/reader/openai_vision.py` | `OpenAIVisionBoardReader` — vision-LLM handwriting recognition. |
+
+### `backend/app/agent/grader/` — per-turn student-model grader
+
+A second LLM seam (mirrors `whiteboard/extractor/`) that assesses each student
+turn and advances mastery levels / misconceptions, so the student model evolves
+every turn without relying on the main LLM calling progress tools. Off by
+default (`GRADER=null`); opt in with `GRADER=openai`.
+
+| Path | What it is |
+| --- | --- |
+| `grader/base.py` | `Grader` Protocol, `GradeResult`, `NodeUpdate` (the graded payload). |
+| `grader/null.py` | `NullGrader` — no-op default; evolution gated on LLM tool calls only. |
+| `grader/openai.py` | `OpenAIGrader` — structured-outputs grader over the turn + board + focus context. |
+| `grader/factory.py` | `get_grader()` — env-driven `@lru_cache`d factory. |
+
+### `backend/app/progress/` — knowledge-tracing student model
+
+Tracks per-`(user_id, doc_id)` progress over the syllabus tree. Both concepts
+and problems are trackable units (a concept with no problems still progresses).
+Mastery is ordinal (`not_started < introduced < practicing < proficient < mastered`)
+so partial progress is observable. A v1 → v2 migration runs transparently on load.
+
+| Path | What it is |
+| --- | --- |
+| `progress/models.py` | `ProgressState`, `NodeProgress`, `FocusPointer`, `ProgressSummary`, `MasteryLevel`, `Recommendation`. v1→v2 migration validator. |
+| `progress/engine.py` | `ProgressEngine` — state machine: `set_focus`, `set_level` (monotonic), `record_mastery`, `record_misconception`/`clear_misconceptions`, `record_hint`, `effective_level` (concept aggregation), `recommend()` (deterministic directive), `snapshot_update()` (wire). |
+| `progress/messages.py` | Wire schemas for the `session_progress` topic: `SessionProgressUpdate`, `ProblemProgressSnapshot` (5-level `status`), `ConceptProgressSnapshot`. |
+| `progress/publisher.py` | `publish_session_progress(room, update)` — encodes + sends on the data channel. |
+| `progress/store.py` | `StorageProgressStore` — persists `ProgressState` JSON in storage. |
+
+### `backend/app/syllabus/` — textbook structure tree
+
+| Path | What it is |
+| --- | --- |
+| `syllabus/models.py` | `Syllabus`, `Chapter`, `Concept`, `Problem` pydantic models. |
+| `syllabus/builder.py` | `build_heuristic_syllabus(document)` — maps parsed blocks → chapters/concepts/problems. |
+| `syllabus/store.py` | `save_syllabus` / `load_syllabus` — storage key `{doc_id}/syllabus.json`. |
+| `syllabus/parse.py` | `parse_pdf_to_document` — LlamaParse → `ParsedDocument` (gated on `LLAMAPARSE_API_KEY`). |
 
 ### `backend/app/api/` — FastAPI HTTP API
 
