@@ -22,36 +22,13 @@ import time
 from pathlib import Path
 
 from livekit import rtc
-from livekit.agents import RoomInputOptions
-from livekit.agents.testing import fake_job_context
-from livekit.agents.voice.run_result import RunEvent
 
+from app.agent.console.runtime import local_text_job
+from app.agent.console.ui import format_run_event
+from app.agent.providers import ensure_livekit_plugins_registered
 from app.agent.session_factory import build_session_bundle, send_initial_greeting
 from app.agent.simulation import assert_turn_expectations, load_scenario
 from app.config import Settings, get_settings
-
-
-def _format_event(event: RunEvent) -> dict[str, object]:
-    if event.type == "message":
-        return {
-            "type": "message",
-            "role": event.item.role,
-            "text": event.item.text_content,
-        }
-    if event.type == "function_call":
-        return {
-            "type": "function_call",
-            "name": event.item.name,
-            "arguments": event.item.arguments,
-        }
-    if event.type == "function_call_output":
-        return {
-            "type": "function_call_output",
-            "name": event.item.name,
-            "output": event.item.output,
-            "is_error": event.item.is_error,
-        }
-    return {"type": event.type}
 
 
 def _apply_board_text(session_data, text: str | None) -> None:
@@ -77,22 +54,19 @@ async def run_scenario(
     if user_id or active_doc_id:
         print(f"  identity: user_id={user_id!r} doc_id={active_doc_id!r}", flush=True)
 
-    async with rtc.Room() as room:
-        with fake_job_context(room=room):
+    room = rtc.Room()
+    try:
+        async with local_text_job(room=room):
             bundle = await build_session_bundle(
                 room=room,
                 settings=settings,
                 user_id=user_id,
                 active_doc_id=active_doc_id,
+                text_only=True,
             )
             _apply_board_text(bundle.session_data, scenario.board_text)
 
-            await bundle.session.start(
-                agent=bundle.agent,
-                room=room,
-                room_input_options=RoomInputOptions(),
-                record=False,
-            )
+            await bundle.session.start(agent=bundle.agent, record=False)
 
             try:
                 if scenario.greeting:
@@ -101,7 +75,10 @@ async def run_scenario(
                         has_progress=bundle.session_data.progress_engine is not None,
                     )
                     if verbose:
-                        print("--- greeting (see assistant reply in turn events) ---", flush=True)
+                        print(
+                            "--- greeting (see assistant reply in turn events) ---",
+                            flush=True,
+                        )
 
                 for index, turn in enumerate(scenario.turns, start=1):
                     label = f"turn {index}"
@@ -119,13 +96,18 @@ async def run_scenario(
                     if verbose:
                         print(f"--- {label}: events ---", flush=True)
                         for event in run.events:
-                            print(json.dumps(_format_event(event), ensure_ascii=False), flush=True)
+                            print(
+                                json.dumps(format_run_event(event), ensure_ascii=False),
+                                flush=True,
+                            )
 
                     assert_turn_expectations(run, turn.expect, turn_label=label)
                     print(f"  ✓ {label} expectations passed", flush=True)
             finally:
                 await bundle.listener.aclose()
                 await bundle.session.aclose()
+    finally:
+        room.disconnect()
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -145,6 +127,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    ensure_livekit_plugins_registered()
     args = _parse_args(argv)
     scenario_path = args.scenario
     if not scenario_path.is_file():

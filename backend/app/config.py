@@ -89,6 +89,9 @@ class Settings(BaseSettings):
     # participant metadata is available.
     sim_user_id: str = ""
     sim_active_doc_id: str = ""
+    # When true (default), ``console --text`` prompts for doc/user on stdin if
+    # ``SIM_*`` are unset. Set false to skip prompts (non-TTY / automation).
+    sim_interactive: bool = True
 
     # Storage
     storage_backend: StorageBackendName = "local"

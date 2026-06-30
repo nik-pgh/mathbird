@@ -3,7 +3,10 @@
 Run locally:
     uv run python -m app.agent.main dev
 
-Text console (no mic, no LiveKit participant required):
+Interactive text console (recommended — readable tutor output):
+    uv run python -m scripts.agent_console
+
+Legacy LiveKit console (debug logs may appear):
     uv run python -m app.agent.main console --text
 
 Connects to LiveKit Cloud using ``LIVEKIT_URL`` / ``LIVEKIT_API_KEY`` /
@@ -28,6 +31,7 @@ from livekit.agents import (  # noqa: E402
     cli,
 )
 
+from app.agent.providers.register import ensure_livekit_plugins_registered
 from app.agent.session_factory import (  # noqa: E402
     build_session_bundle,
     resolve_session_identity,
@@ -56,6 +60,9 @@ async def entrypoint(ctx: JobContext) -> None:
 
     await ctx.connect()
 
+    if ctx.is_fake_job():
+        logging.getLogger("livekit.agents").setLevel(logging.WARNING)
+
     user_id, active_doc_id = await resolve_session_identity(ctx, settings)
     bundle = await build_session_bundle(
         room=ctx.room,
@@ -82,9 +89,16 @@ async def entrypoint(ctx: JobContext) -> None:
 
     await send_initial_greeting(bundle.session, has_progress=progress_engine is not None)
 
+    if ctx.is_fake_job():
+        from app.agent.console.ui import print_banner, print_latest_assistant_from_history
+
+        print_banner(doc_id=active_doc_id, user_id=user_id)
+        print_latest_assistant_from_history(bundle.session.history)
+
 
 def main() -> None:
     """CLI entrypoint. ``dev`` runs the worker locally against LiveKit Cloud."""
+    ensure_livekit_plugins_registered()
     settings = get_settings()
     cli.run_app(
         WorkerOptions(

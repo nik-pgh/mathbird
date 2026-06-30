@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from livekit.agents import AgentSession, JobContext
 
+from app.agent.console.identity import prompt_console_identity
 from app.agent.providers import build_llm, build_stt, build_tts, build_vad
 from app.agent.tools import build_function_tools
 from app.agent.whiteboard import (
@@ -64,6 +65,13 @@ async def resolve_session_identity(
     if ctx.is_fake_job():
         user_id = settings.sim_user_id or None
         active_doc_id = settings.sim_active_doc_id or None
+        prompted_user, prompted_doc = await prompt_console_identity(
+            settings,
+            need_user=user_id is None,
+            need_doc=active_doc_id is None,
+        )
+        user_id = user_id or prompted_user
+        active_doc_id = active_doc_id or prompted_doc
         if user_id or active_doc_id:
             logger.info(
                 "fake job: using sim identity user_id=%s active_doc_id=%s",
@@ -110,8 +118,13 @@ async def build_session_bundle(
     settings: Settings | None = None,
     user_id: str | None = None,
     active_doc_id: str | None = None,
+    text_only: bool = False,
 ) -> SessionBundle:
-    """Wire STT/LLM/TTS/VAD, whiteboard state, tools, and ``WhiteboardAgent``."""
+    """Wire STT/LLM/TTS/VAD, whiteboard state, tools, and ``WhiteboardAgent``.
+
+    When ``text_only`` is true (console / YAML simulators), only the LLM is wired;
+    STT/TTS/VAD and turn detection are omitted.
+    """
     settings = settings or get_settings()
 
     board_state = BoardState()
@@ -146,13 +159,20 @@ async def build_session_bundle(
         progress_engine=progress_engine,
     )
 
-    session = AgentSession(
-        stt=build_stt(settings),
-        llm=build_llm(settings),
-        tts=build_tts(settings),
-        vad=build_vad(settings),
-        userdata=session_data,
-    )
+    if text_only:
+        session = AgentSession(
+            llm=build_llm(settings),
+            turn_detection=None,
+            userdata=session_data,
+        )
+    else:
+        session = AgentSession(
+            stt=build_stt(settings),
+            llm=build_llm(settings),
+            tts=build_tts(settings),
+            vad=build_vad(settings),
+            userdata=session_data,
+        )
 
     agent = WhiteboardAgent(
         instructions=settings.agent_instructions,
