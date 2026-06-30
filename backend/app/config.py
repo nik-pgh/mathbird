@@ -84,6 +84,12 @@ class Settings(BaseSettings):
     # requests fall back to this doc_id so the agent can search it.
     guest_sample_doc_id: str = ""
 
+    # Console / simulation identity. Used when the worker runs as a fake job
+    # (``console --text``, ``simulate_conversation.py``) where no LiveKit
+    # participant metadata is available.
+    sim_user_id: str = ""
+    sim_active_doc_id: str = ""
+
     # Storage
     storage_backend: StorageBackendName = "local"
     storage_local_dir: str = "./uploads"

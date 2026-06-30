@@ -48,29 +48,30 @@ async def test_entrypoint_initializes_phoenix_inside_room_job(monkeypatch) -> No
             agent_instructions="test instructions",
         ),
     )
-    monkeypatch.setattr(main, "get_board_reader", lambda: object())
-    monkeypatch.setattr(main, "get_board_extractor", lambda: object())
-    monkeypatch.setattr(
-        main,
-        "install_user_board_listener",
-        lambda **_kwargs: SimpleNamespace(aclose=lambda: None),
-    )
-    monkeypatch.setattr(main, "build_stt", lambda _settings: object())
-    monkeypatch.setattr(main, "build_llm", lambda _settings: object())
-    monkeypatch.setattr(main, "build_tts", lambda _settings: object())
-    monkeypatch.setattr(main, "build_vad", lambda _settings: object())
-    monkeypatch.setattr(main, "build_function_tools", lambda **_kwargs: [])
-    monkeypatch.setattr(main, "WhiteboardAgent", lambda **_kwargs: object())
 
     class FakeSession:
-        def __init__(self, **_kwargs) -> None:
-            events.append("session_created")
-
         async def start(self, **_kwargs) -> None:
             events.append("session_started")
 
         async def generate_reply(self, **_kwargs) -> None:
             events.append("reply_generated")
+
+    class FakeBundle:
+        session = FakeSession()
+        agent = object()
+        listener = SimpleNamespace(aclose=lambda: None)
+        session_data = SimpleNamespace(progress_engine=None)
+
+    async def _fake_build_session_bundle(**_kwargs):
+        events.append("session_created")
+        return FakeBundle()
+
+    async def _fake_resolve_session_identity(_ctx, _settings):
+        events.append("resolve_identity")
+        return None, None
+
+    monkeypatch.setattr(main, "build_session_bundle", _fake_build_session_bundle)
+    monkeypatch.setattr(main, "resolve_session_identity", _fake_resolve_session_identity)
 
     class FakeContext:
         room = SimpleNamespace(name="test-room")
@@ -81,14 +82,10 @@ async def test_entrypoint_initializes_phoenix_inside_room_job(monkeypatch) -> No
         def add_shutdown_callback(self, _callback) -> None:
             events.append("shutdown_callback")
 
-        async def wait_for_participant(self):
-            events.append("wait_for_participant")
-            return SimpleNamespace(metadata=None)
-
-    monkeypatch.setattr(main, "AgentSession", FakeSession)
-
-    await main.entrypoint(FakeContext())
+    await main.entrypoint(FakeContext())  # type: ignore[arg-type]
 
     assert setup_calls == ["setup"]
     assert events[0] == "setup"
     assert "connect" in events
+    assert "session_started" in events
+    assert "reply_generated" in events
