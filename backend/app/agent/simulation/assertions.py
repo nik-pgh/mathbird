@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 from livekit.agents.voice.run_result import RunEvent, RunResult
 
 from .scenarios import TurnExpectation
+
+if TYPE_CHECKING:
+    from app.progress.engine import ProgressEngine
 
 
 def _assistant_text(events: list[RunEvent]) -> str:
@@ -32,8 +36,20 @@ def _function_calls(events: list[RunEvent], name: str | None = None) -> list[tup
     return calls
 
 
-def assert_turn_expectations(run: RunResult, expect: TurnExpectation, *, turn_label: str) -> None:
-    """Raise ``AssertionError`` with a readable message when expectations fail."""
+def assert_turn_expectations(
+    run: RunResult,
+    expect: TurnExpectation,
+    *,
+    turn_label: str,
+    engine: ProgressEngine | None = None,
+) -> None:
+    """Raise ``AssertionError`` with a readable message when expectations fail.
+
+    Text/tool expectations are always checked. Progression expectations
+    (``node_level`` / ``focus_node`` / ``next_suggestion_node`` /
+    ``misconceptions_contain``) require ``engine`` to be passed and are
+    skipped otherwise.
+    """
     events = run.events
     prefix = f"[{turn_label}]"
 
@@ -77,4 +93,53 @@ def assert_turn_expectations(run: RunResult, expect: TurnExpectation, *, turn_la
             raise AssertionError(
                 f"{prefix} assistant reply must not contain {fragment!r}: "
                 f"{_assistant_text(events)!r}"
+            )
+
+    # Progression expectations — only checked when an engine is supplied.
+    if engine is not None:
+        _assert_progression(expect, engine, prefix=prefix)
+
+
+def _assert_progression(expect: TurnExpectation, engine: ProgressEngine, *, prefix: str) -> None:
+    has_progression_expectation = (
+        bool(expect.node_level)
+        or expect.focus_node is not None
+        or expect.next_suggestion_node is not None
+        or bool(expect.misconceptions_contain)
+    )
+    if not has_progression_expectation:
+        return
+
+    for node_id, required_level in expect.node_level.items():
+        actual = engine.effective_level(node_id)
+        if actual != required_level:
+            raise AssertionError(
+                f"{prefix} node {node_id!r} expected level {required_level!r}, got {actual!r}"
+            )
+
+    if expect.focus_node is not None:
+        focus = engine.state.focus
+        actual_focus = (focus.problem_id or focus.concept_id) if focus is not None else None
+        if actual_focus != expect.focus_node:
+            raise AssertionError(
+                f"{prefix} expected focus {expect.focus_node!r}, got {actual_focus!r}"
+            )
+
+    if expect.next_suggestion_node is not None:
+        nxt = engine.state.next_suggestion
+        actual_next = (nxt.problem_id or nxt.concept_id) if nxt is not None else None
+        if actual_next != expect.next_suggestion_node:
+            raise AssertionError(
+                f"{prefix} expected next_suggestion {expect.next_suggestion_node!r}, "
+                f"got {actual_next!r}"
+            )
+
+    for node_id, fragment in expect.misconceptions_contain.items():
+        node = engine.state.nodes.get(node_id)
+        misconceptions = node.misconceptions if node is not None else []
+        haystack = " ".join(misconceptions).lower()
+        if fragment.lower() not in haystack:
+            raise AssertionError(
+                f"{prefix} node {node_id!r} misconceptions missing {fragment!r} "
+                f"(got {misconceptions})"
             )

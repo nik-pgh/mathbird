@@ -101,7 +101,12 @@ async def run_scenario(
                                 flush=True,
                             )
 
-                    assert_turn_expectations(run, turn.expect, turn_label=label)
+                    assert_turn_expectations(
+                        run,
+                        turn.expect,
+                        turn_label=label,
+                        engine=bundle.session_data.progress_engine,
+                    )
                     print(f"  ✓ {label} expectations passed", flush=True)
             finally:
                 await bundle.listener.aclose()

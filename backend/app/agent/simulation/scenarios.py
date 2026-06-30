@@ -16,6 +16,13 @@ class TurnExpectation(BaseModel):
     search_query_contains: list[str] = Field(default_factory=list)
     assistant_contains: list[str] = Field(default_factory=list)
     assistant_not_contains: list[str] = Field(default_factory=list)
+    # Progression expectations — checked against the engine state AFTER the turn.
+    # ``node_level`` maps node_id → required effective level (concept or problem).
+    node_level: dict[str, str] = Field(default_factory=dict)
+    focus_node: str | None = None
+    next_suggestion_node: str | None = None
+    # node_id → substring that must appear in that node's misconceptions list.
+    misconceptions_contain: dict[str, str] = Field(default_factory=dict)
 
 
 class ScenarioTurn(BaseModel):

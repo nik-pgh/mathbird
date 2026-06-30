@@ -1,0 +1,36 @@
+# Demonstration scenario for per-turn progression evaluation.
+#
+# Requires the hand-authored syllabus at
+# simulations/fixtures/progression_demo_syllabus.json to be loaded into storage
+# at key ``progression-demo/syllabus.json`` before running (see tests/simulation
+# for the load helper). Decouples progression eval from LlamaParse.
+#
+# Run with the grader OFF (GRADER=null, default) so the LLM's own tool calls
+# drive the level transitions asserted below. Set GRADER=openai to let the
+# grader auto-evolve the model instead.
+name: progression_demo
+doc_id: progression-demo
+turns:
+  - student: "Can we work on problem 1? It's x + 3 = 7."
+    expect:
+      tool_calls: ["set_focus"]
+      focus_node: "ch-1-p-1"
+      node_level:
+        ch-1-p-1: "practicing"
+
+  - student: "I subtracted 3 from both sides so x is 4."
+    board_text: "x + 3 = 7\nx = 4"
+    expect:
+      # Whether the tutor calls record_mastery here depends on whether it also
+      # asks for an explanation. With solved-only, level reaches proficient.
+      assistant_contains: ["?"]
+      node_level:
+        ch-1-p-1: "proficient"
+
+  - student: "Because subtracting 3 from both sides keeps it balanced, and 7 minus 3 is 4."
+    expect:
+      # After a correct solve AND explanation the tutor should record mastery.
+      tool_calls: ["record_mastery"]
+      node_level:
+        ch-1-p-1: "mastered"
+      next_suggestion_node: "ch-1-p-2"
