@@ -50,7 +50,7 @@ async def test_get_progress_returns_saved_state(isolated_storage: Path) -> None:
         doc_id=doc_id,
         updated_at="2026-06-19T00:00:00+00:00",
         focus=FocusPointer(chapter_id="ch-1", concept_id="c-1", problem_id="p-1"),
-        nodes={"p-1": ProblemProgress(status="in_progress", attempts=1, updated_at="t")},
+        nodes={"p-1": ProblemProgress(level="practicing", attempts=1, updated_at="t")},
     )
     store = get_progress_store(storage_mod.get_storage())
     await store.save(state)

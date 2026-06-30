@@ -175,7 +175,11 @@ function ChapterDetail({ chapter }: { chapter: RoadmapChapterView }) {
 
 function ConceptDetail({ concept }: { concept: RoadmapConceptView }) {
   return (
-    <div className="roadmap-detail-concept">
+    <div
+      className={`roadmap-detail-concept${
+        concept.hasOpenMisconceptions ? " roadmap-detail-concept--review" : ""
+      }`}
+    >
       <p className="roadmap-detail-concept-title">{concept.title}</p>
       {concept.problems.length > 0 && (
         <ul className="roadmap-detail-problems">
