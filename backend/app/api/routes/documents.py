@@ -13,7 +13,6 @@ from __future__ import annotations
 import io
 import json
 import logging
-import posixpath
 import shutil
 import tempfile
 import uuid
@@ -22,7 +21,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
-from urllib.parse import quote, unquote, urlparse
+from urllib.parse import quote, urlparse
 from urllib.request import url2pathname
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -31,6 +30,13 @@ from pydantic import BaseModel
 
 from app.auth import User, get_current_user
 from app.config import get_settings
+from app.documents.catalog import (
+    SIDECAR_NAME,
+    SYLLABUS_NAME,
+    filename_from_storage_key,
+    list_document_summaries,
+    sidecar_key,
+)
 from app.rag import get_retriever
 from app.storage import StoredObject, get_storage
 from app.syllabus import Syllabus, build_heuristic_syllabus, load_syllabus, save_syllabus
@@ -40,9 +46,6 @@ router = APIRouter()
 logger = logging.getLogger("mathbird.api.documents")
 
 DocStatus = Literal["uploaded", "indexed", "failed"]
-
-_SIDECAR_NAME = "meta.json"
-_SYLLABUS_NAME = "syllabus.json"
 
 
 class DocumentResponse(BaseModel):
@@ -102,7 +105,7 @@ async def _open_storage_stream(storage: Any, key: str) -> AsyncIterator[Any]:
 
 async def _read_sidecar(storage: Any, doc_id: str) -> dict[str, Any]:
     try:
-        async with _open_storage_stream(storage, _sidecar_key(doc_id)) as stream:
+        async with _open_storage_stream(storage, sidecar_key(doc_id)) as stream:
             payload = json.loads(stream.read().decode("utf-8"))
     except (FileNotFoundError, OSError, json.JSONDecodeError, ValueError):
         return {}
@@ -117,7 +120,7 @@ async def _local_pdf_path(storage: Any, stored: StoredObject) -> AsyncIterator[s
 
     temp_dir = tempfile.mkdtemp()
     try:
-        temp_path = Path(temp_dir) / _filename_from_storage_key(stored.key)
+        temp_path = Path(temp_dir) / filename_from_storage_key(stored.key)
         with temp_path.open("wb") as temp_file:
             async with _open_storage_stream(storage, stored.key) as source:
                 shutil.copyfileobj(source, temp_file)
@@ -150,11 +153,6 @@ def _path_from_file_uri(uri: str) -> str:
     return url2pathname(parsed.path)
 
 
-def _filename_from_storage_key(key: str) -> str:
-    filename = posixpath.basename(unquote(key.strip("/")).replace("\\", "/"))
-    return filename or "document.pdf"
-
-
 def _content_disposition(filename: str) -> str:
     fallback = "".join(
         ch if 0x20 <= ord(ch) < 0x7F and ch not in {'"', "\\", ";"} else "_"
@@ -165,14 +163,10 @@ def _content_disposition(filename: str) -> str:
     return f'inline; filename="{fallback}"; filename*=UTF-8\'\'{encoded}'
 
 
-def _sidecar_key(doc_id: str) -> str:
-    return f"{doc_id}/{_SIDECAR_NAME}"
-
-
 async def _write_sidecar(storage: Any, doc_id: str, payload: dict) -> None:
     body = json.dumps(payload).encode("utf-8")
     await storage.put(
-        _sidecar_key(doc_id),
+        sidecar_key(doc_id),
         io.BytesIO(body),
         content_type="application/json",
     )
@@ -183,7 +177,7 @@ def _find_stored_pdf(objects: list[StoredObject], doc_id: str) -> StoredObject |
     for obj in objects:
         if not obj.key.startswith(prefix):
             continue
-        if obj.key.endswith(f"/{_SIDECAR_NAME}") or obj.key.endswith(f"/{_SYLLABUS_NAME}"):
+        if obj.key.endswith(f"/{SIDECAR_NAME}") or obj.key.endswith(f"/{SYLLABUS_NAME}"):
             continue
         return obj
     return None
@@ -251,36 +245,21 @@ async def ingest_document(
 async def list_documents(
     _user: Annotated[User, Depends(get_current_user)],
 ) -> DocumentListResponse:
-    storage = get_storage()
-    objects = await storage.list()
-
-    # Group by doc_id; ignore sidecars in the public listing.
-    docs: dict[str, StoredObject] = {}
-    sidecar_doc_ids: set[str] = set()
-    for obj in objects:
-        head, _, tail = obj.key.partition("/")
-        if not tail:
-            continue
-        if tail == _SIDECAR_NAME:
-            sidecar_doc_ids.add(head)
-            continue
-        # First non-sidecar entry per doc_id wins.
-        docs.setdefault(head, obj)
-
-    results: list[DocumentResponse] = []
-    for doc_id, obj in docs.items():
-        status: DocStatus = "indexed" if doc_id in sidecar_doc_ids else "uploaded"
-        meta = await _read_sidecar(storage, doc_id) if doc_id in sidecar_doc_ids else {}
-        syllabus_ready = bool(meta.get("syllabus_ready"))
-        results.append(
-            DocumentResponse.from_stored(
-                doc_id,
-                obj,
-                status=status,
-                syllabus_ready=syllabus_ready,
+    summaries = await list_document_summaries()
+    return DocumentListResponse(
+        documents=[
+            DocumentResponse(
+                doc_id=summary.doc_id,
+                key=summary.key,
+                uri=summary.uri,
+                size=summary.size,
+                content_type=summary.content_type,
+                status=summary.status,
+                syllabus_ready=summary.syllabus_ready,
             )
-        )
-    return DocumentListResponse(documents=results)
+            for summary in summaries
+        ]
+    )
 
 
 @router.get("/documents/{doc_id}/syllabus", response_model=Syllabus)
@@ -306,7 +285,7 @@ async def get_document_file(
     if stored is None:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    filename = _filename_from_storage_key(stored.key)
+    filename = filename_from_storage_key(stored.key)
     content_disposition = _content_disposition(filename)
 
     if stored.uri.startswith("file://"):

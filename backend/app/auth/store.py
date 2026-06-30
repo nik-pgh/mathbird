@@ -62,6 +62,18 @@ class UserStore:
             return None
         return _row_to_user(row)
 
+    def list_users(self, *, limit: int = 20) -> list[User]:
+        rows = self._conn.execute(
+            """
+            SELECT id, google_sub, email, name, created_at
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [_row_to_user(row) for row in rows]
+
 
 def _row_to_user(row: sqlite3.Row) -> User:
     return User(
