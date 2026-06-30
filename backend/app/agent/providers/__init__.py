@@ -6,8 +6,9 @@ factory output — it never imports vendor plugins directly.
 """
 
 from .llm import build_llm
+from .register import ensure_livekit_plugins_registered
 from .stt import build_stt
 from .tts import build_tts
 from .vad import build_vad
 
-__all__ = ["build_llm", "build_stt", "build_tts", "build_vad"]
+__all__ = ["build_llm", "build_stt", "build_tts", "build_vad", "ensure_livekit_plugins_registered"]
