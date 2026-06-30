@@ -1,13 +1,10 @@
-"""LiveKit agent entrypoint.
+"""LiveKit agent worker entrypoint.
 
 Run locally:
     uv run python -m app.agent.main dev
 
-Interactive text console (recommended — readable tutor output):
+Interactive text console (no mic, debug LLM + tools locally):
     uv run python -m scripts.agent_console
-
-Legacy LiveKit console (debug logs may appear):
-    uv run python -m app.agent.main console --text
 
 Connects to LiveKit Cloud using ``LIVEKIT_URL`` / ``LIVEKIT_API_KEY`` /
 ``LIVEKIT_API_SECRET``. When a participant joins a room, the worker spawns an
@@ -60,10 +57,7 @@ async def entrypoint(ctx: JobContext) -> None:
 
     await ctx.connect()
 
-    if ctx.is_fake_job():
-        logging.getLogger("livekit.agents").setLevel(logging.WARNING)
-
-    user_id, active_doc_id = await resolve_session_identity(ctx, settings)
+    user_id, active_doc_id = await resolve_session_identity(ctx)
     bundle = await build_session_bundle(
         room=ctx.room,
         settings=settings,
@@ -88,12 +82,6 @@ async def entrypoint(ctx: JobContext) -> None:
             logger.exception("Failed to publish initial session progress snapshot")
 
     await send_initial_greeting(bundle.session, has_progress=progress_engine is not None)
-
-    if ctx.is_fake_job():
-        from app.agent.console.ui import print_banner, print_latest_assistant_from_history
-
-        print_banner(doc_id=active_doc_id, user_id=user_id)
-        print_latest_assistant_from_history(bundle.session.history)
 
 
 def main() -> None:

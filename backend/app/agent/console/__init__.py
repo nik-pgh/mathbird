@@ -3,7 +3,7 @@
 Scripts: ``scripts/agent_console.py``, ``scripts/simulate_conversation.py``.
 """
 
-from app.agent.console.identity import prompt_console_identity
+from app.agent.console.identity import prompt_console_identity, resolve_local_identity
 from app.agent.console.runtime import (
     enable_text_only_job,
     local_agent_runtime,
@@ -30,5 +30,6 @@ __all__ = [
     "print_turn_divider",
     "print_user_message",
     "prompt_console_identity",
+    "resolve_local_identity",
     "render_run_events",
 ]

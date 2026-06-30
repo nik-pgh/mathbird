@@ -1,8 +1,5 @@
 """Interactive text console with readable tutor output.
 
-Preferred over ``python -m app.agent.main console --text`` (LiveKit's built-in
-console mixes structured debug logs with Rich output).
-
 Usage (from ``backend/``)::
 
     uv run python -m scripts.agent_console
@@ -14,6 +11,7 @@ import asyncio
 import logging
 import sys
 
+from app.agent.console.identity import resolve_local_identity
 from app.agent.console.runtime import local_text_job
 from app.agent.console.ui import (
     print_banner,
@@ -24,11 +22,7 @@ from app.agent.console.ui import (
     render_run_events,
 )
 from app.agent.providers import ensure_livekit_plugins_registered
-from app.agent.session_factory import (
-    build_session_bundle,
-    resolve_session_identity,
-    send_initial_greeting,
-)
+from app.agent.session_factory import build_session_bundle, send_initial_greeting
 from app.config import get_settings
 
 
@@ -47,7 +41,7 @@ async def run_console() -> None:
 
     async with local_text_job() as ctx:
         room = ctx.room
-        user_id, active_doc_id = await resolve_session_identity(ctx, settings)
+        user_id, active_doc_id = await resolve_local_identity(settings)
 
         bundle = await build_session_bundle(
             room=room,

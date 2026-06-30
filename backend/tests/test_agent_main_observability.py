@@ -66,7 +66,7 @@ async def test_entrypoint_initializes_phoenix_inside_room_job(monkeypatch) -> No
         events.append("session_created")
         return FakeBundle()
 
-    async def _fake_resolve_session_identity(_ctx, _settings):
+    async def _fake_resolve_session_identity(_ctx):
         events.append("resolve_identity")
         return None, None
 

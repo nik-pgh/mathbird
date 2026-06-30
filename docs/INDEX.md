@@ -46,14 +46,14 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | Path | What it is |
 | --- | --- |
 | `agent/main.py` | Worker `entrypoint(ctx)` — joins a room, builds `AgentSession`, starts greeting. CLI: `python -m app.agent.main dev`. |
-| `scripts/agent_console.py` | Interactive text REPL with readable tutor output (preferred over `console --text`). |
-| `agent/session_factory.py` | Shared per-room wiring: `build_session_bundle`, `resolve_session_identity`, `send_initial_greeting`. Used by entrypoint and simulators. |
-| `agent/console/` | Local text console + YAML sim helpers — `runtime.py` (fake job + HTTP context), `identity.py` (stdin doc/user picker), `ui.py` (Rich formatters). |
+| `scripts/agent_console.py` | Interactive text REPL with readable tutor output. |
+| `agent/session_factory.py` | Production per-room wiring: `build_session_bundle`, `resolve_session_identity`, `send_initial_greeting`. |
+| `agent/console/` | Local text console + YAML sim helpers — `runtime.py` (local fake job + HTTP context), `identity.py` (stdin doc/user picker), `ui.py` (Rich formatters). |
 | `agent/simulation/scenarios.py` | YAML scenario loader (`ConversationScenario`, `load_scenario`). |
 | `agent/simulation/assertions.py` | Turn expectations checked against LiveKit `RunResult` events. |
 | `agent/tools.py` | `@function_tool` functions the LLM can call. `search_documents` is the RAG seam. `build_function_tools()` returns the list. |
 | `agent/providers/__init__.py` | Re-exports `build_stt/llm/tts/vad`. |
-| `agent/providers/register.py` | Eager LiveKit plugin imports on the main thread (required before `console --text` / local scripts). |
+| `agent/providers/register.py` | Eager LiveKit plugin imports on the main thread (required before local scripts). |
 | `agent/providers/stt.py` | STT factory. Branches on `settings.stt_provider`. Lazy vendor imports. |
 | `agent/providers/llm.py` | LLM factory. |
 | `agent/providers/tts.py` | TTS factory. Cartesia / ElevenLabs / OpenAI. |

@@ -84,12 +84,11 @@ class Settings(BaseSettings):
     # requests fall back to this doc_id so the agent can search it.
     guest_sample_doc_id: str = ""
 
-    # Console / simulation identity. Used when the worker runs as a fake job
-    # (``console --text``, ``simulate_conversation.py``) where no LiveKit
-    # participant metadata is available.
+    # Local script identity (``agent_console``, ``simulate_conversation.py``) when
+    # no LiveKit participant metadata is available.
     sim_user_id: str = ""
     sim_active_doc_id: str = ""
-    # When true (default), ``console --text`` prompts for doc/user on stdin if
+    # When true (default), ``agent_console`` prompts for doc/user on stdin if
     # ``SIM_*`` are unset. Set false to skip prompts (non-TTY / automation).
     sim_interactive: bool = True
 

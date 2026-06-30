@@ -21,11 +21,16 @@ def test_parse_participant_metadata() -> None:
 
 
 @pytest.mark.asyncio
-async def test_resolve_session_identity_uses_sim_settings_on_fake_job() -> None:
-    ctx = SimpleNamespace(is_fake_job=lambda: True)
-    settings = SimpleNamespace(sim_user_id="sim-user", sim_active_doc_id="sim-doc")
+async def test_resolve_local_identity_uses_sim_settings() -> None:
+    from app.agent.console.identity import resolve_local_identity
 
-    user_id, doc_id = await resolve_session_identity(ctx, settings)  # type: ignore[arg-type]
+    settings = SimpleNamespace(
+        sim_user_id="sim-user",
+        sim_active_doc_id="sim-doc",
+        sim_interactive=False,
+    )
+
+    user_id, doc_id = await resolve_local_identity(settings)  # type: ignore[arg-type]
 
     assert user_id == "sim-user"
     assert doc_id == "sim-doc"
@@ -36,13 +41,9 @@ async def test_resolve_session_identity_reads_participant_metadata() -> None:
     async def _wait_for_participant():
         return SimpleNamespace(metadata='{"user_id":"u2","active_doc_id":"d2"}')
 
-    ctx = SimpleNamespace(
-        is_fake_job=lambda: False,
-        wait_for_participant=_wait_for_participant,
-    )
-    settings = SimpleNamespace(sim_user_id="", sim_active_doc_id="")
+    ctx = SimpleNamespace(wait_for_participant=_wait_for_participant)
 
-    user_id, doc_id = await resolve_session_identity(ctx, settings)  # type: ignore[arg-type]
+    user_id, doc_id = await resolve_session_identity(ctx)  # type: ignore[arg-type]
 
     assert user_id == "u2"
     assert doc_id == "d2"

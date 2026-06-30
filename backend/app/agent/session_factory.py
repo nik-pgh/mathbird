@@ -9,7 +9,6 @@ from dataclasses import dataclass
 
 from livekit.agents import AgentSession, JobContext
 
-from app.agent.console.identity import prompt_console_identity
 from app.agent.providers import build_llm, build_stt, build_tts, build_vad
 from app.agent.tools import build_function_tools
 from app.agent.whiteboard import (
@@ -52,34 +51,8 @@ def parse_participant_metadata(metadata: str | None) -> tuple[str | None, str | 
     )
 
 
-async def resolve_session_identity(
-    ctx: JobContext,
-    settings: Settings,
-) -> tuple[str | None, str | None]:
-    """Resolve ``user_id`` and ``active_doc_id`` for RAG scoping and progress.
-
-    Production rooms read participant JWT metadata. Console / fake jobs skip
-    ``wait_for_participant`` (which would hang with no remote participant) and
-    fall back to ``SIM_USER_ID`` / ``SIM_ACTIVE_DOC_ID`` from settings.
-    """
-    if ctx.is_fake_job():
-        user_id = settings.sim_user_id or None
-        active_doc_id = settings.sim_active_doc_id or None
-        prompted_user, prompted_doc = await prompt_console_identity(
-            settings,
-            need_user=user_id is None,
-            need_doc=active_doc_id is None,
-        )
-        user_id = user_id or prompted_user
-        active_doc_id = active_doc_id or prompted_doc
-        if user_id or active_doc_id:
-            logger.info(
-                "fake job: using sim identity user_id=%s active_doc_id=%s",
-                user_id,
-                active_doc_id,
-            )
-        return user_id, active_doc_id
-
+async def resolve_session_identity(ctx: JobContext) -> tuple[str | None, str | None]:
+    """Resolve ``user_id`` and ``active_doc_id`` from the joining participant's JWT metadata."""
     try:
         participant = await asyncio.wait_for(ctx.wait_for_participant(), timeout=10.0)
         return parse_participant_metadata(participant.metadata)

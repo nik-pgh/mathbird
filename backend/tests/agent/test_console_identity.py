@@ -67,8 +67,8 @@ async def test_prompt_doc_selection(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_resolve_session_identity_prompts_when_fake_job(monkeypatch) -> None:
-    from app.agent.session_factory import resolve_session_identity
+async def test_resolve_local_identity_prompts_when_env_incomplete(monkeypatch) -> None:
+    from app.agent.console.identity import resolve_local_identity
 
     async def _fake_prompt(_settings, *, need_user, need_doc):
         assert need_user is True
@@ -76,14 +76,13 @@ async def test_resolve_session_identity_prompts_when_fake_job(monkeypatch) -> No
         return "picked-user", "picked-doc"
 
     monkeypatch.setattr(
-        "app.agent.session_factory.prompt_console_identity",
+        "app.agent.console.identity.prompt_console_identity",
         _fake_prompt,
     )
 
-    ctx = SimpleNamespace(is_fake_job=lambda: True)
     settings = SimpleNamespace(sim_user_id="", sim_active_doc_id="", sim_interactive=True)
 
-    user_id, doc_id = await resolve_session_identity(ctx, settings)  # type: ignore[arg-type]
+    user_id, doc_id = await resolve_local_identity(settings)  # type: ignore[arg-type]
 
     assert user_id == "picked-user"
     assert doc_id == "picked-doc"

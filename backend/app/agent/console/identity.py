@@ -1,4 +1,4 @@
-"""Interactive doc/user selection for local console and simulation fake jobs."""
+"""Interactive doc/user selection for local scripts (agent_console, simulate_conversation)."""
 
 from __future__ import annotations
 
@@ -103,3 +103,15 @@ async def prompt_console_identity(
     user_id = await _prompt_user_id() if need_user else None
     print("", flush=True)
     return user_id, active_doc_id
+
+
+async def resolve_local_identity(settings: Settings) -> tuple[str | None, str | None]:
+    """Resolve ``SIM_*`` env vars and optional stdin prompts for local scripts."""
+    user_id = settings.sim_user_id or None
+    active_doc_id = settings.sim_active_doc_id or None
+    prompted_user, prompted_doc = await prompt_console_identity(
+        settings,
+        need_user=user_id is None,
+        need_doc=active_doc_id is None,
+    )
+    return user_id or prompted_user, active_doc_id or prompted_doc

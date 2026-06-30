@@ -49,12 +49,6 @@ SIM_ACTIVE_DOC_ID=your-doc-id SIM_USER_ID=test-user \
   uv run python -m scripts.agent_console
 ```
 
-Legacy LiveKit CLI console (still works; may show structured debug logs):
-
-```bash
-uv run python -m app.agent.main console --text
-```
-
 **Scripted YAML scenarios** — replay multi-turn conversations with assertions:
 
 ```bash

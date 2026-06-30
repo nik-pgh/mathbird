@@ -23,7 +23,6 @@ uv run pytest path::test_name        # single test
 
 # Agent without voice (interactive)
 uv run python -m scripts.agent_console
-# legacy: uv run python -m app.agent.main console --text
 
 # Scripted tutor scenarios (YAML under simulations/scenarios/)
 uv run python -m scripts.simulate_conversation simulations/scenarios/tutor_greeting.yaml -v
@@ -59,7 +58,7 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 | Tune agent persona | Edit `backend/personas/default.yaml`, or set `PERSONA_FILE` to another YAML; `Settings.agent_instructions` loads it via `_load_persona` |
 | Add observability (LLM/RAG tracing) | Already wired via `app/observability.py`; toggle with `PHOENIX_ENABLED=true` |
 | New conversation simulation scenario | YAML in `simulations/scenarios/`; extend `TurnExpectation` in `app/agent/simulation/scenarios.py` if new assertion types are needed |
-| Debug agent without voice | `scripts/agent_console.py` (preferred), `console --text`, or `scripts/simulate_conversation.py` — all use `session_factory.py`; local scripts also use `app/agent/console/` |
+| Debug agent without voice | `scripts/agent_console.py` or `scripts/simulate_conversation.py` — both use `session_factory.py` + `app/agent/console/` |
 | Interactive console doc/user picker | `app/agent/console/identity.py`; toggle with `SIM_INTERACTIVE` / pre-set `SIM_USER_ID` / `SIM_ACTIVE_DOC_ID` |
 
 ## Gotchas
@@ -76,4 +75,4 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 - **Agent persona is YAML, not env.** `Settings.agent_instructions` is a `@property` that calls `_load_persona(persona_file)` — there is no `AGENT_INSTRUCTIONS` env var anymore. The default `backend/personas/default.yaml` ships a math-tutor prompt; swap with `PERSONA_FILE=/path/to/other.yaml` (the YAML must define a non-empty top-level `instructions:` string).
 - **Phoenix tracing must be imported first.** `app/agent/main.py` calls `setup_phoenix()` at the top of the module, before any `livekit` or provider imports. Don't reorder — livekit caches unpatched OpenAI/LlamaIndex method references and the spans go missing. The HTTP API (`app/api/main.py`) does the same on its hot path.
 - **Phoenix deps are core.** `uv sync` installs `arize-phoenix` and OpenInference instrumentors. Export is still off until `PHOENIX_ENABLED=true`.
-- **Console / simulation identity.** Fake jobs (`agent_console`, `console --text`, `simulate_conversation.py`) have no LiveKit participant metadata. Set `SIM_USER_ID` / `SIM_ACTIVE_DOC_ID` in `.env`, or let `SIM_INTERACTIVE=true` (default) prompt on stdin. Local scripts use `app/agent/console/runtime.py` (`local_text_job`) for text-only LLM sessions without STT/TTS.
+- **Local script identity.** `agent_console` and `simulate_conversation.py` have no LiveKit participant metadata. Set `SIM_USER_ID` / `SIM_ACTIVE_DOC_ID` in `.env`, or let `SIM_INTERACTIVE=true` (default) prompt on stdin. Use `app/agent/console/runtime.py` (`local_text_job`) for text-only LLM sessions without STT/TTS.

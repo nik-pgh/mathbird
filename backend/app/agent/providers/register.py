@@ -8,8 +8,8 @@ _plugins_loaded = False
 def ensure_livekit_plugins_registered() -> None:
     """Import vendor plugin packages so ``Plugin.register_plugin`` runs on the main thread.
 
-    ``console --text`` dispatches the entrypoint on a worker thread; lazy imports
-    inside ``build_stt`` / ``build_llm`` / … then raise
+    Local scripts (``agent_console``, ``simulate_conversation``) build providers
+    outside the LiveKit worker; lazy imports then raise
     ``RuntimeError: Plugins must be registered on the main thread``.
     """
     global _plugins_loaded
