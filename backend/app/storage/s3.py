@@ -58,7 +58,12 @@ class S3Storage:
 
     @asynccontextmanager
     async def open(self, key: str) -> AsyncIterator[BinaryIO]:
-        response = self.client.get_object(Bucket=self.bucket, Key=key)
+        try:
+            response = self.client.get_object(Bucket=self.bucket, Key=key)
+        except self.client.exceptions.NoSuchKey as err:  # pragma: no cover - depends on live S3
+            # Normalize the not-found contract with LocalStorage so callers can
+            # rely on FileNotFoundError for missing keys across backends.
+            raise FileNotFoundError(key) from err
         body = response["Body"]
         try:
             yield body

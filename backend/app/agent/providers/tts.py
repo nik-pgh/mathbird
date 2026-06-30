@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from livekit.agents import tts as tts_base
+from livekit.agents.types import NOT_GIVEN
 
 from app.config import Settings
 
@@ -24,8 +25,8 @@ def build_tts(settings: Settings) -> tts_base.TTS:
         return elevenlabs.TTS(
             model=settings.tts_model,
             voice_id=settings.tts_voice,
-            language=settings.tts_language or None,
-            api_key=settings.eleven_api_key or None,
+            language=settings.tts_language or NOT_GIVEN,
+            api_key=settings.eleven_api_key or NOT_GIVEN,
         )
 
     if name == "openai":
