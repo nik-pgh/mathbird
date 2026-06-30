@@ -1,0 +1,6 @@
+name: tutor_greeting
+greeting: true
+turns:
+  - student: "Hi, I need help with algebra."
+    expect:
+      assistant_contains: ["?"]

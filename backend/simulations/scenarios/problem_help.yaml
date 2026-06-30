@@ -1,0 +1,12 @@
+name: problem_help_rag
+# Set doc_id or SIM_ACTIVE_DOC_ID when your PDF is indexed.
+greeting: false
+turns:
+  - student: "Can you help me with problem 3 from the textbook?"
+    expect:
+      tool_calls:
+        - search_documents
+      search_query_contains:
+        - "problem 3"
+      assistant_contains:
+        - "?"
