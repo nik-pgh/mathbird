@@ -28,6 +28,7 @@ from livekit.agents import Agent
 from livekit.agents.llm import ChatContext, ChatMessage
 from opentelemetry import trace
 
+from app.agent.grader.base import Grader, NodeUpdate
 from app.agent.math_speech import spoken_math_stream
 from app.agent.whiteboard.cache import BoardCache
 from app.agent.whiteboard.extractor.base import BoardExtractor
@@ -43,6 +44,37 @@ _tracer = trace.get_tracer("mathbird.session")
 _QUEUE_MAXSIZE = 20
 
 
+def _extract_text(message: ChatMessage) -> str:
+    """Best-effort extraction of plain text from a ChatMessage.
+
+    LiveKit ChatMessage content may be a string or a list of content parts;
+    we concatenate any str-like parts.
+    """
+    content = getattr(message, "content", None)
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    parts: list[str] = []
+    if isinstance(content, list):
+        for part in content:
+            if isinstance(part, str):
+                parts.append(part)
+            else:
+                text = getattr(part, "text", None) or getattr(part, "content", None)
+                if isinstance(text, str):
+                    parts.append(text)
+    return "".join(parts)
+
+
+async def _persist_progress_via_store(engine: ProgressEngine) -> None:
+    from app.progress import get_progress_store
+    from app.storage import get_storage
+
+    store = get_progress_store(get_storage())
+    await store.save(engine.state)
+
+
 class WhiteboardAgent(Agent):
     def __init__(
         self,
@@ -50,6 +82,7 @@ class WhiteboardAgent(Agent):
         board_state: BoardState,
         board_cache: BoardCache,
         extractor: BoardExtractor,
+        grader: Grader | None = None,
         progress_engine: ProgressEngine | None = None,
         **kwargs: Any,
     ) -> None:
@@ -57,6 +90,7 @@ class WhiteboardAgent(Agent):
         self._board_state = board_state
         self._board_cache = board_cache
         self._extractor = extractor
+        self._grader = grader
         self._progress_engine = progress_engine
         self._sentence_queue: asyncio.Queue[str] = asyncio.Queue(maxsize=_QUEUE_MAXSIZE)
         self._buffer: str = ""
@@ -110,6 +144,97 @@ class WhiteboardAgent(Agent):
                 if focus:
                     span.set_attribute("session.turn.focus_problem_id", focus.problem_id)
                     span.set_attribute("session.turn.focus_chapter_id", focus.chapter_id)
+
+        # Grade the student's turn and evolve the student model. Runs after the
+        # span so a grader failure never breaks the turn; the snapshot publish
+        # lets the frontend see updated levels even when the LLM calls no tool.
+        if self._progress_engine is not None and self._grader is not None:
+            await self._grade_turn(new_message)
+
+    async def _grade_turn(self, new_message: ChatMessage) -> None:
+        """Assess the student's latest turn and advance the student model.
+
+        Defensive: any grader/persistence failure is logged and swallowed so
+        the turn proceeds. The ``new_message`` is the student's input text;
+        the whiteboard state supplies ``board_text``.
+        """
+        engine = self._progress_engine
+        if engine is None or self._grader is None:
+            return
+
+        turn_text = _extract_text(new_message)
+        if not turn_text.strip():
+            return
+
+        focus_node_id = engine.state.focus.problem_id or engine.state.focus.concept_id \
+            if engine.state.focus is not None else None
+        levels = engine.nearby_levels(focus_node_id) if focus_node_id else {}
+        syllabus_context = engine.focus_context(focus_node_id) if focus_node_id else ""
+        board_text = None if self._board_state.is_blank else self._board_state.user_text
+
+        try:
+            result = await self._grader.grade(
+                turn_text=turn_text,
+                board_text=board_text,
+                focus_node_id=focus_node_id,
+                levels=levels,
+                syllabus_context=syllabus_context,
+            )
+        except Exception:
+            logger.exception("grader raised; skipping turn grading")
+            return
+
+        if not result.updates:
+            return
+
+        changed = False
+        for update in result.updates:
+            try:
+                changed |= self._apply_grader_update(engine, update)
+            except ValueError:
+                logger.warning("grader referenced unknown node id: %s", update.node_id)
+
+        if not changed:
+            return
+
+        # Persist + publish so the frontend reflects grader-driven evolution
+        # even when the LLM called no progress tool this turn.
+        try:
+            await _persist_progress_via_store(engine)
+        except Exception:
+            logger.exception("failed to persist graded progress state")
+        try:
+            room = self._get_room()
+            if room is not None:
+                from app.progress.publisher import publish_session_progress
+
+                await publish_session_progress(room, engine.snapshot_update())
+        except Exception:
+            logger.exception("failed to publish graded progress snapshot")
+
+    @staticmethod
+    def _apply_grader_update(engine: ProgressEngine, update: NodeUpdate) -> bool:
+        """Apply one graded update; return True if it changed state."""
+        before = engine.effective_level(update.node_id)
+        if update.clear_misconceptions:
+            engine.clear_misconceptions(update.node_id)
+        for text in update.misconception_additions:
+            engine.record_misconception(update.node_id, text)
+        if update.hint_given:
+            engine.record_hint(update.node_id)
+        if update.level is not None:
+            engine.set_level(
+                update.node_id,
+                update.level,
+                note=update.note or None,
+                force=update.force,
+            )
+        elif update.note:
+            # Note-only update: touch the node so its updated_at moves.
+            engine.set_level(update.node_id, engine.effective_level(update.node_id), note=update.note)
+        after = engine.effective_level(update.node_id)
+        return after != before or bool(update.misconception_additions) or update.clear_misconceptions \
+            or update.hint_given
 
     # ── lifecycle ──────────────────────────────────────────────────────
 

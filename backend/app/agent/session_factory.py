@@ -20,6 +20,7 @@ from app.agent.whiteboard import (
     get_board_reader,
     install_user_board_listener,
 )
+from app.agent.grader import get_grader
 from app.agent.whiteboard_agent import WhiteboardAgent
 from app.config import Settings, get_settings
 
@@ -104,6 +105,7 @@ async def build_session_bundle(
     board_cache = BoardCache()
     board_reader = get_board_reader()
     board_extractor = get_board_extractor()
+    grader = get_grader()
     listener = install_user_board_listener(
         room=room,
         state=board_state,
@@ -153,6 +155,7 @@ async def build_session_bundle(
         board_state=board_state,
         board_cache=board_cache,
         extractor=board_extractor,
+        grader=grader,
         progress_engine=progress_engine,
     )
 
