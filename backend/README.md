@@ -27,6 +27,52 @@ uv run uvicorn app.api.main:app --reload --port 8000
 uv run python -m app.agent.main dev
 ```
 
+## Testing the agent (no voice)
+
+Two ways to exercise the full LLM + tools pipeline without mic, speaker, or
+a LiveKit room participant:
+
+**Interactive text console** — type student turns with readable tutor output
+(Claude Code–style labels, tool-call summaries, no JSON debug noise):
+
+```bash
+cd backend
+uv run python -m scripts.agent_console
+```
+
+Optional doc/progress scope. If `SIM_ACTIVE_DOC_ID` / `SIM_USER_ID` are unset,
+the console lists uploaded PDFs and known auth users and prompts on stdin.
+Set `SIM_INTERACTIVE=false` to skip prompts (or pre-set `SIM_*` in `.env`):
+
+```bash
+SIM_ACTIVE_DOC_ID=your-doc-id SIM_USER_ID=test-user \
+  uv run python -m scripts.agent_console
+```
+
+Legacy LiveKit CLI console (still works; may show structured debug logs):
+
+```bash
+uv run python -m app.agent.main console --text
+```
+
+**Scripted YAML scenarios** — replay multi-turn conversations with assertions:
+
+```bash
+uv run python -m scripts.simulate_conversation \
+  simulations/scenarios/tutor_greeting.yaml -v
+
+SIM_ACTIVE_DOC_ID=your-doc-id uv run python -m scripts.simulate_conversation \
+  simulations/scenarios/problem_help.yaml -v
+```
+
+Scenarios live under `simulations/scenarios/`. Each turn can assert tool calls,
+`search_documents` query fragments, and assistant reply content. Fast unit tests
+(no LLM): `uv run pytest tests/simulation/ -m "not live"`. Full stack against
+OpenAI: `uv run pytest tests/simulation/ -m live`.
+
+Session wiring is shared between the worker entrypoint and the simulator via
+`app/agent/session_factory.py`.
+
 ## Swapping providers
 
 Edit `.env` — no code changes required:

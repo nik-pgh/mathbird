@@ -55,6 +55,12 @@ uv run uvicorn app.api.main:app --reload --port 8000
 # Backend — LiveKit agent worker (connects to LiveKit Cloud, joins rooms)
 uv run python -m app.agent.main dev
 
+# Backend — agent text console (no mic; debug LLM + tools locally)
+uv run python -m scripts.agent_console
+
+# Backend — scripted conversation simulation from YAML
+uv run python -m scripts.simulate_conversation simulations/scenarios/tutor_greeting.yaml -v
+
 # Backend — lint / format
 uv run ruff check .
 uv run ruff format .
@@ -138,7 +144,7 @@ Schemas live in `backend/app/agent/whiteboard/messages.py` and are mirrored in `
 
 ## Tests
 
-Pytest config lives in `backend/pyproject.toml` with `asyncio_mode = "auto"` — async test functions don't need `@pytest.mark.asyncio`. `httpx` is in dev deps for FastAPI testing. Tests live under `backend/tests/` grouped by seam (`tests/rag/`, `tests/whiteboard/`); add new tests next to the package they exercise. The frontend does not have a test suite yet.
+Pytest config lives in `backend/pyproject.toml` with `asyncio_mode = "auto"` — async test functions don't need `@pytest.mark.asyncio`. `httpx` is in dev deps for FastAPI testing. Tests live under `backend/tests/` grouped by seam (`tests/rag/`, `tests/whiteboard/`, `tests/simulation/`); add new tests next to the package they exercise. Use `@pytest.mark.live` for tests that call external LLM APIs. The frontend does not have a test suite yet.
 
 ## Gotchas
 

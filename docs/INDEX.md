@@ -23,7 +23,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/README.md` | Backend-specific run instructions. |
 | `backend/CLAUDE.md` | Backend-scoped agent guidance (rules, gotchas, where-to-add map). |
 | `backend/uploads/` | (gitignored) — default `STORAGE_LOCAL_DIR`. |
-| `backend/tests/` | Pytest suite, grouped by seam (`tests/rag/`, `tests/whiteboard/`). |
+| `backend/tests/` | Pytest suite, grouped by seam (`tests/rag/`, `tests/whiteboard/`, `tests/simulation/`). |
 | `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
 | `backend/evals/README.md` | Agent-facing guide to the retrieval evaluation pipeline, reports, chunking policies, dashboard wiring, and extension workflow. |
 | `backend/evals/golden/goodfellow_ch2_retrieval.jsonl` | 40-row golden retrieval set for Goodfellow chapter 2. |
@@ -31,6 +31,8 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/scripts/eval_retrieval.py` | CLI to compare retrieval quality across embedding collections. |
 | `backend/scripts/eval_chunking.py` | CLI to parse once, index multiple chunking policies, evaluate them, and optionally update the frontend dashboard JSON. |
 | `backend/scripts/eval_structured.py` | CLI to compare production, structured-only, and semantic-only retrieval paths; optional dashboard JSON output. |
+| `backend/scripts/simulate_conversation.py` | CLI to replay YAML tutor scenarios against the real agent stack (text-only, no voice). |
+| `backend/simulations/scenarios/` | YAML conversation scenarios for `simulate_conversation.py`. |
 
 ### `backend/app/` — shared package
 
@@ -44,8 +46,14 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | Path | What it is |
 | --- | --- |
 | `agent/main.py` | Worker `entrypoint(ctx)` — joins a room, builds `AgentSession`, starts greeting. CLI: `python -m app.agent.main dev`. |
+| `scripts/agent_console.py` | Interactive text REPL with readable tutor output (preferred over `console --text`). |
+| `agent/session_factory.py` | Shared per-room wiring: `build_session_bundle`, `resolve_session_identity`, `send_initial_greeting`. Used by entrypoint and simulators. |
+| `agent/console/` | Local text console + YAML sim helpers — `runtime.py` (fake job + HTTP context), `identity.py` (stdin doc/user picker), `ui.py` (Rich formatters). |
+| `agent/simulation/scenarios.py` | YAML scenario loader (`ConversationScenario`, `load_scenario`). |
+| `agent/simulation/assertions.py` | Turn expectations checked against LiveKit `RunResult` events. |
 | `agent/tools.py` | `@function_tool` functions the LLM can call. `search_documents` is the RAG seam. `build_function_tools()` returns the list. |
 | `agent/providers/__init__.py` | Re-exports `build_stt/llm/tts/vad`. |
+| `agent/providers/register.py` | Eager LiveKit plugin imports on the main thread (required before `console --text` / local scripts). |
 | `agent/providers/stt.py` | STT factory. Branches on `settings.stt_provider`. Lazy vendor imports. |
 | `agent/providers/llm.py` | LLM factory. |
 | `agent/providers/tts.py` | TTS factory. Cartesia / ElevenLabs / OpenAI. |
@@ -72,6 +80,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `api/main.py` | FastAPI app, CORS, mounts routers, `/health`. |
 | `api/routes/token.py` | `POST /api/token` — signs LiveKit JWT, returns `{token, url, room, identity}`. |
 | `api/routes/documents.py` | `POST /api/documents` stores PDFs, `POST /api/documents/{doc_id}/ingest` indexes them, `GET /api/documents` lists upload/index status, and `GET /api/documents/{doc_id}/file` streams PDFs to the session iframe. |
+| `documents/catalog.py` | Shared PDF listing for HTTP API and console doc picker (`list_document_summaries`). |
 
 ### `backend/app/storage/` — pluggable storage
 
