@@ -37,7 +37,8 @@ class _GradedNode(BaseModel):
 
 
 class _GradeResponse(BaseModel):
-    updates: list[_GradedNode]
+    set_focus_node_id: str | None = None
+    updates: list[_GradedNode] = Field(default_factory=list)
 
 
 _SYSTEM_PROMPT = """\
@@ -52,6 +53,12 @@ You will receive:
 - levels: a map of node_id → current mastery level for nearby nodes.
 - syllabus_context: the focus problem's statement, its parent concept, and \
 adjacent problems (a short text block).
+- next_suggestion_node_id / next_suggestion_label: the engine's current next \
+suggestion candidate (may be null).
+- recommend_intent / recommend_directive: what the tutor was trying to do in \
+the previous message (may be null).
+- last_tutor_message: the tutor message immediately before this student turn \
+(may be null).
 
 Mastery levels are ordinal: not_started < introduced < practicing < proficient < mastered.
 - introduced: the concept/problem has been presented or opened.
@@ -74,10 +81,16 @@ practicing/proficient.
 negative"). Phrase each as a reusable diagnostic, not a turn transcript.
 - ``clear_misconceptions=true`` only when the student explicitly corrected a \
 previously recorded error this turn.
-- ``hint_given=true`` when the tutor (in the same turn) gave a substantive \
-hint toward the focus node — this feeds the "review" recommendation.
+- ``hint_given=true`` when ``last_tutor_message`` gave a substantive hint \
+toward the focus node. Do not infer hints from the student turn alone.
 - Target the focus node primarily; only touch other nodes when the student's \
 work this turn clearly pertains to them (e.g. a prerequisite they reused).
+- ``set_focus_node_id`` is optional and usually null. Set it only when all are \
+true: ``recommend_intent`` is ``introduce``, ``next_suggestion_node_id`` is \
+present, and the student gave a clear affirmative acceptance to proceed ("yes", \
+"ok", "let's do that", etc.). In that case set ``set_focus_node_id`` to \
+``next_suggestion_node_id``. Leave null for non-affirmative, ambiguous, or \
+off-topic student turns.
 
 If nothing in this turn supports an update, return {"updates": []}.
 """
@@ -89,11 +102,21 @@ def _format_user_message(
     focus_node_id: str | None,
     levels: dict[str, MasteryLevel],
     syllabus_context: str,
+    next_suggestion_node_id: str | None,
+    next_suggestion_label: str | None,
+    recommend_intent: str | None,
+    recommend_directive: str | None,
+    last_tutor_message: str | None,
 ) -> str:
     return (
         f"focus_node_id: {focus_node_id or '(none)'}\n"
         f"levels: {json.dumps(levels, ensure_ascii=False)}\n"
+        f"next_suggestion_node_id: {next_suggestion_node_id or '(none)'}\n"
+        f"next_suggestion_label: {next_suggestion_label or '(none)'}\n"
+        f"recommend_intent: {recommend_intent or '(none)'}\n"
+        f"recommend_directive: {recommend_directive or '(none)'}\n"
         f"syllabus_context:\n{syllabus_context or '(none)'}\n\n"
+        f"last_tutor_message:\n{last_tutor_message or '(none)'}\n\n"
         f"board_text:\n{board_text or '(empty)'}\n\n"
         f"turn_text:\n{turn_text}"
     )
@@ -122,11 +145,11 @@ class OpenAIGrader(Grader):
         focus_node_id: str | None,
         levels: dict[str, MasteryLevel],
         syllabus_context: str,
-        next_suggestion_node_id: str | None = None,  # noqa: ARG002
-        next_suggestion_label: str | None = None,  # noqa: ARG002
-        recommend_intent: str | None = None,  # noqa: ARG002
-        recommend_directive: str | None = None,  # noqa: ARG002
-        last_tutor_message: str | None = None,  # noqa: ARG002
+        next_suggestion_node_id: str | None = None,
+        next_suggestion_label: str | None = None,
+        recommend_intent: str | None = None,
+        recommend_directive: str | None = None,
+        last_tutor_message: str | None = None,
     ) -> GradeResult:
         try:
             completion = await asyncio.wait_for(
@@ -143,6 +166,11 @@ class OpenAIGrader(Grader):
                                 focus_node_id,
                                 levels,
                                 syllabus_context,
+                                next_suggestion_node_id,
+                                next_suggestion_label,
+                                recommend_intent,
+                                recommend_directive,
+                                last_tutor_message,
                             ),
                         },
                     ],
@@ -173,6 +201,7 @@ class OpenAIGrader(Grader):
         if parsed is None:
             return GradeResult()
         return GradeResult(
+            set_focus_node_id=parsed.set_focus_node_id,
             updates=[
                 NodeUpdate(
                     node_id=u.node_id,

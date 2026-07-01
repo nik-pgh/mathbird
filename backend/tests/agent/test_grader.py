@@ -97,8 +97,8 @@ class _FakeCompletions:
     async def parse(self, **kwargs):  # noqa: ANN003
         from app.agent.grader.openai import _GradeResponse, _GradedNode
 
-        nodes = self._factory(_GradedNode)
-        return _FakeCompletion(_GradeResponse(updates=nodes))
+        parsed = self._factory(_GradedNode, _GradeResponse)
+        return _FakeCompletion(parsed)
 
 
 class _FakeBeta:
@@ -117,14 +117,16 @@ async def test_openai_grader_applies_solved_update() -> None:
     from app.agent.whiteboard.cache import BoardCache
     from app.agent.whiteboard.state import BoardState
 
-    def factory(_GradedNode):
-        return [
-            _GradedNode(
-                node_id="ch-1-p-1",
-                level="proficient",
-                note="student solved correctly but did not explain",
-            )
-        ]
+    def factory(_GradedNode, _GradeResponse):
+        return _GradeResponse(
+            updates=[
+                _GradedNode(
+                    node_id="ch-1-p-1",
+                    level="proficient",
+                    note="student solved correctly but did not explain",
+                )
+            ]
+        )
 
     grader = OpenAIGrader(model="test", timeout=5.0, client=_FakeClient(factory))
     engine = _engine()
@@ -150,13 +152,15 @@ async def test_openai_grader_applies_solved_update() -> None:
 async def test_openai_grader_records_misconception() -> None:
     from app.agent.grader.openai import _GradedNode
 
-    def factory(_GradedNode):
-        return [
-            _GradedNode(
-                node_id="ch-1-p-1",
-                misconception_additions=["sign error distributing the negative"],
-            )
-        ]
+    def factory(_GradedNode, _GradeResponse):
+        return _GradeResponse(
+            updates=[
+                _GradedNode(
+                    node_id="ch-1-p-1",
+                    misconception_additions=["sign error distributing the negative"],
+                )
+            ]
+        )
 
     grader = OpenAIGrader(model="test", timeout=5.0, client=_FakeClient(factory))
     engine = _engine()
@@ -171,6 +175,30 @@ async def test_openai_grader_records_misconception() -> None:
     )
     WhiteboardAgent._apply_grader_update(engine, result.updates[0])
     assert engine.state.nodes["ch-1-p-1"].misconceptions == ["sign error distributing the negative"]
+
+
+@pytest.mark.asyncio
+async def test_openai_grader_returns_set_focus() -> None:
+    def factory(_GradedNode, _GradeResponse):
+        return _GradeResponse(set_focus_node_id="ch-1-c-a", updates=[])
+
+    grader = OpenAIGrader(model="test", timeout=5.0, client=_FakeClient(factory))
+    engine = _engine()
+    engine.set_focus("ch-1-p-1")
+
+    result = await grader.grade(
+        turn_text="yes, let's do that next",
+        board_text=None,
+        focus_node_id="ch-1-p-1",
+        levels=engine.nearby_levels("ch-1-p-1"),
+        syllabus_context=engine.focus_context("ch-1-p-1"),
+        next_suggestion_node_id="ch-1-c-a",
+        next_suggestion_label="Concept A",
+        recommend_intent="introduce",
+        recommend_directive="move_to_next",
+        last_tutor_message="Great work. Want to move to Concept A next?",
+    )
+    assert result.set_focus_node_id == "ch-1-c-a"
 
 
 @pytest.mark.asyncio
