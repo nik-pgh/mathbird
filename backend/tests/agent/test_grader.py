@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from livekit.agents.llm import ChatContext, ChatMessage
 
-from app.agent.grader import Grader, GradeResult, NodeUpdate, get_grader
+from app.agent.grader import Grader, GradeResult, get_grader
 from app.agent.grader.null import NullGrader
 from app.agent.grader.openai import OpenAIGrader
 from app.agent.whiteboard_agent import WhiteboardAgent
@@ -96,7 +96,7 @@ class _FakeCompletions:
         self._factory = parsed_factory
 
     async def parse(self, **kwargs):  # noqa: ANN003
-        from app.agent.grader.openai import _GradeResponse, _GradedNode
+        from app.agent.grader.openai import _GradedNode, _GradeResponse
 
         parsed = self._factory(_GradedNode, _GradeResponse)
         return _FakeCompletion(parsed)
@@ -115,8 +115,6 @@ class _FakeClient:
 @pytest.mark.asyncio
 async def test_openai_grader_applies_solved_update() -> None:
     """An OpenAI grader that returns a 'proficient' update advances the engine."""
-    from app.agent.whiteboard.cache import BoardCache
-    from app.agent.whiteboard.state import BoardState
 
     def factory(_GradedNode, _GradeResponse):
         return _GradeResponse(
@@ -151,7 +149,6 @@ async def test_openai_grader_applies_solved_update() -> None:
 
 @pytest.mark.asyncio
 async def test_openai_grader_records_misconception() -> None:
-    from app.agent.grader.openai import _GradedNode
 
     def factory(_GradedNode, _GradeResponse):
         return _GradeResponse(
@@ -212,7 +209,9 @@ async def test_openai_grader_returns_empty_on_exception() -> None:
 
     class _ExplodingClient:
         def __init__(self) -> None:
-            self.beta = type("B", (), {"chat": type("C", (), {"completions": _ExplodingCompletions()})()})()
+            completions = _ExplodingCompletions()
+            chat = type("C", (), {"completions": completions})()
+            self.beta = type("B", (), {"chat": chat})()
 
     grader = OpenAIGrader(model="test", timeout=5.0, client=_ExplodingClient())
     result = await grader.grade(

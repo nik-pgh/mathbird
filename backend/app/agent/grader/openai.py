@@ -17,7 +17,7 @@ from typing import Any
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
-from app.agent.grader.base import GradeResult, Grader, NodeUpdate
+from app.agent.grader.base import Grader, GradeResult, NodeUpdate
 from app.progress.models import MasteryLevel
 
 logger = logging.getLogger("mathbird.agent.grader")

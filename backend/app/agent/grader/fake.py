@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import deque
 
-from app.agent.grader.base import GradeResult, Grader
+from app.agent.grader.base import Grader, GradeResult
 from app.progress.models import MasteryLevel
 
 

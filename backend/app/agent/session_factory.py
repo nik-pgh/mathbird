@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from livekit.agents import AgentSession, JobContext
 
+from app.agent.grader import Grader, get_grader
 from app.agent.providers import build_llm, build_stt, build_tts, build_vad
 from app.agent.tools import build_function_tools
 from app.agent.whiteboard import (
@@ -20,7 +21,6 @@ from app.agent.whiteboard import (
     get_board_reader,
     install_user_board_listener,
 )
-from app.agent.grader import Grader, get_grader
 from app.agent.whiteboard_agent import WhiteboardAgent
 from app.config import Settings, get_settings
 

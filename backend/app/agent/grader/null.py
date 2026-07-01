@@ -6,7 +6,7 @@ is gated entirely on the LLM's manual tool calls (the pre-grader behavior).
 
 from __future__ import annotations
 
-from app.agent.grader.base import GradeResult, Grader
+from app.agent.grader.base import Grader, GradeResult
 from app.progress.models import MasteryLevel
 
 
