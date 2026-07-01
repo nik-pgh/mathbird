@@ -49,6 +49,7 @@ class GradeResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    set_focus_node_id: str | None = None
     updates: list[NodeUpdate] = Field(default_factory=list)
 
 
@@ -62,4 +63,9 @@ class Grader(Protocol):
         focus_node_id: str | None,
         levels: dict[str, MasteryLevel],
         syllabus_context: str,
+        next_suggestion_node_id: str | None = None,
+        next_suggestion_label: str | None = None,
+        recommend_intent: str | None = None,
+        recommend_directive: str | None = None,
+        last_tutor_message: str | None = None,
     ) -> GradeResult: ...

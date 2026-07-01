@@ -19,5 +19,10 @@ class NullGrader(Grader):
         focus_node_id: str | None,  # noqa: ARG002
         levels: dict[str, MasteryLevel],  # noqa: ARG002
         syllabus_context: str,  # noqa: ARG002
+        next_suggestion_node_id: str | None = None,  # noqa: ARG002
+        next_suggestion_label: str | None = None,  # noqa: ARG002
+        recommend_intent: str | None = None,  # noqa: ARG002
+        recommend_directive: str | None = None,  # noqa: ARG002
+        last_tutor_message: str | None = None,  # noqa: ARG002
     ) -> GradeResult:
         return GradeResult()

@@ -122,6 +122,11 @@ class OpenAIGrader(Grader):
         focus_node_id: str | None,
         levels: dict[str, MasteryLevel],
         syllabus_context: str,
+        next_suggestion_node_id: str | None = None,  # noqa: ARG002
+        next_suggestion_label: str | None = None,  # noqa: ARG002
+        recommend_intent: str | None = None,  # noqa: ARG002
+        recommend_directive: str | None = None,  # noqa: ARG002
+        last_tutor_message: str | None = None,  # noqa: ARG002
     ) -> GradeResult:
         try:
             completion = await asyncio.wait_for(

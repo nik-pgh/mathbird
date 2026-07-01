@@ -58,8 +58,10 @@ async def test_null_grader_returns_empty() -> None:
         focus_node_id="ch-1-p-1",
         levels={"ch-1-p-1": "practicing"},
         syllabus_context="Chapter 1 / Concept A / Problem 1",
+        next_suggestion_node_id="ch-1-p-2",
     )
     assert result.updates == []
+    assert result.set_focus_node_id is None
 
 
 def test_default_factory_returns_null_grader() -> None:
