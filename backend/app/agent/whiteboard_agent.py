@@ -28,7 +28,7 @@ from livekit.agents import Agent
 from livekit.agents.llm import ChatContext, ChatMessage
 from opentelemetry import trace
 
-from app.agent.grader.base import Grader, NodeUpdate
+from app.agent.grader.base import Grader
 from app.agent.math_speech import spoken_math_stream
 from app.agent.whiteboard.cache import BoardCache
 from app.agent.whiteboard.extractor.base import BoardExtractor
@@ -36,7 +36,7 @@ from app.agent.whiteboard.messages import AiBoardUpdate
 from app.agent.whiteboard.publisher import publish_ai_board
 from app.agent.whiteboard.sentence import split_sentences
 from app.agent.whiteboard.state import BoardState
-from app.progress.engine import ProgressEngine
+from app.progress.engine import ProgressEngine, _node_label
 
 logger = logging.getLogger("mathbird.agent.extractor")
 _tracer = trace.get_tracer("mathbird.session")
@@ -168,8 +168,19 @@ class WhiteboardAgent(Agent):
 
         focus_node_id = engine.state.focus.problem_id or engine.state.focus.concept_id \
             if engine.state.focus is not None else None
+        rec = engine.recommend()
+        nxt = engine.state.next_suggestion
+        nxt_id = (nxt.problem_id or nxt.concept_id) if nxt else None
+        nxt_label = _node_label(engine.syllabus, nxt) if nxt else None
+        context_id = focus_node_id or nxt_id
         levels = engine.nearby_levels(focus_node_id) if focus_node_id else {}
-        syllabus_context = engine.focus_context(focus_node_id) if focus_node_id else ""
+        if context_id is None:
+            syllabus_context = ""
+        elif focus_node_id:
+            syllabus_context = engine.focus_context(context_id)
+        else:
+            syllabus_context = engine.suggestion_context(context_id)
+        last_tutor_message = self._last_assistant_message()
         board_text = None if self._board_state.is_blank else self._board_state.user_text
 
         try:
@@ -179,6 +190,11 @@ class WhiteboardAgent(Agent):
                 focus_node_id=focus_node_id,
                 levels=levels,
                 syllabus_context=syllabus_context,
+                next_suggestion_node_id=nxt_id,
+                next_suggestion_label=nxt_label,
+                recommend_intent=rec.intent,
+                recommend_directive=rec.directive,
+                last_tutor_message=last_tutor_message,
             )
         except Exception:
             logger.exception("grader raised; skipping turn grading")
@@ -207,10 +223,26 @@ class WhiteboardAgent(Agent):
         except Exception:
             logger.exception("failed to publish graded progress snapshot")
 
-    @staticmethod
-    def _apply_grader_update(engine: ProgressEngine, update: NodeUpdate) -> bool:
-        """Compat shim for older tests; delegates to ProgressEngine."""
-        return engine._apply_node_update(update)
+    def _last_assistant_message(self) -> str | None:
+        """Return the most recent non-empty assistant message from session history."""
+        sess = self._fake_session_for_tests
+        if sess is None:
+            sess = getattr(self, "session", None)
+        history = getattr(sess, "history", None)
+        items = getattr(history, "items", None)
+        if not isinstance(items, list):
+            return None
+        for item in reversed(items):
+            role = getattr(item, "role", None)
+            if role != "assistant":
+                continue
+            text = getattr(item, "text_content", None)
+            if isinstance(text, str) and text.strip():
+                return text
+            extracted = _extract_text(item)
+            if extracted.strip():
+                return extracted
+        return None
 
     # ── lifecycle ──────────────────────────────────────────────────────
 

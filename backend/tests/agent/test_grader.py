@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from livekit.agents.llm import ChatContext, ChatMessage
 
 from app.agent.grader import Grader, GradeResult, NodeUpdate, get_grader
 from app.agent.grader.null import NullGrader
@@ -133,7 +134,7 @@ async def test_openai_grader_applies_solved_update() -> None:
     engine.set_focus("ch-1-p-1")
     assert engine.effective_level("ch-1-p-1") == "practicing"
 
-    # Apply the grader result manually (mirrors WhiteboardAgent._apply_grader_update).
+    # Apply the full grader result via the ProgressEngine write path.
     result = await grader.grade(
         turn_text="I got x equals 3",
         board_text="x + 2 = 5",
@@ -142,7 +143,7 @@ async def test_openai_grader_applies_solved_update() -> None:
         syllabus_context=engine.focus_context("ch-1-p-1"),
     )
     assert len(result.updates) == 1
-    changed = WhiteboardAgent._apply_grader_update(engine, result.updates[0])
+    changed = engine.apply_grade_result(result)
     assert changed is True
     assert engine.effective_level("ch-1-p-1") == "proficient"
     assert engine.state.nodes["ch-1-p-1"].solved is True
@@ -173,7 +174,7 @@ async def test_openai_grader_records_misconception() -> None:
         levels=engine.nearby_levels("ch-1-p-1"),
         syllabus_context=engine.focus_context("ch-1-p-1"),
     )
-    WhiteboardAgent._apply_grader_update(engine, result.updates[0])
+    engine.apply_grade_result(result)
     assert engine.state.nodes["ch-1-p-1"].misconceptions == ["sign error distributing the negative"]
 
 
@@ -240,3 +241,55 @@ def test_focus_context_for_problem() -> None:
     assert "Chapter 1" in ctx
     assert "Concept A" in ctx
     assert "Problem 1" in ctx
+
+
+@pytest.mark.asyncio
+async def test_grade_turn_sets_focus_from_grader(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.agent.whiteboard.cache import BoardCache
+    from app.agent.whiteboard.state import BoardState
+
+    class _FakeExtractor:
+        async def extract(self, sentence, current_items, last_sentence):  # noqa: ANN001
+            return []
+
+    class _FakeGrader:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        async def grade(self, **kwargs):  # noqa: ANN003
+            self.calls.append(kwargs)
+            return GradeResult(set_focus_node_id="ch-1-p-1")
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.history = ChatContext.empty()
+            self.history.add_message(
+                role="assistant",
+                content="Great work. Want to move to Problem 1 next?",
+            )
+
+    async def _noop_persist(engine):  # noqa: ANN001
+        return None
+
+    monkeypatch.setattr("app.agent.whiteboard_agent._persist_progress_via_store", _noop_persist)
+    engine = _engine()
+    grader = _FakeGrader()
+    agent = WhiteboardAgent(
+        instructions="be a tutor",
+        board_state=BoardState(),
+        board_cache=BoardCache(),
+        extractor=_FakeExtractor(),
+        grader=grader,
+        progress_engine=engine,
+    )
+    agent._fake_session_for_tests = _FakeSession()  # type: ignore[attr-defined]
+
+    await agent._grade_turn(ChatMessage(role="user", content=["yes, let's do that next"]))
+
+    assert engine.state.focus is not None
+    assert engine.state.focus.problem_id == "ch-1-p-1"
+    assert len(grader.calls) == 1
+    assert grader.calls[0]["recommend_intent"] == "introduce"
+    assert grader.calls[0]["next_suggestion_node_id"] == "ch-1-c-a"
+    assert grader.calls[0]["next_suggestion_label"] == "Concept A"
+    assert grader.calls[0]["last_tutor_message"] == "Great work. Want to move to Problem 1 next?"
