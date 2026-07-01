@@ -35,6 +35,8 @@ from app.agent.console.context_view import (
 )
 from app.agent.console.runtime import local_text_job
 from app.agent.console.ui import format_run_event
+from app.agent.grader.base import GradeResult
+from app.agent.grader.fake import FakeGrader
 from app.agent.providers import ensure_livekit_plugins_registered
 from app.agent.session_factory import build_session_bundle, send_initial_greeting
 from app.agent.simulation import assert_turn_expectations, load_scenario
@@ -53,6 +55,14 @@ def _apply_board_text(session_data: SessionData, text: str | None) -> None:
     state.refreshed_at = time.time()
 
 
+def _scripted_grader_for_scenario(scenario) -> FakeGrader | None:
+    has_scripted_results = any(turn.grader_result is not None for turn in scenario.turns)
+    if not has_scripted_results:
+        return None
+    queued_results = [turn.grader_result or GradeResult() for turn in scenario.turns]
+    return FakeGrader(queued_results)
+
+
 async def run_scenario(
     scenario_path: Path,
     *,
@@ -61,6 +71,7 @@ async def run_scenario(
     show_context: bool = False,
 ) -> None:
     scenario = load_scenario(scenario_path)
+    scripted_grader = _scripted_grader_for_scenario(scenario)
     user_id = scenario.user_id or settings.sim_user_id or None
     active_doc_id = scenario.doc_id or settings.sim_active_doc_id or None
 
@@ -77,6 +88,7 @@ async def run_scenario(
                 user_id=user_id,
                 active_doc_id=active_doc_id,
                 text_only=True,
+                grader=scripted_grader,
             )
             _apply_board_text(bundle.session_data, scenario.board_text)
             engine = bundle.session_data.progress_engine

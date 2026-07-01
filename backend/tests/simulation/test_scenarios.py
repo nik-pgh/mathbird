@@ -7,6 +7,8 @@ import yaml
 from livekit.agents.llm import ChatMessage, FunctionCall
 from livekit.agents.voice.run_result import RunResult
 
+from app.agent.grader.base import GradeResult
+from app.agent.grader.fake import FakeGrader
 from app.agent.session_factory import parse_participant_metadata, resolve_session_identity
 from app.agent.simulation.assertions import assert_turn_expectations
 from app.agent.simulation.scenarios import TurnExpectation, load_scenario
@@ -67,6 +69,71 @@ def test_load_scenario_from_yaml(tmp_path) -> None:
     assert len(scenario.turns) == 1
     assert scenario.turns[0].student == "hello"
     assert scenario.turns[0].expect.assistant_contains == ["hi"]
+
+
+def test_load_scenario_grader_result_from_yaml(tmp_path) -> None:
+    path = tmp_path / "scenario.yaml"
+    path.write_text(
+        yaml.dump(
+            {
+                "name": "demo",
+                "turns": [
+                    {
+                        "student": "hello",
+                        "grader_result": {
+                            "set_focus_node_id": "ch-1-p-1",
+                            "updates": [{"node_id": "ch-1-p-1", "level": "practicing"}],
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scenario = load_scenario(path)
+    turn = scenario.turns[0]
+    assert turn.grader_result is not None
+    assert turn.grader_result.set_focus_node_id == "ch-1-p-1"
+    assert len(turn.grader_result.updates) == 1
+    assert turn.grader_result.updates[0].node_id == "ch-1-p-1"
+    assert turn.grader_result.updates[0].level == "practicing"
+
+
+@pytest.mark.asyncio
+async def test_fake_grader_pops_results_in_order() -> None:
+    grader = FakeGrader(
+        [
+            GradeResult(set_focus_node_id="ch-1-p-1"),
+            GradeResult(),
+        ]
+    )
+
+    first = await grader.grade(
+        turn_text="turn 1",
+        board_text=None,
+        focus_node_id=None,
+        levels={},
+        syllabus_context="",
+    )
+    second = await grader.grade(
+        turn_text="turn 2",
+        board_text=None,
+        focus_node_id=None,
+        levels={},
+        syllabus_context="",
+    )
+
+    assert first.set_focus_node_id == "ch-1-p-1"
+    assert second == GradeResult()
+    with pytest.raises(RuntimeError, match="exhausted"):
+        await grader.grade(
+            turn_text="turn 3",
+            board_text=None,
+            focus_node_id=None,
+            levels={},
+            syllabus_context="",
+        )
 
 
 def _run_with_events(items) -> RunResult:

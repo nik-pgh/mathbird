@@ -8,6 +8,8 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.agent.grader.base import GradeResult
+
 
 class TurnExpectation(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -30,6 +32,7 @@ class ScenarioTurn(BaseModel):
 
     student: str
     board_text: str | None = None
+    grader_result: GradeResult | None = None
     expect: TurnExpectation = Field(default_factory=TurnExpectation)
 
 
