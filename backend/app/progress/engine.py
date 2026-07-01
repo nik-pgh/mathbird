@@ -9,6 +9,7 @@ partial progress is observable. Levels move monotonically upward by default
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from app.progress.messages import (
     ConceptProgressSnapshot,
@@ -26,6 +27,9 @@ from app.progress.models import (
     max_level,
 )
 from app.syllabus.models import Problem, Syllabus
+
+if TYPE_CHECKING:
+    from app.agent.grader.base import GradeResult, NodeUpdate
 
 
 def _now_iso() -> str:
@@ -304,6 +308,61 @@ class ProgressEngine:
             self.set_level(node_id, "introduced")
         else:
             self.set_level(node_id, "practicing")
+        self._state.updated_at = _now_iso()
+
+    def apply_grade_result(self, result: GradeResult) -> bool:
+        """Apply a grader result as the single engine write path."""
+        changed = False
+        if result.set_focus_node_id:
+            before_focus = self._state.focus
+            self.set_focus(result.set_focus_node_id)
+            if self._state.focus != before_focus:
+                changed = True
+        for update in result.updates:
+            if self._apply_node_update(update):
+                changed = True
+        return changed
+
+    def _apply_node_update(self, update: NodeUpdate) -> bool:
+        """Apply one graded update; return True if it changed state."""
+        before = self.effective_level(update.node_id)
+        if update.clear_misconceptions:
+            self.clear_misconceptions(update.node_id)
+        for text in update.misconception_additions:
+            self.record_misconception(update.node_id, text)
+        if update.hint_given:
+            self.record_hint(update.node_id)
+        if update.level is not None:
+            self.set_level(
+                update.node_id,
+                update.level,
+                note=update.note or None,
+                force=update.force,
+            )
+        elif update.note:
+            # Note-only update: touch the node so its updated_at moves.
+            self.set_level(update.node_id, self.effective_level(update.node_id), note=update.note)
+        after = self.effective_level(update.node_id)
+        if self.is_problem(update.node_id) and after == "mastered" and before != "mastered":
+            self._finalize_problem_mastery(update.node_id)
+        return (
+            after != before
+            or bool(update.misconception_additions)
+            or update.clear_misconceptions
+            or update.hint_given
+        )
+
+    def _finalize_problem_mastery(self, problem_id: str) -> None:
+        """Apply mastery side effects when a problem first reaches mastered."""
+        pointer = self._pointer_for(problem_id)
+        node = self._state.nodes.setdefault(problem_id, NodeProgress())
+        node.attempts += 1
+        node.solved = True
+        node.explained = True
+        node.updated_at = _now_iso()
+        if self._state.focus is None or self._state.focus.problem_id != problem_id:
+            self._state.focus = pointer
+        self._state.next_suggestion = self._next_after(pointer)
         self._state.updated_at = _now_iso()
 
     def record_mastery(self, problem_id: str, *, solved: bool, explained: bool) -> None:

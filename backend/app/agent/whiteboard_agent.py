@@ -184,15 +184,14 @@ class WhiteboardAgent(Agent):
             logger.exception("grader raised; skipping turn grading")
             return
 
-        if not result.updates:
+        if not result.updates and not result.set_focus_node_id:
             return
 
-        changed = False
-        for update in result.updates:
-            try:
-                changed |= self._apply_grader_update(engine, update)
-            except ValueError:
-                logger.warning("grader referenced unknown node id: %s", update.node_id)
+        try:
+            changed = engine.apply_grade_result(result)
+        except ValueError as exc:
+            logger.warning("grader referenced unknown node id: %s", exc)
+            return
 
         if not changed:
             return
@@ -214,27 +213,8 @@ class WhiteboardAgent(Agent):
 
     @staticmethod
     def _apply_grader_update(engine: ProgressEngine, update: NodeUpdate) -> bool:
-        """Apply one graded update; return True if it changed state."""
-        before = engine.effective_level(update.node_id)
-        if update.clear_misconceptions:
-            engine.clear_misconceptions(update.node_id)
-        for text in update.misconception_additions:
-            engine.record_misconception(update.node_id, text)
-        if update.hint_given:
-            engine.record_hint(update.node_id)
-        if update.level is not None:
-            engine.set_level(
-                update.node_id,
-                update.level,
-                note=update.note or None,
-                force=update.force,
-            )
-        elif update.note:
-            # Note-only update: touch the node so its updated_at moves.
-            engine.set_level(update.node_id, engine.effective_level(update.node_id), note=update.note)
-        after = engine.effective_level(update.node_id)
-        return after != before or bool(update.misconception_additions) or update.clear_misconceptions \
-            or update.hint_given
+        """Compat shim for older tests; delegates to ProgressEngine."""
+        return engine._apply_node_update(update)
 
     # ── lifecycle ──────────────────────────────────────────────────────
 
