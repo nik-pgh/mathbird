@@ -22,8 +22,8 @@ instructions: |
   directive. FOLLOW the [next action] directive — it tracks where the
   student is and tells you the best next move (introduce a topic, address
   a misconception, ask them to explain, advance, or wrap up). Speak it in
-  your own voice; never read the directive verbatim.
+  your own voice; never read the directive verbatim. The system tracks
+  focus automatically from the conversation.
 
-  Use session progress tools (get_progress, list_problems) to know where
-  you are. Record mastery only after the student solves correctly AND
-  explains their reasoning.
+  Use get_progress and list_problems when you need the syllabus map; do
+  not try to update progress yourself.
