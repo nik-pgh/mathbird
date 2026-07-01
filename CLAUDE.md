@@ -16,10 +16,13 @@ mathbird/
 │   │   ├── config.py          # pydantic-settings Settings — single env source of truth
 │   │   ├── agent/             # LiveKit worker
 │   │   │   ├── main.py        # entrypoint — joined per room
-│   │   │   ├── tools.py       # @function_tool functions (search_documents + whiteboard tools)
-│   │   │   ├── whiteboard_agent.py  # Agent subclass; injects user-board reading per turn
+│   │   │   ├── tools.py       # @function_tool functions (RAG + read-only progress + whiteboard)
+│   │   │   ├── whiteboard_agent.py  # Agent subclass; user-board injection + grader + AiBoard extractor
+│   │   │   ├── grader/        # per-turn student-model grader (GRADER env; see below)
 │   │   │   ├── providers/     # stt.py / llm.py / tts.py / vad.py — factories
 │   │   │   └── whiteboard/    # messages, state, publisher, listener, reader/{null,openai_vision}
+│   │   ├── progress/          # ProgressEngine, persistence, session_progress wire format
+│   │   └── syllabus/          # syllabus tree built at ingest from ParsedDocument
 │   │   ├── api/               # FastAPI app (token issuance + uploads)
 │   │   │   └── routes/        # token.py, documents.py
 │   │   ├── storage/           # base.py (Protocol) + local.py / s3.py
@@ -89,8 +92,10 @@ The agent worker **needs LiveKit Cloud credentials in `.env`** to start in `dev`
 4. Worker streams audio → STT → LLM → TTS → audio back into the room. The LLM can call function tools:
    - `search_documents` — RAG lookup through `get_retriever()`.
    - `read_user_board` — re-read the latest cached `BoardState` snapshot mid tool-chain.
-   The AiBoard (the agent's whiteboard) is driven separately: `WhiteboardAgent.transcription_node` tees the agent's outgoing text stream, accumulates sentences, and a background worker calls the configured `BoardExtractor` (`null` or `openai`) which publishes `update_ai_board` items over the data channel per sentence. The LLM does NOT call `update_ai_board` directly.
-5. In parallel, the handwriting panel periodically posts PNG snapshots on the `user_board` topic. The listener decodes, debounces, hands the bytes to the configured `BoardReader` (`null` or `openai_vision`), and writes the resulting text into `BoardState`.
+   - `get_progress` / `list_problems` — read-only syllabus progress (only when syllabus + progress are loaded for the session).
+   Progress **mutations** (`set_focus`, mastery updates) are **not** tutor tools — they flow through the **grader** (step 5). The AiBoard (the agent's whiteboard) is driven separately: `WhiteboardAgent.transcription_node` tees the agent's outgoing text stream, accumulates sentences, and a background worker calls the configured `BoardExtractor` (`null` or `openai`) which publishes `update_ai_board` items over the data channel per sentence. The LLM does NOT call `update_ai_board` directly.
+5. After each student turn, when syllabus + progress are loaded and `GRADER` is not `null`, `WhiteboardAgent` runs the configured grader (`app/agent/grader/`). The grader returns a `GradeResult` (focus changes + per-node mastery/misconception updates) that `ProgressEngine.apply_grade_result()` applies, persists, and publishes on the `session_progress` data channel — independent of whether the tutor LLM called any tool. Each turn also injects a `[session progress]` block and a deterministic `[next action]` directive into the tutor's context.
+6. In parallel, the handwriting panel periodically posts PNG snapshots on the `user_board` topic. The listener decodes, debounces, hands the bytes to the configured `BoardReader` (`null` or `openai_vision`), and writes the resulting text into `BoardState`.
 
 You do **not** run a LiveKit server locally. The worker is a client that joins cloud rooms on demand.
 
@@ -106,7 +111,7 @@ These come from the README's "Project conventions" and the actual code shape. Vi
    - Add the name to the `TtsProvider` Literal in `app/config.py`.
    - That's it — `app/agent/main.py` is untouched. The same shape applies to STT/LLM/VAD providers, storage backends, RAG providers, and board readers.
 4. **Storage, retrieval, and board reading are Protocols, not base classes.** `StorageBackend`, `Retriever`, and `BoardReader` are `typing.Protocol` types. Implementations are duck-typed; they don't subclass anything.
-5. **Function tools are the LLM's window into the codebase.** New agent capabilities are usually new `@function_tool` functions added to `backend/app/agent/tools.py` and returned from `build_function_tools()`. The agent picks them up automatically. **Docstrings are load-bearing** — the LLM reads them to decide when to call the tool.
+5. **Function tools are the LLM's window into the codebase.** New agent capabilities are usually new `@function_tool` functions added to `backend/app/agent/tools.py` and returned from `build_function_tools()`. The agent picks them up automatically. **Docstrings are load-bearing** — the LLM reads them to decide when to call the tool. Progress is **grader-primary**: tutor tools are read-only (`get_progress`, `list_problems`); do not re-expose mutating progress tools to the LLM — extend `app/agent/grader/` instead.
 6. **Whiteboard messages are typed end-to-end.** Wire schemas live in `backend/app/agent/whiteboard/messages.py` (pydantic) and are mirrored by hand in `frontend/src/lib/whiteboard.ts`. There is no codegen, so update both sides in the same change.
 
 ## Where to add things
@@ -117,6 +122,7 @@ These come from the README's "Project conventions" and the actual code shape. Vi
 | Add a new vendor for an existing modality | `app/agent/providers/<modality>.py` + `Literal` in `config.py` + dep in `pyproject.toml` |
 | Plug in real RAG | Set `RAG_PROVIDER=llamaindex_qdrant` for the built-in LlamaParse + Qdrant retriever; add a new module under `app/rag/` only for another provider. |
 | Add a new agent capability (callable mid-conversation) | New `@function_tool` in `app/agent/tools.py`, add to `build_function_tools()` |
+| Change how progress advances | `app/agent/grader/<name>.py` + `GraderName` in `config.py` + branch in `grader/factory.py` — not tutor tools |
 | Add a new whiteboard item kind | Add a pydantic model to `app/agent/whiteboard/messages.py`, extend the `AiBoardItem` union, mirror in `frontend/src/lib/whiteboard.ts`, render in `frontend/src/components/whiteboard/BoardItem.tsx` |
 | Add a new board reader (handwriting recognizer) | New module under `app/agent/whiteboard/reader/`, add the name to `BoardReaderName` in `config.py`, add a branch in `get_board_reader()` |
 | Add a new board extractor (sentence-streaming AiBoard writer) | New module under `app/agent/whiteboard/extractor/`, add the name to `BoardExtractorName` in `config.py`, add a branch in `get_board_extractor()` |
@@ -158,3 +164,4 @@ Pytest config lives in `backend/pyproject.toml` with `asyncio_mode = "auto"` —
 - **`BOARD_READER` defaults to `null`.** The agent will see "no reading yet" until you set `BOARD_READER=openai_vision` (and have `OPENAI_API_KEY` set). Snapshots are throttled to `BOARD_READER_INTERVAL_SECONDS` (2s) and resized to `BOARD_READER_MAX_IMAGE_DIM` (512px) on the client.
 - **Agent persona lives in a YAML file, not an env var.** `Settings.agent_instructions` is a read-only `@property` that loads `backend/personas/default.yaml` (a math-tutor prompt by default). Edit that file or point `PERSONA_FILE` at another YAML with a top-level `instructions:` string. The old `AGENT_INSTRUCTIONS` env var is gone.
 - **Phoenix tracing is opt-in via env.** `app/observability.py` is a no-op unless `PHOENIX_ENABLED=true` (Phoenix/OpenInference deps are always installed with `uv sync`). When enabled it instruments OpenAI + LlamaIndex so every LLM completion, function-tool call, and `Retriever.retrieve()` is captured. `setup_phoenix()` is called at the very top of `app/agent/main.py` — before any livekit imports — so don't move that import; livekit caches unpatched method refs otherwise.
+- **Progress is grader-primary.** When syllabus + progress load for a session, the tutor gets read-only tools (`get_progress`, `list_problems`) and per-turn `[session progress]` / `[next action]` injection. Mutations run through `WhiteboardAgent`'s grader after each student turn. Set `GRADER=openai` (needs `OPENAI_API_KEY`) for progress to advance; `GRADER=null` loads state but does not mutate it (`session_factory` logs a warning).

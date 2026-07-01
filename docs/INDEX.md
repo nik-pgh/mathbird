@@ -51,14 +51,29 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `agent/console/` | Local text console + YAML sim helpers — `runtime.py` (local fake job + HTTP context), `identity.py` (stdin doc/user picker), `ui.py` (Rich formatters). |
 | `agent/simulation/scenarios.py` | YAML scenario loader (`ConversationScenario`, `load_scenario`). Turn expectations include per-turn progression fields (`node_level`, `focus_node`, `next_suggestion_node`, `misconceptions_contain`). |
 | `agent/simulation/assertions.py` | Turn expectations checked against LiveKit `RunResult` events + optional `ProgressEngine` state. |
-| `agent/tools.py` | `@function_tool` functions the LLM can call. `search_documents` is the RAG seam. `build_function_tools()` returns the list. |
+| `agent/tools.py` | `@function_tool` functions the LLM can call. `build_function_tools()` assembles the LLM-facing list (see tool table below). `update_ai_board` / `clear_ai_board` stay defined for tests but are not exposed to the LLM. |
 | `agent/providers/__init__.py` | Re-exports `build_stt/llm/tts/vad`. |
 | `agent/providers/register.py` | Eager LiveKit plugin imports on the main thread (required before local scripts). |
 | `agent/providers/stt.py` | STT factory. Branches on `settings.stt_provider`. Lazy vendor imports. |
 | `agent/providers/llm.py` | LLM factory. |
 | `agent/providers/tts.py` | TTS factory. Cartesia / ElevenLabs / OpenAI. |
 | `agent/providers/vad.py` | VAD factory. Silero only today. |
-| `agent/whiteboard_agent.py` | `Agent` subclass that injects the latest user-board reading into the chat context each turn. |
+| `agent/whiteboard_agent.py` | `Agent` subclass: injects user-board reading + progress context each turn; runs the grader after each student turn; tees transcription to the AiBoard extractor. |
+
+#### LLM function tools (`agent/tools.py`)
+
+Progress is **grader-primary**: the tutor LLM never mutates progress — the grader (`app/agent/grader/`) applies `GradeResult` via `ProgressEngine.apply_grade_result()` after each student turn. Tutor tools are read-only for progress.
+
+| Tool | In LLM list when | Role |
+| --- | --- | --- |
+| `search_documents` | always | RAG lookup via `get_retriever()` |
+| `read_user_board` | always | Latest student-board OCR text |
+| `get_progress` | syllabus + progress loaded | Read-only progress summary (same text as injected `[session progress]` block) |
+| `list_problems` | syllabus + progress loaded | Read-only syllabus problem listing, optional chapter/concept filter |
+| `update_ai_board` | never (defined only) | Publish primitive for tests; AiBoard is extractor-driven |
+| `clear_ai_board` | never (defined only) | Same — not in `build_function_tools()` |
+
+Superseded tutor mutating tools (removed from `build_function_tools()`): `set_focus`, `record_mastery`. See [`docs/superpowers/specs/2026-06-19-student-progress-design.md`](./superpowers/specs/2026-06-19-student-progress-design.md) for the original design; grader-primary architecture superseded the tutor-tool mutation path.
 
 ### `backend/app/agent/whiteboard/` — pluggable handwriting reader + state
 
@@ -76,16 +91,18 @@ Hand-maintained map of every important file. Update this when adding or renaming
 ### `backend/app/agent/grader/` — per-turn student-model grader
 
 A second LLM seam (mirrors `whiteboard/extractor/`) that assesses each student
-turn and advances mastery levels / misconceptions, so the student model evolves
-every turn without relying on the main LLM calling progress tools. Off by
-default (`GRADER=null`); opt in with `GRADER=openai`.
+turn and advances mastery levels / misconceptions via `ProgressEngine.apply_grade_result()`,
+so the student model evolves every turn without the tutor LLM calling mutating
+progress tools. Off in code by default (`GRADER=null` in `Settings`); opt in with
+`GRADER=openai` (see `.env.example`).
 
 | Path | What it is |
 | --- | --- |
 | `grader/base.py` | `Grader` Protocol, `GradeResult`, `NodeUpdate` (the graded payload). |
-| `grader/null.py` | `NullGrader` — no-op default; evolution gated on LLM tool calls only. |
+| `grader/null.py` | `NullGrader` — no-op default; progress state loads but does not advance. |
 | `grader/openai.py` | `OpenAIGrader` — structured-outputs grader over the turn + board + focus context. |
-| `grader/factory.py` | `get_grader()` — env-driven `@lru_cache`d factory. |
+| `grader/fake.py` | `FakeGrader` — scripted queue of `GradeResult`s for YAML simulators (`simulate_conversation.py`). |
+| `grader/factory.py` | `get_grader()` — env-driven `@lru_cache`d factory (`GRADER`, `GRADER_MODEL`, `GRADER_TIMEOUT_SECONDS`). |
 
 ### `backend/app/progress/` — knowledge-tracing student model
 
@@ -97,7 +114,7 @@ so partial progress is observable. A v1 → v2 migration runs transparently on l
 | Path | What it is |
 | --- | --- |
 | `progress/models.py` | `ProgressState`, `NodeProgress`, `FocusPointer`, `ProgressSummary`, `MasteryLevel`, `Recommendation`. v1→v2 migration validator. |
-| `progress/engine.py` | `ProgressEngine` — state machine: `set_focus`, `set_level` (monotonic), `record_mastery`, `record_misconception`/`clear_misconceptions`, `record_hint`, `effective_level` (concept aggregation), `recommend()` (deterministic directive), `snapshot_update()` (wire). |
+| `progress/engine.py` | `ProgressEngine` — state machine: `set_focus`, `set_level` (monotonic), `record_mastery`, `apply_grade_result` (grader write path), `record_misconception`/`clear_misconceptions`, `record_hint`, `effective_level` (concept aggregation), `recommend()` (deterministic directive), `format_injection()` / `snapshot_update()` (wire). |
 | `progress/messages.py` | Wire schemas for the `session_progress` topic: `SessionProgressUpdate`, `ProblemProgressSnapshot` (5-level `status`), `ConceptProgressSnapshot`. |
 | `progress/publisher.py` | `publish_session_progress(room, update)` — encodes + sends on the data channel. |
 | `progress/store.py` | `StorageProgressStore` — persists `ProgressState` JSON in storage. |
