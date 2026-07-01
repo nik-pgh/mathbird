@@ -301,6 +301,12 @@ class WhiteboardAgent(Agent):
                 logger.exception("extractor worker error; continuing")
 
     async def _process_sentence(self, sentence: str) -> None:
+        # Check for a room *before* paying for the extractor call. The local
+        # text console starts the session without a room (no RoomIO on an
+        # unconnected fake room), and there's no point running the extractor
+        # LLM when we already know the items can't be published.
+        if self._get_room() is None:
+            return
         current = self._board_cache.current_items()
         items = await self._extractor.extract(
             sentence=sentence,
@@ -312,7 +318,7 @@ class WhiteboardAgent(Agent):
             return
         room = self._get_room()
         if room is None:
-            logger.warning("no room available; dropping %d board item(s)", len(items))
+            logger.debug("room dropped after extract; dropping %d board item(s)", len(items))
             return
         await publish_ai_board(room, AiBoardUpdate(op="upsert", items=items))
         self._board_cache.apply(items)
