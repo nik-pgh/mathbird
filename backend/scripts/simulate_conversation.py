@@ -9,6 +9,10 @@ Usage (from ``backend/``)::
         simulations/scenarios/problem_help.yaml \\
         --verbose
 
+    uv run python -m scripts.simulate_conversation \\
+        simulations/scenarios/progression_demo.yaml \\
+        --show-context
+
 Scenario ``user_id`` / ``doc_id`` override ``SIM_USER_ID`` / ``SIM_ACTIVE_DOC_ID``.
 """
 
@@ -20,9 +24,15 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from livekit import rtc
 
+from app.agent.console.context_view import (
+    assistant_reply,
+    print_llm_context,
+    print_progress_snapshot,
+)
 from app.agent.console.runtime import local_text_job
 from app.agent.console.ui import format_run_event
 from app.agent.providers import ensure_livekit_plugins_registered
@@ -30,8 +40,11 @@ from app.agent.session_factory import build_session_bundle, send_initial_greetin
 from app.agent.simulation import assert_turn_expectations, load_scenario
 from app.config import Settings, get_settings
 
+if TYPE_CHECKING:
+    from app.agent.whiteboard import SessionData
 
-def _apply_board_text(session_data, text: str | None) -> None:
+
+def _apply_board_text(session_data: SessionData, text: str | None) -> None:
     if not text:
         return
     state = session_data.board_state
@@ -45,6 +58,7 @@ async def run_scenario(
     *,
     settings: Settings,
     verbose: bool = False,
+    show_context: bool = False,
 ) -> None:
     scenario = load_scenario(scenario_path)
     user_id = scenario.user_id or settings.sim_user_id or None
@@ -65,14 +79,19 @@ async def run_scenario(
                 text_only=True,
             )
             _apply_board_text(bundle.session_data, scenario.board_text)
+            engine = bundle.session_data.progress_engine
 
             await bundle.session.start(agent=bundle.agent, record=False)
 
             try:
+                if show_context and engine is not None:
+                    print("\n--- initial context ---", flush=True)
+                    print_llm_context(bundle.session_data, engine)
+
                 if scenario.greeting:
                     await send_initial_greeting(
                         bundle.session,
-                        has_progress=bundle.session_data.progress_engine is not None,
+                        has_progress=engine is not None,
                     )
                     if verbose:
                         print(
@@ -90,6 +109,10 @@ async def run_scenario(
                     print(f"\n--- {label}: student ---", flush=True)
                     print(turn.student, flush=True)
 
+                    if show_context:
+                        print(f"\n--- {label}: context (what the LLM sees) ---", flush=True)
+                        print_llm_context(bundle.session_data, engine)
+
                     run = bundle.session.run(user_input=turn.student)
                     await run
 
@@ -101,11 +124,23 @@ async def run_scenario(
                                 flush=True,
                             )
 
+                    if show_context:
+                        reply = assistant_reply(run.events)
+                        print(f"\n--- {label}: tutor ---", flush=True)
+                        if reply.strip():
+                            for line in reply.splitlines():
+                                print(f"  {line}" if line else "", flush=True)
+                        else:
+                            print("  (no assistant reply)", flush=True)
+                        if engine is not None:
+                            print(f"\n--- {label}: progress (after turn) ---", flush=True)
+                            print_progress_snapshot(engine)
+
                     assert_turn_expectations(
                         run,
                         turn.expect,
                         turn_label=label,
-                        engine=bundle.session_data.progress_engine,
+                        engine=engine,
                     )
                     print(f"  ✓ {label} expectations passed", flush=True)
             finally:
@@ -126,7 +161,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "-v",
         "--verbose",
         action="store_true",
-        help="Print RunResult events after each turn",
+        help="Print RunResult events after each turn (raw JSON, deep debugging).",
+    )
+    parser.add_argument(
+        "-c",
+        "--show-context",
+        action="store_true",
+        help=(
+            "Show the LLM context nudge before each turn (board + progress injection) "
+            "and the progress snapshot after. Pairs with -v."
+        ),
     )
     return parser.parse_args(argv)
 
@@ -145,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:
                 scenario_path,
                 settings=get_settings(),
                 verbose=args.verbose,
+                show_context=args.show_context,
             )
         )
     except AssertionError as exc:
