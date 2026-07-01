@@ -187,11 +187,7 @@ class WhiteboardAgent(Agent):
         if not result.updates and not result.set_focus_node_id:
             return
 
-        try:
-            changed = engine.apply_grade_result(result)
-        except ValueError as exc:
-            logger.warning("grader referenced unknown node id: %s", exc)
-            return
+        changed = engine.apply_grade_result(result)
 
         if not changed:
             return

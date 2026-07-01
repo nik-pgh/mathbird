@@ -8,6 +8,7 @@ partial progress is observable. Levels move monotonically upward by default
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
@@ -30,6 +31,8 @@ from app.syllabus.models import Problem, Syllabus
 
 if TYPE_CHECKING:
     from app.agent.grader.base import GradeResult, NodeUpdate
+
+logger = logging.getLogger(__name__)
 
 
 def _now_iso() -> str:
@@ -314,13 +317,20 @@ class ProgressEngine:
         """Apply a grader result as the single engine write path."""
         changed = False
         if result.set_focus_node_id:
-            before_focus = self._state.focus
-            self.set_focus(result.set_focus_node_id)
-            if self._state.focus != before_focus:
+            try:
+                self.set_focus(result.set_focus_node_id)
                 changed = True
+            except ValueError:
+                logger.warning(
+                    "grader referenced unknown node id: %s",
+                    result.set_focus_node_id,
+                )
         for update in result.updates:
-            if self._apply_node_update(update):
-                changed = True
+            try:
+                if self._apply_node_update(update):
+                    changed = True
+            except ValueError:
+                logger.warning("grader referenced unknown node id: %s", update.node_id)
         return changed
 
     def _apply_node_update(self, update: NodeUpdate) -> bool:
