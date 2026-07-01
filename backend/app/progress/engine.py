@@ -621,6 +621,8 @@ class ProgressEngine:
         )
         rec = self.recommend()
         action_block = f"\n[next action]\n{rec.directive}" if rec.directive else ""
+        if focus is None and rec.focus_node_id:
+            action_block += f"\n(anchor: {rec.focus_node_id})"
 
         if focus is None:
             return (
@@ -695,6 +697,10 @@ class ProgressEngine:
                 f"Problems:\n{problem_lines}"
             )
         return ""
+
+    def suggestion_context(self, focus_node_id: str) -> str:
+        """Alias for :meth:`focus_context` — the recommended next node."""
+        return self.focus_context(focus_node_id)
 
     # --------------------------------------------------------------- internals
 

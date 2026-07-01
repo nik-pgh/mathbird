@@ -300,3 +300,10 @@ def test_format_injection_contains_next_action() -> None:
     assert "[next action]" in injection
     assert "[session progress]" in injection
 
+
+def test_format_injection_shows_anchor_when_no_focus() -> None:
+    engine = _engine()
+    injection = engine.format_injection()
+    assert "(anchor:" in injection
+    assert "ch-1-c-a" in injection  # first unmastered concept id in fixture
+
