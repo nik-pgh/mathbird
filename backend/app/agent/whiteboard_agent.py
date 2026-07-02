@@ -30,6 +30,7 @@ from opentelemetry import trace
 
 from app.agent.grader.base import Grader, GradeResult
 from app.agent.math_speech import spoken_math_stream
+from app.agent.turn_context.builder import TurnContextBuilder
 from app.agent.turn_context.session import resolve_agent_session, resolve_session_data
 from app.agent.whiteboard.cache import BoardCache
 from app.agent.whiteboard.extractor.base import BoardExtractor
@@ -117,26 +118,23 @@ class WhiteboardAgent(Agent):
         with _tracer.start_as_current_span("session.turn_context") as span:
             if state.refreshed_at is not None:
                 age = state.age_seconds()
-                age_str = f"{age:.0f}s ago" if age is not None else "just now"
 
                 span.set_attribute("session.turn.whiteboard_present", True)
                 span.set_attribute("session.turn.whiteboard_age_seconds", age or -1)
                 span.set_attribute("session.turn.whiteboard_blank", state.is_blank)
                 if not state.is_blank:
                     span.set_attribute("session.turn.whiteboard_text", state.user_text[:500])
-
-                if state.is_blank:
-                    body = f"[user whiteboard (refreshed {age_str}): blank]"
-                else:
-                    body = f"[user whiteboard (refreshed {age_str}):\n{state.user_text}\n]"
-
-                turn_ctx.add_message(role="system", content=body)
             else:
                 span.set_attribute("session.turn.whiteboard_present", False)
 
+            builder = TurnContextBuilder(
+                board_state=state,
+                progress_engine=self._progress_engine,
+            )
+            for block in builder.base_injections():
+                turn_ctx.add_message(role="system", content=block.content)
+
             if self._progress_engine is not None:
-                injection = self._progress_engine.format_injection()
-                turn_ctx.add_message(role="system", content=injection)
                 await self._maybe_inject_textbook_excerpt(turn_ctx)
 
                 engine = self._progress_engine
