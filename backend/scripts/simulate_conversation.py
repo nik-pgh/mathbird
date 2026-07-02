@@ -126,19 +126,19 @@ async def run_scenario(
                         print(f"\n--- {label}: context (what the LLM sees) ---", flush=True)
                         print_llm_context(bundle.session_data, engine)
 
-                    run = await run_text_turn(bundle.session, bundle.agent, turn.student)
-                    await run
+                    result = await run_text_turn(bundle.session, bundle.agent, turn.student)
+                    await result.run
 
                     if verbose:
                         print(f"--- {label}: events ---", flush=True)
-                        for event in run.events:
+                        for event in result.run.events:
                             print(
                                 json.dumps(format_run_event(event), ensure_ascii=False),
                                 flush=True,
                             )
 
                     if show_context:
-                        reply = assistant_reply(run.events)
+                        reply = assistant_reply(result.run.events)
                         print(f"\n--- {label}: tutor ---", flush=True)
                         if reply.strip():
                             for line in reply.splitlines():
@@ -150,7 +150,7 @@ async def run_scenario(
                             print_progress_snapshot(engine)
 
                     assert_turn_expectations(
-                        run,
+                        result.run,
                         turn.expect,
                         turn_label=label,
                         engine=engine,

@@ -1,4 +1,4 @@
-"""Tests for typed local turns invoking ``on_user_turn_completed``."""
+"""Tests for typed local turns invoking ``prepare_turn_context``."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from livekit.agents.voice.run_result import RunResult
 
-from app.agent.console.turn import run_text_turn
+from app.agent.console.turn import TurnRunResult, run_text_turn
 from app.agent.grader.null import NullGrader
 from app.agent.whiteboard.cache import BoardCache
 from app.agent.whiteboard.state import BoardState
@@ -72,11 +72,15 @@ async def test_run_text_turn_runs_grader_before_llm(monkeypatch: pytest.MonkeyPa
 
     calls: list[str] = []
 
-    async def _fake_on_user_turn_completed(turn_ctx, new_message):  # noqa: ANN001
-        calls.append("hook")
-        await WhiteboardAgent.on_user_turn_completed(agent, turn_ctx, new_message)
+    async def _tracking_prepare(agent, turn_ctx, new_message):  # noqa: ANN001
+        calls.append("prepare")
+        from app.agent.turn_context.prepare import prepare_turn_context as real_prepare
 
-    agent.on_user_turn_completed = _fake_on_user_turn_completed  # type: ignore[method-assign]
+        return await real_prepare(agent, turn_ctx, new_message)
+
+    from app.agent.console import turn as turn_module
+
+    monkeypatch.setattr(turn_module, "prepare_turn_context", _tracking_prepare)
 
     session = MagicMock()
     session._global_run_state = None
@@ -88,9 +92,11 @@ async def test_run_text_turn_runs_grader_before_llm(monkeypatch: pytest.MonkeyPa
 
     session.generate_reply = _generate_reply
 
-    run_state = await run_text_turn(session, agent, "almost nothing")
+    result = await run_text_turn(session, agent, "almost nothing")
 
-    assert calls == ["hook", "reply"]
-    assert isinstance(run_state, RunResult)
+    assert calls == ["prepare", "reply"]
+    assert isinstance(result, TurnRunResult)
+    assert isinstance(result.run, RunResult)
+    assert result.snapshot.injections
     assert engine.state.focus is not None
     assert engine.state.focus.concept_id == "ch-1-c-a"

@@ -26,11 +26,10 @@ from typing import Any
 
 from livekit.agents import Agent
 from livekit.agents.llm import ChatContext, ChatMessage
-from opentelemetry import trace
 
 from app.agent.grader.base import Grader, GradeResult
 from app.agent.math_speech import spoken_math_stream
-from app.agent.turn_context.builder import TurnContextBuilder
+from app.agent.turn_context.prepare import prepare_turn_context
 from app.agent.turn_context.session import resolve_agent_session, resolve_session_data
 from app.agent.whiteboard.cache import BoardCache
 from app.agent.whiteboard.extractor.base import BoardExtractor
@@ -43,7 +42,6 @@ from app.progress.engine import ProgressEngine, _node_label
 from app.rag import get_retriever
 
 logger = logging.getLogger("mathbird.agent.extractor")
-_tracer = trace.get_tracer("mathbird.session")
 
 _QUEUE_MAXSIZE = 20
 
@@ -109,49 +107,9 @@ class WhiteboardAgent(Agent):
     async def on_user_turn_completed(
         self,
         turn_ctx: ChatContext,
-        new_message: ChatMessage,  # noqa: ARG002 — required by framework hook
+        new_message: ChatMessage,
     ) -> None:
-        state = self._board_state
-
-        # Trace the session dynamics that shape this turn's LLM call.
-        # Uses NoOp tracer when Phoenix is disabled — zero cost when off.
-        with _tracer.start_as_current_span("session.turn_context") as span:
-            if state.refreshed_at is not None:
-                age = state.age_seconds()
-
-                span.set_attribute("session.turn.whiteboard_present", True)
-                span.set_attribute("session.turn.whiteboard_age_seconds", age or -1)
-                span.set_attribute("session.turn.whiteboard_blank", state.is_blank)
-                if not state.is_blank:
-                    span.set_attribute("session.turn.whiteboard_text", state.user_text[:500])
-            else:
-                span.set_attribute("session.turn.whiteboard_present", False)
-
-            builder = TurnContextBuilder(
-                board_state=state,
-                progress_engine=self._progress_engine,
-            )
-            for block in builder.base_injections():
-                turn_ctx.add_message(role="system", content=block.content)
-
-            if self._progress_engine is not None:
-                await self._maybe_inject_textbook_excerpt(turn_ctx)
-
-                engine = self._progress_engine
-                summary = engine.summary()
-                focus = engine.state.focus
-                span.set_attribute("session.turn.progress_mastered", summary.mastered)
-                span.set_attribute("session.turn.progress_total", summary.total)
-                span.set_attribute("session.turn.progress_in_progress", summary.in_progress)
-                if focus:
-                    span.set_attribute("session.turn.focus_problem_id", focus.problem_id)
-                    span.set_attribute("session.turn.focus_chapter_id", focus.chapter_id)
-
-        # Grade the student's turn and evolve the student model. Runs after the
-        # span so a grader failure never breaks the turn; the snapshot publish
-        # lets the frontend see updated levels even when the LLM calls no tool.
-        if self._progress_engine is not None and self._grader is not None:
-            await self._grade_turn(new_message)
+        await prepare_turn_context(self, turn_ctx, new_message)
 
     async def _maybe_inject_textbook_excerpt(self, turn_ctx: ChatContext) -> None:
         """Pre-fetch RAG snippets for the current syllabus node when retrieval is enabled."""

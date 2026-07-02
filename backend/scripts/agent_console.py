@@ -89,9 +89,9 @@ async def run_console(*, show_context: bool = False) -> None:
                 if show_context:
                     print_dim("[dim]--- context (what the LLM sees) ---[/dim]")
                     print_llm_context(bundle.session_data, engine)
-                run = await run_text_turn(bundle.session, bundle.agent, user_text)
-                await run
-                render_run_events(run.events, skip_user=True)
+                result = await run_text_turn(bundle.session, bundle.agent, user_text)
+                await result.run
+                render_run_events(result.run.events, skip_user=True)
                 if show_context and engine is not None:
                     print_dim("[dim]--- progress (after turn) ---[/dim]")
                     print_progress_snapshot(engine)
