@@ -191,6 +191,26 @@ def _find_stored_pdf(objects: list[StoredObject], doc_id: str) -> StoredObject |
 # ── routes ──────────────────────────────────────────────────────────────────
 
 
+async def _read_bounded_pdf(file: UploadFile, *, max_bytes: int) -> bytes:
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(64 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"PDF exceeds maximum upload size of {max_bytes} bytes.",
+            )
+        chunks.append(chunk)
+    data = b"".join(chunks)
+    if not data.startswith(b"%PDF-"):
+        raise HTTPException(status_code=415, detail="Only valid PDF files are accepted.")
+    return data
+
+
 @router.post("/documents", response_model=DocumentResponse, status_code=201)
 async def upload_document(
     file: Annotated[UploadFile, File(description="PDF document to ingest")],
@@ -199,12 +219,15 @@ async def upload_document(
     if (file.content_type or "").lower() != "application/pdf":
         raise HTTPException(status_code=415, detail="Only application/pdf is accepted.")
 
+    settings = get_settings()
+    pdf_bytes = await _read_bounded_pdf(file, max_bytes=settings.max_upload_bytes)
+
     doc_id = uuid.uuid4().hex
     safe_name = (file.filename or "document.pdf").replace("/", "_")
     key = f"{doc_id}/{safe_name}"
 
     storage = get_storage()
-    stored = await storage.put(key, file.file, content_type="application/pdf")
+    stored = await storage.put(key, io.BytesIO(pdf_bytes), content_type="application/pdf")
     await _write_sidecar(
         storage,
         doc_id,

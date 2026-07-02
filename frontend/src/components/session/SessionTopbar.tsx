@@ -48,12 +48,14 @@ export default function SessionTopbar({ session }: Props) {
         <Link className={onLibrary ? "active" : ""} to="/">
           Library
         </Link>
-        <Link
-          className={location.pathname === "/evals" ? "active" : ""}
-          to="/evals"
-        >
-          Evals
-        </Link>
+        {import.meta.env.VITE_EVALS_ENABLED === "true" ? (
+          <Link
+            className={location.pathname === "/evals" ? "active" : ""}
+            to="/evals"
+          >
+            Evals
+          </Link>
+        ) : null}
       </nav>
       <div className="spacer" />
 

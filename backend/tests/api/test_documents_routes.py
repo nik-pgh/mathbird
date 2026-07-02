@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 from pathlib import Path
 
@@ -195,6 +196,36 @@ def test_get_document_file_quotes_download_filename_safely(
     assert res.status_code == 200
     assert 'filename="bad_name.pdf"' in res.headers["content-disposition"]
     assert 'bad"name.pdf' not in res.headers["content-disposition"]
+
+
+def test_upload_rejects_non_pdf_bytes(auth_client: TestClient) -> None:
+    res = auth_client.post(
+        "/api/documents",
+        files={"file": ("fake.pdf", io.BytesIO(b"not-a-pdf"), "application/pdf")},
+    )
+    assert res.status_code == 415
+
+
+def test_upload_rejects_oversized_pdf(
+    auth_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MAX_UPLOAD_BYTES", "100")
+    get_settings.cache_clear()
+    try:
+        res = auth_client.post(
+            "/api/documents",
+            files={
+                "file": (
+                    "big.pdf",
+                    io.BytesIO(b"%PDF-1.4\n" + b"x" * 200),
+                    "application/pdf",
+                )
+            },
+        )
+        assert res.status_code == 413
+    finally:
+        get_settings.cache_clear()
 
 
 def test_get_document_file_404_for_unknown_id(

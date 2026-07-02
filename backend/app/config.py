@@ -79,6 +79,7 @@ class Settings(BaseSettings):
     oauth_redirect_url: str = "http://localhost:8000/api/auth/google/callback"
     auth_db_path: str = "./auth.db"
     auth_cookie_name: str = "mathbird_session"
+    auth_cookie_secure: bool = False
     frontend_url: str = "http://localhost:5173"
 
     # Guest sessions — pre-indexed doc_id for "try without signup" flow.
@@ -164,6 +165,10 @@ class Settings(BaseSettings):
     board_reader_model: str = "gpt-4o-mini"
     board_reader_interval_seconds: float = 2.0
     board_reader_max_image_dim: int = 512
+    board_reader_max_png_bytes: int = 1_048_576
+
+    # PDF uploads
+    max_upload_bytes: int = 50_000_000
 
     # AiBoard extractor — second LLM that watches the agent's spoken
     # sentences and publishes board items per sentence. Off by default.

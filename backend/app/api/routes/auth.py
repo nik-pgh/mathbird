@@ -74,6 +74,7 @@ async def google_callback(
         token,
         httponly=True,
         samesite="lax",
+        secure=settings.auth_cookie_secure,
         path="/",
         max_age=settings.auth_jwt_expiry_hours * 3600,
     )
