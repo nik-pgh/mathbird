@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { GUEST_ENABLED, googleLoginUrl } from "../lib/auth";
+import { GUEST_ENABLED, googleLoginUrl } from "../lib/api";
 
 export default function LoginPage() {
   const navigate = useNavigate();

@@ -38,8 +38,7 @@ mathbird/
     └── src/
         ├── App.tsx            # react-router: /, /login, /session, /evals
         ├── lib/
-        │   ├── api.ts         # typed REST client (primary fetch site)
-        │   ├── auth.ts        # session helpers (getMe, logout) — consolidate into api.ts in Phase 4
+        │   ├── api.ts         # typed REST client (sole fetch site)
         │   ├── whiteboard.ts  # TS mirror of whiteboard pydantic schemas
         │   ├── progress.ts    # TS mirror of session_progress wire format
         │   └── roadmapProgress.ts  # roadmap UI types (ProblemStatus mirror)
@@ -151,7 +150,7 @@ These come from the README's "Project conventions" and the actual code shape. Vi
 
 There are three contracts the frontend and backend must keep in sync — all hand-mirrored, no codegen:
 
-**1. REST.** `frontend/src/lib/api.ts` is the **primary** `fetch()` site for document and LiveKit endpoints. Session auth helpers live in `frontend/src/lib/auth.ts` today (`getMe`, `logout`) — consolidate into `api.ts` when touching auth (see improvement plan Phase 4).
+**1. REST.** `frontend/src/lib/api.ts` is the **only** `fetch()` site for REST — documents, LiveKit token, syllabus, and session auth (`getMe`, `logout`).
 
 | Call | Backend route | Returns |
 | --- | --- | --- |
@@ -164,7 +163,7 @@ There are three contracts the frontend and backend must keep in sync — all han
 | `fetchDocumentSyllabus(docId)` | `GET /api/documents/{doc_id}/syllabus` | `Syllabus` |
 | `requestToken({doc_id?, ...})` | `POST /api/token` | `TokenResponse` (includes LiveKit `url`) |
 
-Update `lib/api.ts` (and `lib/auth.ts` until consolidated) plus the corresponding pydantic models in `app/api/routes/` in the same change.
+Update `lib/api.ts` and the corresponding pydantic models in `app/api/routes/` in the same change.
 
 **2. LiveKit data channels — whiteboard.** Two topics for board traffic:
 

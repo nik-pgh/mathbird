@@ -13,7 +13,6 @@ import io
 import logging
 import uuid
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 from urllib.parse import quote, urlparse
@@ -83,20 +82,6 @@ class DocumentListResponse(BaseModel):
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
-
-
-@asynccontextmanager
-async def _open_storage_stream(storage: Any, key: str) -> AsyncIterator[Any]:
-    async with open_storage_stream(storage, key) as stream:
-        yield stream
-
-
-async def _read_sidecar(storage: Any, doc_id: str) -> dict[str, Any]:
-    return await read_document_meta(storage, doc_id)
-
-
-async def _write_sidecar(storage: Any, doc_id: str, payload: dict[str, Any]) -> None:
-    await write_document_meta(storage, doc_id, payload)
 
 
 def _path_from_file_uri(uri: str) -> str:
@@ -179,7 +164,7 @@ async def upload_document(
 
     storage = get_storage()
     stored = await storage.put(key, io.BytesIO(pdf_bytes), content_type="application/pdf")
-    await _write_sidecar(
+    await write_document_meta(
         storage,
         doc_id,
         {
@@ -282,7 +267,7 @@ async def get_document_file(
         )
 
     async def _iter() -> AsyncIterator[bytes]:
-        async with _open_storage_stream(storage, stored.key) as stream:
+        async with open_storage_stream(storage, stored.key) as stream:
             while True:
                 chunk = stream.read(64 * 1024)
                 if not chunk:

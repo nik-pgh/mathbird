@@ -1,6 +1,5 @@
 """List uploaded PDFs from storage (shared by HTTP API and console prompts)."""
 
-import json
 import posixpath
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -44,17 +43,10 @@ def sidecar_key(doc_id: str) -> str:
     return f"{doc_id}/{SIDECAR_NAME}"
 
 
-async def _read_sidecar(storage: Any, doc_id: str) -> dict[str, Any]:
-    try:
-        async with storage.open(sidecar_key(doc_id)) as handle:
-            payload = json.load(handle)
-    except Exception:
-        return {}
-    return payload if isinstance(payload, dict) else {}
-
-
 async def list_document_summaries() -> list[DocumentSummary]:
     """Return one row per uploaded doc_id, newest storage keys first."""
+    from app.documents.ingest_work import read_document_meta
+
     storage = get_storage()
     objects = await storage.list()
 
@@ -69,7 +61,7 @@ async def list_document_summaries() -> list[DocumentSummary]:
 
     results: list[DocumentSummary] = []
     for doc_id, obj in sorted(docs.items(), key=lambda item: item[1].key):
-        meta = await _read_sidecar(storage, doc_id)
+        meta = await read_document_meta(storage, doc_id)
         status: DocStatus = ingest_status_from_meta(meta)  # type: ignore[assignment]
         owner = meta.get("uploaded_by_user_id")
         results.append(

@@ -29,7 +29,7 @@ npm test          # Node scripts: math, canvas, board placement, pdf layout
 
 ## Rules specific to this package
 
-1. **`src/lib/api.ts` is the primary `fetch()` site** for documents, token, and syllabus. Session helpers (`getMe`, `logout`) live in `src/lib/auth.ts` today — consolidate into `api.ts` when touching auth.
+1. **`src/lib/api.ts` is the only `fetch()` site** for REST — documents, token, syllabus, and auth (`getMe`, `logout`, `googleLoginUrl`).
 2. **The backend is not in the audio or whiteboard path.** After `requestToken()`, the page connects directly to LiveKit Cloud via `<LiveKitRoom serverUrl={url} token={token} />`. The LiveKit `url` comes from the token response, not a `VITE_*` env var.
 3. **Three data-channel topics:** `ai_board`, `user_board` (see `lib/whiteboard.ts`), and `session_progress` (see `lib/progress.ts` + `lib/roadmapProgress.ts`). Update backend pydantic mirrors in the same commit.
 4. **Voice UI is built from LiveKit React primitives** — `useVoiceAssistant`, `useTrackTranscription`, `useLocalParticipant`, `useDataChannel`, `<BarVisualizer>`, `<RoomAudioRenderer>`.
@@ -42,7 +42,7 @@ npm test          # Node scripts: math, canvas, board placement, pdf layout
 
 | Task | File(s) |
 | --- | --- |
-| New backend call | `src/lib/api.ts` (and `src/lib/auth.ts` until consolidated) |
+| New backend call | `src/lib/api.ts` |
 | New page / route | New file in `src/pages/`, register in `src/App.tsx` |
 | New shared component | `src/components/` |
 | New session-page chrome | `src/components/session/` |

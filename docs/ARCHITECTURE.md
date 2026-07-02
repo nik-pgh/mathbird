@@ -126,7 +126,7 @@ REST mirror: `GET/PATCH /api/progress/{doc_id}` for debugging or UI seeding (aut
 
 Two contracts, both hand-mirrored.
 
-**REST** — `frontend/src/lib/api.ts` is the primary `fetch()` site; `frontend/src/lib/auth.ts` holds session helpers (`getMe`, `logout`) until consolidated.
+**REST** — `frontend/src/lib/api.ts` is the sole `fetch()` site for documents, token, syllabus, and auth.
 
 | Call | Backend route | Returns |
 | --- | --- | --- |

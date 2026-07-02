@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from typing import Literal
-
-from llama_index.core.schema import TextNode
+from typing import TYPE_CHECKING, Literal
 
 from app.rag.parsing import ParsedBlock, ParsedDocument
+
+if TYPE_CHECKING:
+    from llama_index.core.schema import TextNode
 
 ChunkPolicyName = Literal[
     "block",
@@ -151,6 +152,8 @@ def _node_from_blocks(
     chunk_kind: str,
     suffix: str = "",
 ) -> TextNode | None:
+    from llama_index.core.schema import TextNode
+
     content = "\n\n".join(
         _block_content(block) for block in blocks if _block_content(block)
     ).strip()
@@ -291,6 +294,8 @@ def parsed_document_to_chunked_nodes(
 
 def clone_nodes(nodes: list[TextNode]) -> list[TextNode]:
     """Return fresh ``TextNode`` copies so the same parse can be embedded multiple times."""
+    from llama_index.core.schema import TextNode
+
     clones: list[TextNode] = []
     for node in nodes:
         clones.append(

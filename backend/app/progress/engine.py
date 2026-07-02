@@ -108,13 +108,6 @@ def _iter_node_pointers(syllabus: Syllabus) -> list[tuple[FocusPointer, str]]:
     return ordered
 
 
-def _find_pointer(syllabus: Syllabus, problem_id: str) -> FocusPointer | None:
-    for pointer, _problem in iter_problem_pointers(syllabus):
-        if pointer.problem_id == problem_id:
-            return pointer
-    return None
-
-
 def _node_label(syllabus: Syllabus, pointer: FocusPointer) -> str:
     """Human label for the focused node: problem label when set, else concept title."""
     if pointer.problem_id:
@@ -408,7 +401,7 @@ class ProgressEngine:
         self._state.updated_at = _now_iso()
 
     def record_mastery(self, problem_id: str, *, solved: bool, explained: bool) -> None:
-        """Manual mastery tool. Maps the two flags onto the ordinal scale."""
+        """Test/sim-only manual mastery hook. Production sessions mutate progress via the grader."""
         chapter_id, concept_id, _problem_id, kind = self._resolve_node(problem_id)
         if kind != "problem":
             raise ValueError(f"Not a problem id: {problem_id}")

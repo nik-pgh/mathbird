@@ -212,8 +212,7 @@ so partial progress is observable. A v1 → v2 migration runs transparently on l
 | `src/main.tsx` | React entry — mounts `<App />` into the root. |
 | `src/App.tsx` | `react-router-dom` shell — `/login`, `/` (auth), `/session` (auth or `?guest=true`), `/evals`. |
 | `src/vite-env.d.ts` | Vite/TS environment types. |
-| `src/lib/api.ts` | Primary REST client: documents, token, syllabus. |
-| `src/lib/auth.ts` | Session helpers: `getMe`, `logout` (consolidate into `api.ts` in Phase 4). |
+| `src/lib/api.ts` | Typed REST client — documents, token, syllabus, auth (`getMe`, `logout`). |
 | `src/lib/progress.ts` | TS mirror of `progress/messages.py` + decode helpers. |
 | `src/lib/roadmapProgress.ts` | Roadmap panel view-model types (`ProblemStatus` mirror). |
 | `src/lib/syllabus.ts` | Syllabus tree types from `GET /api/documents/{id}/syllabus`. |

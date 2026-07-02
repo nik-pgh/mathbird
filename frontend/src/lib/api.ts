@@ -6,11 +6,21 @@
  * place later.
  */
 
+import type { Syllabus } from "./syllabus";
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 const fetchInit: RequestInit = { credentials: "include" };
 
+export const GUEST_ENABLED = import.meta.env.VITE_GUEST_ENABLED === "true";
+
 export type DocStatus = "uploaded" | "ingesting" | "indexed" | "failed";
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
 
 export interface UploadedDocument {
   doc_id: string;
@@ -38,6 +48,29 @@ async function jsonOrThrow<T>(
     throw new Error(`API ${res.status}: ${detail || res.statusText}`);
   }
   return res.json() as Promise<T>;
+}
+
+export function googleLoginUrl(): string {
+  return `${API_BASE}/api/auth/google`;
+}
+
+export async function getMe(): Promise<User | null> {
+  const res = await fetch(`${API_BASE}/api/auth/me`, fetchInit);
+  if (res.status === 401) return null;
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return res.json() as Promise<User>;
+}
+
+export async function logout(): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/auth/logout`, {
+    method: "POST",
+    ...fetchInit,
+  });
+  if (!res.ok && res.status !== 204) {
+    throw new Error(await res.text());
+  }
 }
 
 export async function uploadPdf(file: File): Promise<UploadedDocument> {
@@ -101,8 +134,6 @@ export async function fetchDocumentPdfBlob(docId: string): Promise<string> {
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
-
-import type { Syllabus } from "./syllabus";
 
 export async function fetchDocumentSyllabus(docId: string): Promise<Syllabus> {
   const res = await fetch(

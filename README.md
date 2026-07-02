@@ -205,8 +205,9 @@ For a hosted deployment, run the same three pieces:
 - LiveKit agent worker as a long-running worker process.
 - Frontend as a static Vite build.
 
-Set `VITE_API_BASE_URL` to the deployed backend URL and keep `VITE_LIVEKIT_URL`
-pointed at the same LiveKit Cloud project used by the backend and worker.
+Set `VITE_API_BASE_URL` to the deployed backend URL. The LiveKit WebSocket URL
+is returned by `POST /api/token` — the frontend does not need a separate
+`VITE_LIVEKIT_URL`.
 
 #### Deploying the backend with Docker + Fly.io
 
@@ -246,8 +247,7 @@ docker run --env-file .env mathbird-backend python -m app.agent.main start
 #### Deploying the frontend
 
 The frontend is a static Vite build. Deploy to Vercel, Netlify, or any static
-host. Set `VITE_API_BASE_URL` to the deployed backend URL and
-`VITE_LIVEKIT_URL` to your LiveKit Cloud project URL.
+host. Set `VITE_API_BASE_URL` to the deployed backend URL.
 
 ## License
 

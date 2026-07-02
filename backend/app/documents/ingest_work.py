@@ -29,7 +29,8 @@ async def read_document_meta(storage: Any, doc_id: str) -> dict[str, Any]:
     try:
         async with open_storage_stream(storage, sidecar_key(doc_id)) as stream:
             payload = json.loads(stream.read().decode("utf-8"))
-    except (FileNotFoundError, OSError, json.JSONDecodeError, ValueError):
+    except (FileNotFoundError, OSError, json.JSONDecodeError, ValueError) as exc:
+        logger.warning("Failed to read sidecar for doc_id=%s: %s", doc_id, exc)
         return {}
     return payload if isinstance(payload, dict) else {}
 
