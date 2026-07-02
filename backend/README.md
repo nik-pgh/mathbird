@@ -38,7 +38,14 @@ a LiveKit room participant:
 ```bash
 cd backend
 uv run python -m scripts.agent_console
+uv run python -m scripts.agent_console -c   # per-turn Rich panel: injected context, tools, tutor, progress
 ```
+
+The `-c` / `--show-context` flag prints one panel per turn showing the exact system
+messages injected into the LLM (board, progress, textbook excerpt if present), tool
+calls, the tutor reply, and progress state after the grader. Implementation lives in
+`app/agent/console/render.py` and `app/agent/turn_context/` (shared with voice via
+`prepare_turn_context`).
 
 Optional doc/progress scope. If `SIM_ACTIVE_DOC_ID` / `SIM_USER_ID` are unset,
 the console lists uploaded PDFs and known auth users and prompts on stdin.

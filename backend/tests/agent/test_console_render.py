@@ -15,6 +15,14 @@ from app.agent.turn_context import InjectionBlock, TurnContextSnapshot, classify
 
 
 def _run_with_events(items) -> RunResult:
+    import asyncio
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
     run = RunResult(user_input="test", output_type=None)
     for item in items:
         run._item_added(item)

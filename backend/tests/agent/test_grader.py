@@ -181,7 +181,10 @@ def test_openai_grader_prompt_rejects_clarifying_question_misconceptions() -> No
     """System prompt must tell the model not to grade clarifying questions as errors."""
     from app.agent.grader.openai import _SYSTEM_PROMPT
 
-    assert "Do NOT record misconceptions when the student asks clarifying questions" in _SYSTEM_PROMPT
+    assert (
+        "Do NOT record misconceptions when the student asks clarifying questions"
+        in _SYSTEM_PROMPT
+    )
 
 
 @pytest.mark.asyncio
