@@ -11,6 +11,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `README.md` | Human-facing project README. |
 | `docs/ARCHITECTURE.md` | "Why" / "how" companion to `CLAUDE.md`. |
 | `docs/INDEX.md` | This file — hand-maintained file/module map. |
+| `docs/improvement-plan/README.md` | Links to GitHub improvement-plan issues (#28–#36). |
 | `.env.example` | Canonical env template. Copy to `.env` at repo root. |
 | `.env` | (gitignored) — actual secrets. Read by `backend/app/config.py`. |
 
@@ -23,7 +24,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `backend/README.md` | Backend-specific run instructions. |
 | `backend/CLAUDE.md` | Backend-scoped agent guidance (rules, gotchas, where-to-add map). |
 | `backend/uploads/` | (gitignored) — default `STORAGE_LOCAL_DIR`. |
-| `backend/tests/` | Pytest suite, grouped by seam (`tests/rag/`, `tests/whiteboard/`, `tests/simulation/`). |
+| `backend/tests/` | Pytest suite — `tests/rag/`, `tests/whiteboard/`, `tests/simulation/`, `tests/auth/`, `tests/api/`, `tests/progress/`, `tests/agent/` (incl. `turn_context/`). |
 | `backend/personas/default.yaml` | YAML system prompt loaded by `Settings.agent_instructions`. Swap via `PERSONA_FILE`. |
 | `backend/evals/README.md` | Agent-facing guide to the retrieval evaluation pipeline, reports, chunking policies, dashboard wiring, and extension workflow. |
 | `backend/evals/golden/goodfellow_ch2_retrieval.jsonl` | 40-row golden retrieval set for Goodfellow chapter 2. |
@@ -46,9 +47,10 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | Path | What it is |
 | --- | --- |
 | `agent/main.py` | Worker `entrypoint(ctx)` — joins a room, builds `AgentSession`, starts greeting. CLI: `python -m app.agent.main dev`. |
-| `scripts/agent_console.py` | Interactive text REPL with readable tutor output. |
+| `scripts/agent_console.py` | Interactive text REPL with readable tutor output (`backend/scripts/`, not under `app/agent/`). |
 | `agent/session_factory.py` | Production per-room wiring: `build_session_bundle`, `resolve_session_identity`, `send_initial_greeting`. |
-| `agent/console/` | Local text console + YAML sim helpers — `runtime.py` (local fake job + HTTP context), `identity.py` (stdin doc/user picker), `ui.py` (Rich formatters). |
+| `agent/turn_context/` | Turn pipeline: `prepare.py` (injection + grader scheduling), `builder.py`, `grade.py`, `grading_task.py`, `snapshot.py`, `session.py`, `types.py`. |
+| `agent/console/` | Local text console — `runtime.py`, `identity.py`, `ui.py`, `render.py`, `turn.py`, `loop.py`. |
 | `agent/simulation/scenarios.py` | YAML scenario loader (`ConversationScenario`, `load_scenario`). Turn expectations include per-turn progression fields (`node_level`, `focus_node`, `next_suggestion_node`, `misconceptions_contain`). |
 | `agent/simulation/assertions.py` | Turn expectations checked against LiveKit `RunResult` events + optional `ProgressEngine` state. |
 | `agent/tools.py` | `@function_tool` functions the LLM can call. `build_function_tools()` assembles the LLM-facing list (see tool table below). `update_ai_board` / `clear_ai_board` stay defined for tests but are not exposed to the LLM. |
@@ -58,7 +60,7 @@ Hand-maintained map of every important file. Update this when adding or renaming
 | `agent/providers/llm.py` | LLM factory. |
 | `agent/providers/tts.py` | TTS factory. Cartesia / ElevenLabs / OpenAI. |
 | `agent/providers/vad.py` | VAD factory. Silero only today. |
-| `agent/whiteboard_agent.py` | `Agent` subclass: injects user-board reading + progress context each turn; runs the grader after each student turn; tees transcription to the AiBoard extractor. |
+| `agent/whiteboard_agent.py` | `Agent` subclass: `on_user_turn_completed` → `prepare_turn_context`; tees transcription to the AiBoard extractor. Grader runs in background via `turn_context/`, not inline here. |
 
 #### LLM function tools (`agent/tools.py`)
 
@@ -73,7 +75,16 @@ Progress is **grader-primary**: the tutor LLM never mutates progress — the gra
 | `update_ai_board` | never (defined only) | Publish primitive for tests; AiBoard is extractor-driven |
 | `clear_ai_board` | never (defined only) | Same — not in `build_function_tools()` |
 
-Superseded tutor mutating tools (removed from `build_function_tools()`): `set_focus`, `record_mastery`. See [`docs/superpowers/specs/2026-06-19-student-progress-design.md`](./superpowers/specs/2026-06-19-student-progress-design.md) for the original design; grader-primary architecture superseded the tutor-tool mutation path.
+Superseded tutor mutating tools (removed from `build_function_tools()`): `set_focus`, `record_mastery`. Grader-primary architecture: progress mutations flow through `app/agent/grader/` + `ProgressEngine.apply_grade_result()`, not tutor tools.
+
+### `backend/app/agent/whiteboard/extractor/` — sentence-streaming AiBoard writer
+
+| Path | What it is |
+| --- | --- |
+| `extractor/base.py` | `BoardExtractor` Protocol + sentence input types. |
+| `extractor/null.py` | `NullBoardExtractor` — no-op default. |
+| `extractor/openai.py` | `OpenAIBoardExtractor` — structured-outputs board items per sentence. |
+| `extractor/factory.py` | `get_board_extractor()` — env-driven factory (`BOARD_EXTRACTOR`). |
 
 ### `backend/app/agent/whiteboard/` — pluggable handwriting reader + state
 
@@ -87,6 +98,23 @@ Superseded tutor mutating tools (removed from `build_function_tools()`): `set_fo
 | `whiteboard/reader/__init__.py` | `BoardReader` Protocol + `get_board_reader()` factory. |
 | `whiteboard/reader/null.py` | `NullBoardReader` — no-op default. |
 | `whiteboard/reader/openai_vision.py` | `OpenAIVisionBoardReader` — vision-LLM handwriting recognition. |
+| `whiteboard/sentence.py` | Sentence splitter for extractor pipeline. |
+| `whiteboard/cache.py` | Per-room AiBoard item cache. |
+
+### `backend/app/auth/` — Google OAuth + session JWT
+
+| Path | What it is |
+| --- | --- |
+| `auth/jwt.py` | Issue/decode session JWT (`AUTH_JWT_SECRET`). |
+| `auth/google.py` | Google OAuth client helpers. |
+| `auth/store.py` | `UserStore` — SQLite user persistence. |
+| `auth/deps.py` | `get_current_user`, `get_optional_user` FastAPI dependencies. |
+
+### `backend/app/documents/` — shared catalog helpers
+
+| Path | What it is |
+| --- | --- |
+| `documents/catalog.py` | `list_document_summaries`, sidecar key helpers — shared by HTTP API and console doc picker. |
 
 ### `backend/app/agent/grader/` — per-turn student-model grader
 
@@ -134,8 +162,9 @@ so partial progress is observable. A v1 → v2 migration runs transparently on l
 | --- | --- |
 | `api/main.py` | FastAPI app, CORS, mounts routers, `/health`. |
 | `api/routes/token.py` | `POST /api/token` — signs LiveKit JWT, returns `{token, url, room, identity}`. |
-| `api/routes/documents.py` | `POST /api/documents` stores PDFs, `POST /api/documents/{doc_id}/ingest` indexes them, `GET /api/documents` lists upload/index status, and `GET /api/documents/{doc_id}/file` streams PDFs to the session iframe. |
-| `documents/catalog.py` | Shared PDF listing for HTTP API and console doc picker (`list_document_summaries`). |
+| `api/routes/auth.py` | `GET /api/auth/google`, callback, `GET /api/auth/me`, `POST /api/auth/logout`. |
+| `api/routes/documents.py` | `POST /api/documents`, `POST /api/documents/{doc_id}/ingest`, `GET /api/documents`, `GET /api/documents/{doc_id}/file`, `GET /api/documents/{doc_id}/syllabus`. |
+| `api/routes/progress.py` | `GET/PATCH /api/progress/{doc_id}` — per-user progress REST (debug/UI). |
 
 ### `backend/app/storage/` — pluggable storage
 
@@ -157,6 +186,9 @@ so partial progress is observable. A v1 → v2 migration runs transparently on l
 | `rag/query_parser.py` | Detects page/problem/example references in student queries. |
 | `rag/formatter.py` | Converts internal retrieved records into cited `RetrievedChunk` results. |
 | `rag/llamaindex_qdrant.py` | Concrete LlamaIndex + Qdrant retriever implementation. |
+| `rag/multi_ingest.py` | Multi-collection ingest helpers for evals. |
+| `rag/embeddings.py` | Embedding model registry for eval comparisons. |
+| `rag/reference_ids.py` | Stable reference id helpers for chunks. |
 | `rag/evaluation.py` | Golden-set retrieval evaluation: loads JSONL cases, scores retrieved chunks, aggregates metrics, and renders reports. |
 | `rag/__init__.py` | Re-exports the public RAG seam. |
 
@@ -167,8 +199,8 @@ so partial progress is observable. A v1 → v2 migration runs transparently on l
 | `frontend/package.json` | `dev` / `build` / `lint` (tsc-only) / `test` / `preview` scripts. |
 | `frontend/vite.config.ts` | Vite config (React plugin). |
 | `frontend/tsconfig*.json` | TypeScript project refs. |
-| `frontend/.env.local` | (gitignored) — `VITE_API_BASE_URL`, `VITE_LIVEKIT_URL`. |
-| `frontend/.env.example` | Template for above. |
+| `frontend/.env.local` | (gitignored) — `VITE_API_BASE_URL`, `VITE_GUEST_ENABLED`, optional `VITE_EVALS_ENABLED`. |
+| `frontend/.env.example` | Template for above. LiveKit URL comes from `POST /api/token`, not a frontend env var. |
 | `frontend/src/data/embeddingEval.generated.json` | Generated embedding comparison report consumed by the eval dashboard. Update via `scripts.eval_retrieval --frontend-output`. |
 | `frontend/src/data/chunkingEval.generated.json` | Generated chunking comparison report consumed by the eval dashboard. Update via `scripts.eval_chunking --frontend-output`. |
 | `frontend/src/data/structuredEval.generated.json` | Generated structured lookup comparison report consumed by the eval dashboard. Update via `scripts.eval_structured --frontend-output`. |
@@ -178,13 +210,25 @@ so partial progress is observable. A v1 → v2 migration runs transparently on l
 | Path | What it is |
 | --- | --- |
 | `src/main.tsx` | React entry — mounts `<App />` into the root. |
-| `src/App.tsx` | `react-router-dom` shell — `/` → Upload, `/session` → Session. |
+| `src/App.tsx` | `react-router-dom` shell — `/login`, `/` (auth), `/session` (auth or `?guest=true`), `/evals`. |
 | `src/vite-env.d.ts` | Vite/TS environment types. |
-| `src/lib/api.ts` | **Only place that calls `fetch()`.** `uploadPdf`, `ingestDocument`, `listDocuments`, `documentFileUrl`, `requestToken`. |
+| `src/lib/api.ts` | Primary REST client: documents, token, syllabus. |
+| `src/lib/auth.ts` | Session helpers: `getMe`, `logout` (consolidate into `api.ts` in Phase 4). |
+| `src/lib/progress.ts` | TS mirror of `progress/messages.py` + decode helpers. |
+| `src/lib/roadmapProgress.ts` | Roadmap panel view-model types (`ProblemStatus` mirror). |
+| `src/lib/syllabus.ts` | Syllabus tree types from `GET /api/documents/{id}/syllabus`. |
+| `src/lib/activeDoc.ts` | `localStorage` key for library → session active doc. |
 | `src/data/retrievalEval.ts` | Normalizes generated backend eval JSON into dashboard-friendly TypeScript types. |
 | `src/lib/useTypewriter.ts` | Hook used by the transcript bubbles. |
-| `src/pages/UploadPage.tsx` | Landing page — `<PdfDropZone>` + uploaded-doc list. |
-| `src/pages/SessionPage.tsx` | Wraps `<LiveKitRoom>` + `useVoiceAssistant` + visualizer + transcript. |
+| `src/pages/LoginPage.tsx` | Google OAuth entry + guest link when `VITE_GUEST_ENABLED`. |
+| `src/pages/UploadPage.tsx` | Landing page — `<PdfDropZone>` + uploaded-doc list (upload then ingest). |
+| `src/pages/SessionPage.tsx` | Wraps `<LiveKitRoom>` + `SharedReasoningWorkspace` + voice footer. |
+| `src/pages/EvalDashboardPage.tsx` | Internal RAG/chunking eval comparison dashboard (`/evals`). |
+| `src/components/auth/AuthGate.tsx` | Redirects unauthenticated users to `/login`. |
+| `src/components/progress/RoadmapProgressPanel.tsx` | Syllabus roadmap UI driven by `session_progress` channel. |
+| `src/components/progress/SessionProgressBridge.tsx` | Subscribes to progress channel, provides snapshot context. |
+| `src/components/progress/useProgressChannel.ts` | Typed `useDataChannel("session_progress")` wrapper. |
+| `src/components/library/DocList.tsx` | Library document list with ingest status. |
 | `src/components/PdfDropZone.tsx` | File-picker / drag-drop component for PDFs. |
 | `src/components/Transcript.tsx` | Streamed user + agent transcription, typewriter animation. |
 | `src/components/session/SessionTopbar.tsx` | Shared top bar; renders the End-session control in session mode. |

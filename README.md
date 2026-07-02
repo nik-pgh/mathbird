@@ -23,18 +23,19 @@ locally.
 
 ### End-to-end flow
 
-1. The student opens the React app and uploads a PDF.
-2. The frontend sends the PDF to the FastAPI backend with `POST /api/documents`.
-3. The backend stores the file and, when RAG is enabled, indexes it for search.
-4. The student starts a voice session.
-5. The frontend asks the backend for a LiveKit token with `POST /api/token`.
-6. The frontend joins a LiveKit Cloud room using that token.
-7. The LiveKit agent worker is dispatched into the room.
-8. The worker runs the voice pipeline:
+1. The student opens the React app and signs in with Google (or uses guest mode when enabled).
+2. The student uploads a PDF from the library page.
+3. The frontend sends the PDF to the backend with `POST /api/documents` (stores only).
+4. The frontend calls `POST /api/documents/{doc_id}/ingest` to parse and index the PDF when RAG is enabled.
+5. The student starts a voice session.
+6. The frontend asks the backend for a LiveKit token with `POST /api/token`.
+7. The frontend joins a LiveKit Cloud room using that token.
+8. The LiveKit agent worker is dispatched into the room.
+9. The worker runs the voice pipeline:
    - speech-to-text turns student audio into text
    - the LLM decides how to respond and can call tools
    - text-to-speech streams the answer back into the room
-9. When the student asks about the uploaded PDF, the agent can call the
+10. When the student asks about the uploaded PDF, the agent can call the
    document search tool before answering.
 
 The backend is split into two running processes:
@@ -62,7 +63,7 @@ RAG_PROVIDER=llamaindex_qdrant
 LLAMAPARSE_API_KEY=...
 OPENAI_API_KEY=...
 QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION=mathbird_documents
+QDRANT_COLLECTION=auto
 ```
 
 With that provider enabled:
@@ -144,8 +145,10 @@ For local development, use:
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8000
-VITE_LIVEKIT_URL=wss://your-project.livekit.cloud
+VITE_GUEST_ENABLED=false
 ```
+
+LiveKit WebSocket URL is returned by `POST /api/token` — you do not need a separate frontend LiveKit env var.
 
 ### 2. Start the backend API
 
