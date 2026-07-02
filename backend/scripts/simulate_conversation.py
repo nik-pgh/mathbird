@@ -28,8 +28,7 @@ from typing import TYPE_CHECKING
 
 from livekit import rtc
 
-from app.agent.console.context_view import print_llm_context, print_progress_snapshot
-from app.agent.console.render import assistant_reply
+from app.agent.console.render import render_turn_panel
 from app.agent.console.runtime import local_text_job
 from app.agent.console.turn import run_text_turn
 from app.agent.console.ui import format_run_event
@@ -94,10 +93,6 @@ async def run_scenario(
             await bundle.session.start(agent=bundle.agent, record=False)
 
             try:
-                if show_context and engine is not None:
-                    print("\n--- initial context ---", flush=True)
-                    print_llm_context(bundle.session_data, engine)
-
                 if scenario.greeting:
                     await send_initial_greeting(
                         bundle.session,
@@ -116,12 +111,9 @@ async def run_scenario(
                     )
                     _apply_board_text(bundle.session_data, board_text)
 
-                    print(f"\n--- {label}: student ---", flush=True)
-                    print(turn.student, flush=True)
-
-                    if show_context:
-                        print(f"\n--- {label}: context (what the LLM sees) ---", flush=True)
-                        print_llm_context(bundle.session_data, engine)
+                    if not show_context:
+                        print(f"\n--- {label}: student ---", flush=True)
+                        print(turn.student, flush=True)
 
                     result = await run_text_turn(bundle.session, bundle.agent, turn.student)
                     await result.run
@@ -135,16 +127,13 @@ async def run_scenario(
                             )
 
                     if show_context:
-                        reply = assistant_reply(result.run.events)
-                        print(f"\n--- {label}: tutor ---", flush=True)
-                        if reply.strip():
-                            for line in reply.splitlines():
-                                print(f"  {line}" if line else "", flush=True)
-                        else:
-                            print("  (no assistant reply)", flush=True)
-                        if engine is not None:
-                            print(f"\n--- {label}: progress (after turn) ---", flush=True)
-                            print_progress_snapshot(engine)
+                        render_turn_panel(
+                            turn_number=index,
+                            user_text=turn.student,
+                            context=result.snapshot,
+                            run=result.run,
+                            engine=engine,
+                        )
 
                     assert_turn_expectations(
                         result.run,
