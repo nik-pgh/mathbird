@@ -526,7 +526,10 @@ class ProgressEngine:
                 intent="introduce",
                 focus_node_id=nxt.problem_id or nxt.concept_id,
                 rationale="No focus set; next unmastered node selected.",
-                directive=f"Introduce the next topic: {label}. Ask what they already know about it.",
+                directive=(
+                    f"Introduce the next topic: {label}. "
+                    "Ask what they already know about it."
+                ),
             )
 
         focus_node_id = focus.problem_id or focus.concept_id
@@ -542,14 +545,20 @@ class ProgressEngine:
                     intent="hold",
                     focus_node_id=focus_node_id,
                     rationale=f"{focus_label} mastered and no further material.",
-                    directive=f"{focus_label} is mastered and nothing remains. Wind down the session.",
+                    directive=(
+                        f"{focus_label} is mastered and nothing remains. "
+                        "Wind down the session."
+                    ),
                 )
             nxt_label = self.node_label(nxt)
             return Recommendation(
                 intent="advance",
                 focus_node_id=nxt.problem_id or nxt.concept_id,
                 rationale=f"{focus_label} mastered.",
-                directive=f"{focus_label} is mastered. Move on to {nxt_label} — ask them to set it up.",
+                directive=(
+                    f"{focus_label} is mastered. Move on to {nxt_label} — "
+                    "ask them to set it up."
+                ),
             )
 
         # Open misconceptions on the focus node → address them first.
@@ -582,7 +591,10 @@ class ProgressEngine:
             return Recommendation(
                 intent="review",
                 focus_node_id=focus_node_id,
-                rationale=f"{focus_label} stalled after {node.hints_given} hints (no prerequisite).",
+                rationale=(
+                    f"{focus_label} stalled after {node.hints_given} hints "
+                    "(no prerequisite)."
+                ),
                 directive=(
                     f"The student is stuck on {focus_label} after {node.hints_given} hints. "
                     "Break the problem into a smaller sub-step and ask about just that part."
@@ -596,8 +608,8 @@ class ProgressEngine:
                 focus_node_id=focus_node_id,
                 rationale=f"{focus_label} solved but not explained.",
                 directive=(
-                    f"The student solved {focus_label} correctly. Ask them to explain *why* it works "
-                    "in their own words before recording mastery."
+                    f"The student solved {focus_label} correctly. Ask them to "
+                    "explain *why* it works in their own words before recording mastery."
                 ),
             )
 

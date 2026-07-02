@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import io
 import json
-from pathlib import Path
-
 import time
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -26,9 +25,7 @@ def _poll_doc_status(
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         listing = client.get("/api/documents").json()
-        status = next(
-            d["status"] for d in listing["documents"] if d["doc_id"] == doc_id
-        )
+        status = next(d["status"] for d in listing["documents"] if d["doc_id"] == doc_id)
         if status == wanted:
             return status
         if wanted == "indexed" and status == "failed":
@@ -149,9 +146,9 @@ def test_ingest_builds_syllabus_when_parser_available(
 
     syllabus_res = client.get(f"/api/documents/{doc_id}/syllabus")
     assert syllabus_res.status_code == 200
-    first_exercise = (
-        syllabus_res.json()["chapters"][0]["concepts"][0]["problems"][0]["exercise_number"]
-    )
+    first_exercise = syllabus_res.json()["chapters"][0]["concepts"][0]["problems"][0][
+        "exercise_number"
+    ]
     assert first_exercise == "1"
 
 
