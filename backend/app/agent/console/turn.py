@@ -8,6 +8,7 @@ and grader-driven state updates match production.
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -28,19 +29,31 @@ class PreparedTurn:
     turn_ctx: ChatContext
     user_message: ChatMessage
     snapshot: TurnContextSnapshot
+    grading_task: asyncio.Task[None] | None
 
 
 @dataclass
 class TurnRunResult:
     run: RunResult
     snapshot: TurnContextSnapshot
+    grading_task: asyncio.Task[None] | None
+
+
+async def await_turn_grading(result: TurnRunResult) -> None:
+    if result.grading_task is not None:
+        await result.grading_task
 
 
 async def prepare_user_turn(agent: WhiteboardAgent, user_input: str) -> PreparedTurn:
     turn_ctx = agent.chat_ctx.copy()
     user_message = ChatMessage(role="user", content=[user_input])
     prepared = await prepare_turn_context(agent, turn_ctx, user_message)
-    return PreparedTurn(turn_ctx, user_message, prepared.snapshot)
+    return PreparedTurn(
+        turn_ctx,
+        user_message,
+        prepared.snapshot,
+        prepared.grading_task,
+    )
 
 
 async def run_text_turn(
@@ -62,4 +75,8 @@ async def run_text_turn(
         input_modality="text",
     )
     run_state._watch_handle(handle)
-    return TurnRunResult(run=run_state, snapshot=prepared.snapshot)
+    return TurnRunResult(
+        run=run_state,
+        snapshot=prepared.snapshot,
+        grading_task=prepared.grading_task,
+    )

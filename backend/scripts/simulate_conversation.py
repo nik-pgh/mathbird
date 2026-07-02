@@ -30,7 +30,7 @@ from livekit import rtc
 
 from app.agent.console.render import render_turn_panel
 from app.agent.console.runtime import local_text_job
-from app.agent.console.turn import run_text_turn
+from app.agent.console.turn import await_turn_grading, run_text_turn
 from app.agent.console.ui import format_run_event
 from app.agent.grader.base import GradeResult
 from app.agent.grader.fake import FakeGrader
@@ -117,6 +117,7 @@ async def run_scenario(
 
                     result = await run_text_turn(bundle.session, bundle.agent, turn.student)
                     await result.run
+                    await await_turn_grading(result)
 
                     if verbose:
                         print(f"--- {label}: events ---", flush=True)

@@ -12,7 +12,7 @@ from app.agent.console.identity import (
 )
 from app.agent.console.render import render_turn_panel
 from app.agent.console.runtime import local_text_job
-from app.agent.console.turn import run_text_turn
+from app.agent.console.turn import await_turn_grading, run_text_turn
 from app.agent.console.ui import (
     print_banner,
     print_dim,
@@ -86,6 +86,7 @@ async def run_console(*, show_context: bool = False) -> None:
                 turn_number += 1
                 result = await run_text_turn(bundle.session, bundle.agent, user_text)
                 await result.run
+                await await_turn_grading(result)
 
                 if show_context:
                     render_turn_panel(

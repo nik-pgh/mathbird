@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import MagicMock
 
 import pytest
 from livekit.agents.voice.run_result import RunResult
 
-from app.agent.console.turn import TurnRunResult, run_text_turn
+from app.agent.console.turn import TurnRunResult, await_turn_grading, run_text_turn
+from app.agent.grader.base import GradeResult
 from app.agent.grader.null import NullGrader
 from app.agent.whiteboard.cache import BoardCache
 from app.agent.whiteboard.state import BoardState
@@ -53,8 +55,73 @@ class _FakeExtractor:
         return []
 
 
+class SlowGrader:
+    """Blocks on ``release`` until the caller sets it."""
+
+    def __init__(self, *, started: asyncio.Event, release: asyncio.Event) -> None:
+        self._started = started
+        self._release = release
+        self.finished = False
+
+    async def grade(self, **kwargs):  # noqa: ANN003
+        self._started.set()
+        await self._release.wait()
+        self.finished = True
+        return GradeResult()
+
+
 @pytest.mark.asyncio
-async def test_run_text_turn_runs_grader_before_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_run_text_turn_starts_reply_before_grade_finishes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RAG_PROVIDER", "null")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    started = asyncio.Event()
+    release = asyncio.Event()
+    grader = SlowGrader(started=started, release=release)
+    engine = _engine()
+    agent = WhiteboardAgent(
+        instructions="be a tutor",
+        board_state=BoardState(),
+        board_cache=BoardCache(),
+        extractor=_FakeExtractor(),
+        grader=grader,
+        progress_engine=engine,
+    )
+
+    reply_started = False
+
+    session = MagicMock()
+    session._global_run_state = None
+    handle = MagicMock()
+
+    def _generate_reply(**kwargs):  # noqa: ANN003
+        nonlocal reply_started
+        reply_started = True
+        return handle
+
+    session.generate_reply = _generate_reply
+
+    result = await run_text_turn(session, agent, "hello")
+
+    await started.wait()
+    assert reply_started
+    assert isinstance(result, TurnRunResult)
+    assert isinstance(result.run, RunResult)
+    assert result.grading_task is not None
+    assert not result.grading_task.done()
+    assert not grader.finished
+
+    release.set()
+    await await_turn_grading(result)
+    assert grader.finished
+
+
+@pytest.mark.asyncio
+async def test_await_turn_grading_applies_focus(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RAG_PROVIDER", "null")
     from app.config import get_settings
 
@@ -70,34 +137,16 @@ async def test_run_text_turn_runs_grader_before_llm(monkeypatch: pytest.MonkeyPa
         progress_engine=engine,
     )
 
-    calls: list[str] = []
-
-    async def _tracking_prepare(agent, turn_ctx, new_message):  # noqa: ANN001
-        calls.append("prepare")
-        from app.agent.turn_context.prepare import prepare_turn_context as real_prepare
-
-        return await real_prepare(agent, turn_ctx, new_message)
-
-    from app.agent.console import turn as turn_module
-
-    monkeypatch.setattr(turn_module, "prepare_turn_context", _tracking_prepare)
-
     session = MagicMock()
     session._global_run_state = None
-    handle = MagicMock()
-
-    def _generate_reply(**kwargs):  # noqa: ANN003
-        calls.append("reply")
-        return handle
-
-    session.generate_reply = _generate_reply
+    session.generate_reply = MagicMock(return_value=MagicMock())
 
     result = await run_text_turn(session, agent, "almost nothing")
 
-    assert calls == ["prepare", "reply"]
-    assert isinstance(result, TurnRunResult)
-    assert isinstance(result.run, RunResult)
-    assert result.snapshot.injections
-    await agent._pending_grader.drain()
+    assert engine.state.focus is None
+    assert result.grading_task is not None
+
+    await await_turn_grading(result)
+
     assert engine.state.focus is not None
     assert engine.state.focus.concept_id == "ch-1-c-a"
