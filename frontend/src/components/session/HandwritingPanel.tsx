@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { GripVertical } from "lucide-react";
 import { getStroke } from "perfect-freehand";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
@@ -56,7 +56,7 @@ type ResizeState = {
   startSize: { width: number; height: number };
 };
 
-export default function HandwritingPanel({
+function HandwritingPanel({
   cardId,
   label,
   position,
@@ -432,6 +432,8 @@ export default function HandwritingPanel({
     </section>
   );
 }
+
+export default memo(HandwritingPanel);
 
 function pointerXY(canvas: HTMLCanvasElement, event: PointerEvent) {
   const rect = canvas.getBoundingClientRect();

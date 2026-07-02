@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import CaseOutcomeMatrix from "../components/evals/CaseOutcomeMatrix";
 import FailureList from "../components/evals/FailureList";
@@ -8,8 +8,9 @@ import SessionTopbar from "../components/session/SessionTopbar";
 import {
   RetrievalEvalReport,
   RetrievalEvalReportTab,
-  retrievalEvalReports,
+  loadEvalCatalog,
 } from "../data/retrievalEval";
+import type { EvalCatalog } from "../lib/evalCatalog";
 import {
   formatLatency,
   formatPercent,
@@ -110,13 +111,51 @@ function reportTabLabel(tab: RetrievalEvalReportTab): string {
 }
 
 export default function EvalDashboardPage() {
-  const [activeTabId, setActiveTabId] = useState(retrievalEvalReports[0]?.id ?? "structured");
+  const [catalog, setCatalog] = useState<EvalCatalog | null>(null);
+  const [activeTabId, setActiveTabId] = useState("structured");
+
+  useEffect(() => {
+    let cancelled = false;
+    loadEvalCatalog()
+      .then((loaded) => {
+        if (cancelled) return;
+        setCatalog(loaded);
+        setActiveTabId(loaded.retrievalEvalReports[0]?.id ?? "structured");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCatalog({
+            structuredEvalSources: [],
+            structuredEvalCatalog: [],
+            retrievalEvalReports: [],
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const retrievalEvalReports = catalog?.retrievalEvalReports ?? [];
   const activeTab = useMemo(
     () =>
       retrievalEvalReports.find((tab) => tab.id === activeTabId) ??
       retrievalEvalReports[0],
-    [activeTabId],
+    [activeTabId, retrievalEvalReports],
   );
+
+  if (!catalog) {
+    return (
+      <>
+        <SessionTopbar />
+        <main className="eval-main">
+          <p className="route-fallback" aria-busy="true">
+            Loading evaluation reports…
+          </p>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -145,7 +184,10 @@ export default function EvalDashboardPage() {
             aria-labelledby={`eval-tab-${activeTabId}`}
           >
             {activeTabId === "structured" ? (
-              <StructuredLookupReport />
+              <StructuredLookupReport
+                catalog={catalog.structuredEvalCatalog}
+                sources={catalog.structuredEvalSources}
+              />
             ) : activeTab ? (
               <ReportView report={activeTab.report} />
             ) : null}

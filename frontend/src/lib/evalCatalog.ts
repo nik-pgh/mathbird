@@ -18,20 +18,9 @@ const AXIS_TAB_META: Record<string, { id: string; label: string }> = {
   structured_lookup: { id: "structured", label: "Structured Lookup" },
 };
 
-const embeddingEvalModules = import.meta.glob("../data/embeddingEval*.json", {
-  eager: true,
-  import: "default",
-}) as Record<string, unknown>;
-
-const chunkingEvalModules = import.meta.glob("../data/chunkingEval*.json", {
-  eager: true,
-  import: "default",
-}) as Record<string, unknown>;
-
-const structuredEvalModules = import.meta.glob("../data/structuredEval*.json", {
-  eager: true,
-  import: "default",
-}) as Record<string, unknown>;
+const embeddingEvalModules = import.meta.glob("../data/embeddingEval*.json");
+const chunkingEvalModules = import.meta.glob("../data/chunkingEval*.json");
+const structuredEvalModules = import.meta.glob("../data/structuredEval*.json");
 
 export interface EvalReportSource {
   id: string;
@@ -53,8 +42,26 @@ export interface StructuredEvalTarget {
   shortLabel: string;
 }
 
+export interface EvalCatalog {
+  structuredEvalSources: EvalReportSource[];
+  structuredEvalCatalog: StructuredEvalTarget[];
+  retrievalEvalReports: RetrievalEvalReportTab[];
+}
+
 function sourceIdFromPath(path: string): string {
   return path.replace("../data/", "").replace(/\.json$/, "");
+}
+
+async function loadJsonModules(
+  modules: Record<string, () => Promise<unknown>>,
+): Promise<Record<string, unknown>> {
+  const entries = await Promise.all(
+    Object.entries(modules).map(async ([path, loader]) => {
+      const mod = (await loader()) as { default: unknown };
+      return [path, mod.default] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
 }
 
 function buildSources(modules: Record<string, unknown>): EvalReportSource[] {
@@ -158,13 +165,14 @@ export function defaultStructuredSelection(
 
 export function buildStructuredComparisonReport(
   selected: readonly StructuredEvalTarget[],
+  sources: readonly EvalReportSource[],
 ): RetrievalEvalReport | null {
   if (selected.length === 0) {
     return null;
   }
 
   const first = selected[0];
-  const source = structuredEvalSources.find((item) => item.id === first.sourceId);
+  const source = sources.find((item) => item.id === first.sourceId);
   if (!source) {
     return null;
   }
@@ -184,10 +192,16 @@ export function buildStructuredComparisonReport(
   };
 }
 
-function buildAxisTabs(): RetrievalEvalReportTab[] {
+function buildAxisTabs(
+  embeddingModules: Record<string, unknown>,
+  chunkingModules: Record<string, unknown>,
+  structuredModules: Record<string, unknown>,
+  structuredEvalCatalog: StructuredEvalTarget[],
+  structuredEvalSources: EvalReportSource[],
+): RetrievalEvalReportTab[] {
   const tabs: RetrievalEvalReportTab[] = [];
 
-  const embeddingReport = latestReport(embeddingEvalModules);
+  const embeddingReport = latestReport(embeddingModules);
   if (embeddingReport) {
     tabs.push({
       id: AXIS_TAB_META.embedding_model.id,
@@ -196,7 +210,7 @@ function buildAxisTabs(): RetrievalEvalReportTab[] {
     });
   }
 
-  const chunkingReport = latestReport(chunkingEvalModules);
+  const chunkingReport = latestReport(chunkingModules);
   if (chunkingReport) {
     tabs.push({
       id: AXIS_TAB_META.chunk_policy.id,
@@ -206,8 +220,10 @@ function buildAxisTabs(): RetrievalEvalReportTab[] {
   }
 
   const structuredReport =
-    buildStructuredComparisonReport(defaultStructuredSelection(structuredEvalCatalog)) ??
-    latestReport(structuredEvalModules);
+    buildStructuredComparisonReport(
+      defaultStructuredSelection(structuredEvalCatalog),
+      structuredEvalSources,
+    ) ?? latestReport(structuredModules);
   if (structuredReport) {
     tabs.push({
       id: AXIS_TAB_META.structured_lookup.id,
@@ -219,7 +235,26 @@ function buildAxisTabs(): RetrievalEvalReportTab[] {
   return tabs;
 }
 
-export const structuredEvalSources = buildSources(structuredEvalModules);
-export const structuredEvalCatalog = buildStructuredEvalCatalog(structuredEvalSources);
-export const retrievalEvalReports = buildAxisTabs();
-export const retrievalEvalReport = retrievalEvalReports[0]?.report;
+export async function loadEvalCatalog(): Promise<EvalCatalog> {
+  const [embeddingModules, chunkingModules, structuredModules] = await Promise.all([
+    loadJsonModules(embeddingEvalModules),
+    loadJsonModules(chunkingEvalModules),
+    loadJsonModules(structuredEvalModules),
+  ]);
+
+  const structuredEvalSources = buildSources(structuredModules);
+  const structuredEvalCatalog = buildStructuredEvalCatalog(structuredEvalSources);
+  const retrievalEvalReports = buildAxisTabs(
+    embeddingModules,
+    chunkingModules,
+    structuredModules,
+    structuredEvalCatalog,
+    structuredEvalSources,
+  );
+
+  return {
+    structuredEvalSources,
+    structuredEvalCatalog,
+    retrievalEvalReports,
+  };
+}

@@ -1,22 +1,33 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes, useSearchParams } from "react-router-dom";
 import AuthGate from "./components/auth/AuthGate";
-import EvalDashboardPage from "./pages/EvalDashboardPage";
 import LoginPage from "./pages/LoginPage";
 import UploadPage from "./pages/UploadPage";
-import SessionPage from "./pages/SessionPage";
 
 const evalsEnabled = import.meta.env.VITE_EVALS_ENABLED === "true";
+
+const SessionPage = lazy(() => import("./pages/SessionPage"));
+const EvalDashboardPage = lazy(() => import("./pages/EvalDashboardPage"));
+
+function RouteFallback() {
+  return (
+    <main className="route-fallback" aria-busy="true">
+      Loading…
+    </main>
+  );
+}
 
 /** Wrap /session with AuthGate unless the guest query param is present. */
 function SessionRoute() {
   const [params] = useSearchParams();
   const isGuest = params.get("guest") === "true";
-  if (isGuest) return <SessionPage />;
-  return (
-    <AuthGate>
+  const page = (
+    <Suspense fallback={<RouteFallback />}>
       <SessionPage />
-    </AuthGate>
+    </Suspense>
   );
+  if (isGuest) return page;
+  return <AuthGate>{page}</AuthGate>;
 }
 
 export default function App() {
@@ -37,7 +48,9 @@ export default function App() {
             path="/evals"
             element={
               <AuthGate>
-                <EvalDashboardPage />
+                <Suspense fallback={<RouteFallback />}>
+                  <EvalDashboardPage />
+                </Suspense>
               </AuthGate>
             }
           />
