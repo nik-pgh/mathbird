@@ -143,6 +143,7 @@ class WhiteboardAgent(Agent):
             except (TimeoutError, asyncio.CancelledError):
                 pass
             self._worker = None
+        await self._pending_grader.drain()
 
     # ── transcription_node tap ─────────────────────────────────────────
 
