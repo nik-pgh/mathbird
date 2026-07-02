@@ -30,6 +30,7 @@ from opentelemetry import trace
 
 from app.agent.grader.base import Grader, GradeResult
 from app.agent.math_speech import spoken_math_stream
+from app.agent.turn_context.session import resolve_agent_session, resolve_session_data
 from app.agent.whiteboard.cache import BoardCache
 from app.agent.whiteboard.extractor.base import BoardExtractor
 from app.agent.whiteboard.messages import AiBoardUpdate
@@ -154,22 +155,6 @@ class WhiteboardAgent(Agent):
         if self._progress_engine is not None and self._grader is not None:
             await self._grade_turn(new_message)
 
-    def _agent_session(self) -> Any | None:
-        sess = self._fake_session_for_tests
-        if sess is None:
-            activity = getattr(self, "_activity", None)
-            sess = activity.session if activity is not None else None
-        return sess
-
-    def _session_data(self) -> Any | None:
-        from app.agent.whiteboard import SessionData
-
-        sess = self._agent_session()
-        if sess is None:
-            return None
-        data = getattr(sess, "userdata", None)
-        return data if isinstance(data, SessionData) else None
-
     async def _maybe_inject_textbook_excerpt(self, turn_ctx: ChatContext) -> None:
         """Pre-fetch RAG snippets for the current syllabus node when retrieval is enabled."""
         engine = self._progress_engine
@@ -180,7 +165,7 @@ class WhiteboardAgent(Agent):
         if settings.rag_provider == "null":
             return
 
-        session_data = self._session_data()
+        session_data = resolve_session_data(self)
         active_doc_id = session_data.active_doc_id if session_data else None
         if not active_doc_id:
             return
@@ -299,7 +284,7 @@ class WhiteboardAgent(Agent):
 
     def _last_assistant_message(self) -> str | None:
         """Return the most recent non-empty assistant message from session history."""
-        sess = self._agent_session()
+        sess = resolve_agent_session(self)
         history = getattr(sess, "history", None) if sess is not None else None
         items = getattr(history, "items", None)
         if not isinstance(items, list):
@@ -404,7 +389,7 @@ class WhiteboardAgent(Agent):
         self._board_cache.apply(items)
 
     def _get_room(self) -> Any | None:
-        sess = self._agent_session()
+        sess = resolve_agent_session(self)
         if sess is None:
             return None
         try:
