@@ -31,6 +31,8 @@ def auth_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 @pytest.fixture
 def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     """Fresh local storage + null RAG for document route tests."""
+    monkeypatch.setenv("AUTH_JWT_SECRET", "test-secret-key-at-least-32-chars!!")
+    monkeypatch.setenv("AUTH_DB_PATH", str(tmp_path / "auth.db"))
     monkeypatch.setenv("STORAGE_BACKEND", "local")
     monkeypatch.setenv("STORAGE_LOCAL_DIR", str(tmp_path))
     monkeypatch.setenv("RAG_PROVIDER", "null")
@@ -39,10 +41,12 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterato
     monkeypatch.setenv("LIVEKIT_API_KEY", "test-key")
     monkeypatch.setenv("LIVEKIT_API_SECRET", "x" * 32)
     get_settings.cache_clear()
+    get_user_store.cache_clear()
     storage_mod.get_storage.cache_clear()
     retriever_mod._singleton = None
     yield tmp_path
     get_settings.cache_clear()
+    get_user_store.cache_clear()
     storage_mod.get_storage.cache_clear()
     retriever_mod._singleton = None
 
