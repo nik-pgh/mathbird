@@ -40,12 +40,10 @@ from app.agent.whiteboard.publisher import publish_ai_board
 from app.agent.whiteboard.sentence import split_sentences
 from app.agent.whiteboard.state import BoardState
 from app.config import get_settings
-from app.progress.engine import ProgressEngine, _node_label
+from app.progress.engine import ProgressEngine
 from app.rag import get_retriever
 
 logger = logging.getLogger("mathbird.agent.extractor")
-
-_QUEUE_MAXSIZE = 20
 
 
 class WhiteboardAgent(Agent):
@@ -65,7 +63,10 @@ class WhiteboardAgent(Agent):
         self._extractor = extractor
         self._grader = grader
         self._progress_engine = progress_engine
-        self._sentence_queue: asyncio.Queue[str] = asyncio.Queue(maxsize=_QUEUE_MAXSIZE)
+        queue_size = get_settings().board_extractor_queue_size
+        self._sentence_queue: asyncio.Queue[str] = asyncio.Queue(maxsize=queue_size)
+        self._queue_maxsize = queue_size
+        self._last_prefetched_node_id: str | None = None
         self._buffer: str = ""
         self._last_sentence: str | None = None
         self._worker: asyncio.Task | None = None
@@ -90,7 +91,7 @@ class WhiteboardAgent(Agent):
             return
 
         settings = get_settings()
-        if settings.rag_provider == "null":
+        if settings.rag_provider == "null" or settings.rag_prefetch_mode == "null":
             return
 
         session_data = resolve_session_data(self)
@@ -105,7 +106,15 @@ class WhiteboardAgent(Agent):
         pointer = engine.state.focus or engine.state.next_suggestion
         if pointer is None:
             return
-        label = _node_label(engine.syllabus, pointer)
+
+        node_id = pointer.problem_id or pointer.concept_id
+        if (
+            settings.rag_prefetch_mode == "focus_change"
+            and node_id == self._last_prefetched_node_id
+        ):
+            return
+
+        label = engine.node_label(pointer)
 
         try:
             chunks = await get_retriever().retrieve(
@@ -119,6 +128,8 @@ class WhiteboardAgent(Agent):
 
         if not chunks:
             return
+
+        self._last_prefetched_node_id = node_id
 
         body = "\n\n".join(f"[{chunk.source}]\n{chunk.text}" for chunk in chunks)
         turn_ctx.add_message(
@@ -178,8 +189,9 @@ class WhiteboardAgent(Agent):
             self._sentence_queue.put_nowait(sentence)
         except asyncio.QueueFull:
             logger.warning(
-                "extractor queue full (maxsize=%d); dropping sentence: %r",
-                _QUEUE_MAXSIZE,
+                "extractor queue full (maxsize=%d, qsize=%d); dropping sentence: %r",
+                self._queue_maxsize,
+                self._sentence_queue.qsize(),
                 sentence[:80],
             )
 

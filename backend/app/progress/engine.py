@@ -165,6 +165,20 @@ class ProgressEngine:
             for concept in chapter.concepts
             for problem in concept.problems
         }
+        self._chapter_title_by_id = {
+            chapter.id: chapter.title for chapter in syllabus.chapters
+        }
+        self._concept_title_by_id = {
+            concept.id: concept.title
+            for chapter in syllabus.chapters
+            for concept in chapter.concepts
+        }
+        self._label_by_node_id: dict[str, str] = dict(self._concept_title_by_id)
+        for chapter in syllabus.chapters:
+            for concept in chapter.concepts:
+                for problem in concept.problems:
+                    self._label_by_node_id[problem.id] = problem.label
+        self._last_wire_snapshot: SessionProgressUpdate | None = None
         if self._state.focus is None:
             self._state.next_suggestion = self._first_unmastered_pointer()
 
@@ -175,6 +189,17 @@ class ProgressEngine:
     @property
     def syllabus(self) -> Syllabus:
         return self._syllabus
+
+    def node_label(self, pointer: FocusPointer) -> str:
+        if pointer.problem_id:
+            return self._label_by_node_id.get(pointer.problem_id, pointer.problem_id)
+        return self._concept_title_by_id.get(pointer.concept_id, pointer.concept_id)
+
+    def chapter_title(self, pointer: FocusPointer) -> str:
+        return self._chapter_title_by_id.get(pointer.chapter_id, pointer.chapter_id)
+
+    def concept_title(self, pointer: FocusPointer) -> str:
+        return self._concept_title_by_id.get(pointer.concept_id, pointer.concept_id)
 
     # ------------------------------------------------------------------ identity
 
@@ -496,7 +521,7 @@ class ProgressEngine:
                     rationale="No focus and no remaining material.",
                     directive="Wrap up — the student has finished the material.",
                 )
-            label = _node_label(self._syllabus, nxt)
+            label = self.node_label(nxt)
             return Recommendation(
                 intent="introduce",
                 focus_node_id=nxt.problem_id or nxt.concept_id,
@@ -505,7 +530,7 @@ class ProgressEngine:
             )
 
         focus_node_id = focus.problem_id or focus.concept_id
-        focus_label = _node_label(self._syllabus, focus)
+        focus_label = self.node_label(focus)
         level = self.effective_level(focus_node_id)
         node = self._state.nodes.get(focus_node_id, NodeProgress())
 
@@ -519,7 +544,7 @@ class ProgressEngine:
                     rationale=f"{focus_label} mastered and no further material.",
                     directive=f"{focus_label} is mastered and nothing remains. Wind down the session.",
                 )
-            nxt_label = _node_label(self._syllabus, nxt)
+            nxt_label = self.node_label(nxt)
             return Recommendation(
                 intent="advance",
                 focus_node_id=nxt.problem_id or nxt.concept_id,
@@ -636,11 +661,56 @@ class ProgressEngine:
             concepts=concepts,
         )
 
+    def publishable_update(self, *, force_full: bool = False) -> SessionProgressUpdate:
+        """Return a snapshot or compact patch for the progress data channel."""
+        full = self.snapshot_update()
+        if force_full or self._last_wire_snapshot is None:
+            self._last_wire_snapshot = full
+            return full
+
+        patch = self._diff_snapshot(full, self._last_wire_snapshot)
+        full_bytes = len(full.model_dump_json())
+        patch_bytes = len(patch.model_dump_json())
+        if patch_bytes < 0.5 * full_bytes:
+            self._last_wire_snapshot = full
+            return patch
+
+        self._last_wire_snapshot = full
+        return full
+
+    def _diff_snapshot(
+        self,
+        full: SessionProgressUpdate,
+        previous: SessionProgressUpdate,
+    ) -> SessionProgressUpdate:
+        prev_nodes = {node.problem_id: node for node in previous.nodes}
+        changed_nodes = [
+            node
+            for node in full.nodes
+            if node.problem_id not in prev_nodes
+            or node.model_dump() != prev_nodes[node.problem_id].model_dump()
+        ]
+        prev_concepts = {concept.concept_id: concept for concept in previous.concepts}
+        changed_concepts = [
+            concept
+            for concept in full.concepts
+            if concept.concept_id not in prev_concepts
+            or concept.model_dump() != prev_concepts[concept.concept_id].model_dump()
+        ]
+        return SessionProgressUpdate(
+            op="patch",
+            focus=full.focus,
+            next_suggestion=full.next_suggestion,
+            summary=full.summary,
+            nodes=changed_nodes,
+            concepts=changed_concepts,
+        )
+
     def format_injection(self) -> str:
         summary = self.summary()
         focus = self._state.focus
         next_label = (
-            _node_label(self._syllabus, self._state.next_suggestion)
+            self.node_label(self._state.next_suggestion)
             if self._state.next_suggestion
             else "none — end of material"
         )
@@ -658,9 +728,9 @@ class ProgressEngine:
             )
 
         node = self._state.nodes.get(focus.problem_id or focus.concept_id, NodeProgress())
-        chapter_title = _chapter_title(self._syllabus, focus)
-        concept_title = _concept_title(self._syllabus, focus)
-        focus_label = _node_label(self._syllabus, focus)
+        chapter_title = self.chapter_title(focus)
+        concept_title = self.concept_title(focus)
+        focus_label = self.node_label(focus)
         chapter_mastered = self._chapter_mastered_count(focus.chapter_id)
         chapter_total = self._chapter_total(focus.chapter_id)
         return (

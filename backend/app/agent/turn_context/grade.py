@@ -9,7 +9,7 @@ from livekit.agents.llm import ChatMessage
 
 from app.agent.grader.base import GradeResult
 from app.agent.turn_context.session import resolve_agent_session
-from app.progress.engine import ProgressEngine, _node_label
+from app.progress.engine import ProgressEngine
 
 if TYPE_CHECKING:
     from app.agent.whiteboard_agent import WhiteboardAgent
@@ -91,7 +91,7 @@ async def grade_student_turn(agent: WhiteboardAgent, new_message: ChatMessage) -
     rec = engine.recommend()
     nxt = engine.state.next_suggestion
     nxt_id = (nxt.problem_id or nxt.concept_id) if nxt else None
-    nxt_label = _node_label(engine.syllabus, nxt) if nxt else None
+    nxt_label = engine.node_label(nxt) if nxt else None
     context_id = focus_node_id or nxt_id
     levels = engine.nearby_levels(focus_node_id) if focus_node_id else {}
     if context_id is None:
@@ -145,6 +145,6 @@ async def grade_student_turn(agent: WhiteboardAgent, new_message: ChatMessage) -
         if room is not None:
             from app.progress.publisher import publish_session_progress
 
-            await publish_session_progress(room, engine.snapshot_update())
+            await publish_session_progress(room, engine.publishable_update())
     except Exception:
         logger.exception("failed to publish graded progress snapshot")

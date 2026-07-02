@@ -77,7 +77,10 @@ async def entrypoint(ctx: JobContext) -> None:
         try:
             from app.progress.publisher import publish_session_progress
 
-            await publish_session_progress(ctx.room, progress_engine.snapshot_update())
+            await publish_session_progress(
+                ctx.room,
+                progress_engine.publishable_update(force_full=True),
+            )
         except Exception:
             logger.exception("Failed to publish initial session progress snapshot")
 

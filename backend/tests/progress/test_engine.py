@@ -320,3 +320,20 @@ def test_format_injection_shows_anchor_when_no_focus() -> None:
     assert "(anchor:" in injection
     assert "ch-1-c-a" in injection  # first unmastered concept id in fixture
 
+
+def test_publishable_update_force_full_is_snapshot() -> None:
+    engine = _engine()
+    update = engine.publishable_update(force_full=True)
+    assert update.op == "snapshot"
+    assert len(update.nodes) > 0
+
+
+def test_publishable_update_emits_patch_after_small_change() -> None:
+    engine = _engine()
+    engine.publishable_update(force_full=True)
+    engine.set_level("ch-1-p-1", "practicing")
+    update = engine.publishable_update()
+    assert update.op == "patch"
+    assert len(update.nodes) == 1
+    assert update.nodes[0].problem_id == "ch-1-p-1"
+

@@ -25,6 +25,7 @@ EmbeddingProvider = Literal[
 ]
 RerankerProvider = Literal["none"]
 RagIngestionMode = Literal["sync"]
+RagPrefetchMode = Literal["null", "focus_change", "always"]
 BoardReaderName = Literal["null", "openai_vision"]
 BoardExtractorName = Literal["null", "openai"]
 LegacyDocAccess = Literal["allow", "deny"]
@@ -113,6 +114,7 @@ class Settings(BaseSettings):
     reranker_provider: RerankerProvider = "none"
     rag_ingestion_mode: RagIngestionMode = "sync"
     rag_top_k: int = 4
+    rag_prefetch_mode: RagPrefetchMode = "focus_change"
 
     # LlamaParse / LlamaCloud
     llamaparse_api_key: str = ""
@@ -175,6 +177,7 @@ class Settings(BaseSettings):
     board_extractor: BoardExtractorName = "null"
     board_extractor_model: str = "gpt-4o-mini"
     board_extractor_timeout_seconds: float = 2.0
+    board_extractor_queue_size: int = 20
 
     # Student-model grader — a second LLM that assesses each student turn and
     # updates mastery levels / misconceptions, so the student model evolves
