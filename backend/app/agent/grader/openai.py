@@ -85,12 +85,13 @@ previously recorded error this turn.
 toward the focus node. Do not infer hints from the student turn alone.
 - Target the focus node primarily; only touch other nodes when the student's \
 work this turn clearly pertains to them (e.g. a prerequisite they reused).
-- ``set_focus_node_id`` is optional and usually null. Set it only when all are \
-true: ``recommend_intent`` is ``introduce``, ``next_suggestion_node_id`` is \
-present, and the student gave a clear affirmative acceptance to proceed ("yes", \
-"ok", "let's do that", etc.). In that case set ``set_focus_node_id`` to \
-``next_suggestion_node_id``. Leave null for non-affirmative, ambiguous, or \
-off-topic student turns.
+- ``set_focus_node_id``: when ``recommend_intent`` is ``introduce`` and \
+``next_suggestion_node_id`` is present, set it to that id when the student \
+engages with the topic this turn — e.g. agrees to start ("yes", "ok", "let's \
+go"), asks to continue ("current focus"), or answers a tutor question about \
+prior knowledge ("almost nothing", "nothing", "a little about vectors"). Leave \
+null only for empty turns, explicit redirects ("skip", "different problem"), \
+or clear off-topic chatter.
 
 If nothing in this turn supports an update, return {"updates": []}.
 """

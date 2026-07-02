@@ -292,3 +292,41 @@ async def test_grade_turn_sets_focus_from_grader(monkeypatch: pytest.MonkeyPatch
     assert grader.calls[0]["next_suggestion_node_id"] == "ch-1-c-a"
     assert grader.calls[0]["next_suggestion_label"] == "Concept A"
     assert grader.calls[0]["last_tutor_message"] == "Great work. Want to move to Problem 1 next?"
+
+
+@pytest.mark.asyncio
+async def test_grade_turn_engine_fallback_when_grader_returns_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Introduce engagement anchors focus even when the grader returns no-op."""
+    from app.agent.whiteboard.cache import BoardCache
+    from app.agent.whiteboard.state import BoardState
+
+    class _FakeExtractor:
+        async def extract(self, sentence, current_items, last_sentence):  # noqa: ANN001
+            return []
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.history = ChatContext()
+
+    async def _noop_persist(engine):  # noqa: ANN001
+        return None
+
+    monkeypatch.setattr("app.agent.whiteboard_agent._persist_progress_via_store", _noop_persist)
+    engine = _engine()
+    agent = WhiteboardAgent(
+        instructions="be a tutor",
+        board_state=BoardState(),
+        board_cache=BoardCache(),
+        extractor=_FakeExtractor(),
+        grader=NullGrader(),
+        progress_engine=engine,
+    )
+    agent._fake_session_for_tests = _FakeSession()  # type: ignore[attr-defined]
+
+    await agent._grade_turn(ChatMessage(role="user", content=["almost nothing"]))
+
+    assert engine.state.focus is not None
+    assert engine.state.focus.concept_id == "ch-1-c-a"
+    assert engine.effective_level("ch-1-c-a") == "introduced"

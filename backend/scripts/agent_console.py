@@ -18,6 +18,7 @@ import sys
 from app.agent.console.context_view import print_llm_context, print_progress_snapshot
 from app.agent.console.identity import resolve_local_identity
 from app.agent.console.runtime import local_text_job
+from app.agent.console.turn import run_text_turn
 from app.agent.console.ui import (
     print_banner,
     print_dim,
@@ -88,7 +89,7 @@ async def run_console(*, show_context: bool = False) -> None:
                 if show_context:
                     print_dim("[dim]--- context (what the LLM sees) ---[/dim]")
                     print_llm_context(bundle.session_data, engine)
-                run = bundle.session.run(user_input=user_text)
+                run = await run_text_turn(bundle.session, bundle.agent, user_text)
                 await run
                 render_run_events(run.events, skip_user=True)
                 if show_context and engine is not None:

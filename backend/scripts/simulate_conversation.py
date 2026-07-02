@@ -34,6 +34,7 @@ from app.agent.console.context_view import (
     print_progress_snapshot,
 )
 from app.agent.console.runtime import local_text_job
+from app.agent.console.turn import run_text_turn
 from app.agent.console.ui import format_run_event
 from app.agent.grader.base import GradeResult
 from app.agent.grader.fake import FakeGrader
@@ -125,7 +126,7 @@ async def run_scenario(
                         print(f"\n--- {label}: context (what the LLM sees) ---", flush=True)
                         print_llm_context(bundle.session_data, engine)
 
-                    run = bundle.session.run(user_input=turn.student)
+                    run = await run_text_turn(bundle.session, bundle.agent, turn.student)
                     await run
 
                     if verbose:

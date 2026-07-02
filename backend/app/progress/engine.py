@@ -34,6 +34,16 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_INTRODUCE_REDIRECT_MARKERS = (
+    "skip",
+    "different problem",
+    "another problem",
+    "change topic",
+    "not now",
+    "later",
+    "something else",
+)
+
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
@@ -332,6 +342,28 @@ class ProgressEngine:
             except ValueError:
                 logger.warning("grader referenced unknown node id: %s", update.node_id)
         return changed
+
+    def focus_on_introduce_engagement(self, turn_text: str) -> str | None:
+        """Return ``next_suggestion`` node id when the student engages during introduce.
+
+        Deterministic fallback when the grader omits ``set_focus_node_id`` (timeout,
+        false negative, or ``GRADER=null``). Any substantive reply that is not an
+        explicit redirect counts as engagement — including answers to "what do you
+        know?" like "almost nothing" or "nothing".
+        """
+        if self._state.focus is not None:
+            return None
+        if self.recommend().intent != "introduce":
+            return None
+        nxt = self._state.next_suggestion
+        if nxt is None:
+            return None
+        text = turn_text.strip().lower()
+        if not text:
+            return None
+        if any(marker in text for marker in _INTRODUCE_REDIRECT_MARKERS):
+            return None
+        return nxt.problem_id or nxt.concept_id
 
     def _apply_node_update(self, update: NodeUpdate) -> bool:
         """Apply one graded update; return True if it changed state."""

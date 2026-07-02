@@ -172,7 +172,7 @@ class Settings(BaseSettings):
     # by default; opt in with GRADER=openai.
     grader: GraderName = "null"
     grader_model: str = "gpt-4o-mini"
-    grader_timeout_seconds: float = 2.0
+    grader_timeout_seconds: float = 5.0
 
     # Observability (Arize Phoenix LLM/RAG tracing). Off by default. To enable,
     # set ``PHOENIX_ENABLED=true``; for local UI run ``uv run phoenix serve``.

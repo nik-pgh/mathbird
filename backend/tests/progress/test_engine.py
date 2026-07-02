@@ -301,6 +301,19 @@ def test_format_injection_contains_next_action() -> None:
     assert "[session progress]" in injection
 
 
+def test_focus_on_introduce_engagement_anchors_substantive_reply() -> None:
+    engine = _engine()
+    anchor = engine.focus_on_introduce_engagement("almost nothing")
+    assert anchor == "ch-1-c-a"
+    engine.set_focus(anchor)
+    assert engine.focus_on_introduce_engagement("still here") is None
+
+
+def test_focus_on_introduce_engagement_skips_redirect() -> None:
+    engine = _engine()
+    assert engine.focus_on_introduce_engagement("skip to a different problem") is None
+
+
 def test_format_injection_shows_anchor_when_no_focus() -> None:
     engine = _engine()
     injection = engine.format_injection()

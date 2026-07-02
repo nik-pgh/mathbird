@@ -32,12 +32,12 @@ def _indent(text: str, prefix: str = "  ") -> str:
 
 
 def print_llm_context(session_data: SessionData, engine: ProgressEngine | None) -> None:
-    """The exact nudge the LLM is about to see this turn.
+    """The per-turn nudge injected via ``on_user_turn_completed``.
 
-    ``ProgressEngine.format_injection()`` returns the verbatim string the
-    per-turn hook adds as a system message — calling it *before*
-    ``session.run()`` reproduces that nudge from the engine's
-    end-of-previous-turn state with zero drift.
+    Shows board state plus ``ProgressEngine.format_injection()`` from the
+    engine's current state. In ``agent_console`` / ``simulate_conversation``,
+    call this *after* the previous turn's ``run_text_turn`` (which runs the
+    hook and grader) so focus and recommendations reflect grading.
     """
     board = session_data.board_state
     if board.refreshed_at is None:
