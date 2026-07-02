@@ -65,7 +65,9 @@ async def test_null_grader_returns_empty() -> None:
     assert result.set_focus_node_id is None
 
 
-def test_default_factory_returns_null_grader() -> None:
+def test_default_factory_returns_null_grader(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GRADER", "null")
+    get_settings.cache_clear()
     get_grader.cache_clear()
     settings = get_settings()
     assert settings.grader == "null"
