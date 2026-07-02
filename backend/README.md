@@ -74,6 +74,23 @@ OpenAI: `uv run pytest tests/simulation/ -m live`.
 Session wiring is shared between the worker entrypoint and the simulator via
 `app/agent/session_factory.py`.
 
+## Progress and grader timing
+
+When syllabus + progress are loaded and `GRADER` is not `null`, each student
+turn follows a parallel timing model (`app/agent/turn_context/prepare.py`):
+
+- The tutor LLM still receives **N−1 progress** — `[session progress]` and
+  `[next action]` reflect state after the previous turn's grade.
+- The turn-N grader runs **in the background** while the tutor composes and
+  speaks its reply.
+- Turn N+1's `prepare_turn_context` **drains** the in-flight grade-N task
+  before injecting context, so the next tutor turn sees grade N's mutations.
+- Mid-turn `get_progress` / `list_problems` may still show **pre-grade-N**
+  state if the background grader has not finished.
+
+Set `GRADER=openai` (plus `OPENAI_API_KEY`) for live progress evolution;
+`GRADER=null` loads and injects state read-only without per-turn grading.
+
 ## Swapping providers
 
 Edit `.env` — no code changes required:
