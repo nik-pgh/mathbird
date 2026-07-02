@@ -9,6 +9,7 @@ from livekit.agents.llm import ChatContext, ChatMessage
 from opentelemetry import trace
 
 from app.agent.turn_context.builder import TurnContextBuilder
+from app.agent.turn_context.grade import grade_student_turn
 from app.agent.turn_context.snapshot import snapshot_from_turn_ctx
 from app.agent.turn_context.types import TurnContextSnapshot
 
@@ -64,6 +65,6 @@ async def prepare_turn_context(
                 span.set_attribute("session.turn.focus_chapter_id", focus.chapter_id)
 
     if agent._progress_engine is not None and agent._grader is not None:
-        await agent._grade_turn(new_message)
+        await grade_student_turn(agent, new_message)
 
     return snapshot_from_turn_ctx(turn_ctx)

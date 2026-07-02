@@ -1,9 +1,10 @@
 """``Agent`` subclass that drives the AiBoard from the agent's spoken reply.
 
-Three responsibilities:
+Responsibilities:
 
-1. Inject the latest reading of the *student's* board into every per-turn
-   ChatContext via ``on_user_turn_completed``.
+1. Delegate per-turn context injection via ``on_user_turn_completed`` →
+   :func:`app.agent.turn_context.prepare.prepare_turn_context` (board reading,
+   progress blocks, grading, textbook excerpts when RAG is enabled).
 2. Override ``transcription_node`` to tee the agent's outgoing text stream:
    text segments pass through to transcript/AiBoard unchanged, while a side channel
    accumulates segments into sentences and feeds a single background
@@ -27,7 +28,7 @@ from typing import Any
 from livekit.agents import Agent
 from livekit.agents.llm import ChatContext, ChatMessage
 
-from app.agent.grader.base import Grader, GradeResult
+from app.agent.grader.base import Grader
 from app.agent.math_speech import spoken_math_stream
 from app.agent.turn_context.prepare import prepare_turn_context
 from app.agent.turn_context.session import resolve_agent_session, resolve_session_data
@@ -44,37 +45,6 @@ from app.rag import get_retriever
 logger = logging.getLogger("mathbird.agent.extractor")
 
 _QUEUE_MAXSIZE = 20
-
-
-def _extract_text(message: ChatMessage) -> str:
-    """Best-effort extraction of plain text from a ChatMessage.
-
-    LiveKit ChatMessage content may be a string or a list of content parts;
-    we concatenate any str-like parts.
-    """
-    content = getattr(message, "content", None)
-    if content is None:
-        return ""
-    if isinstance(content, str):
-        return content
-    parts: list[str] = []
-    if isinstance(content, list):
-        for part in content:
-            if isinstance(part, str):
-                parts.append(part)
-            else:
-                text = getattr(part, "text", None) or getattr(part, "content", None)
-                if isinstance(text, str):
-                    parts.append(text)
-    return "".join(parts)
-
-
-async def _persist_progress_via_store(engine: ProgressEngine) -> None:
-    from app.progress import get_progress_store
-    from app.storage import get_storage
-
-    store = get_progress_store(get_storage())
-    await store.save(engine.state)
 
 
 class WhiteboardAgent(Agent):
@@ -157,105 +127,6 @@ class WhiteboardAgent(Agent):
                 f"{body}"
             ),
         )
-
-    async def _grade_turn(self, new_message: ChatMessage) -> None:
-        """Assess the student's latest turn and advance the student model.
-
-        Defensive: any grader/persistence failure is logged and swallowed so
-        the turn proceeds. The ``new_message`` is the student's input text;
-        the whiteboard state supplies ``board_text``.
-        """
-        engine = self._progress_engine
-        if engine is None or self._grader is None:
-            return
-
-        turn_text = _extract_text(new_message)
-        if not turn_text.strip():
-            return
-
-        focus_node_id = engine.state.focus.problem_id or engine.state.focus.concept_id \
-            if engine.state.focus is not None else None
-        rec = engine.recommend()
-        nxt = engine.state.next_suggestion
-        nxt_id = (nxt.problem_id or nxt.concept_id) if nxt else None
-        nxt_label = _node_label(engine.syllabus, nxt) if nxt else None
-        context_id = focus_node_id or nxt_id
-        levels = engine.nearby_levels(focus_node_id) if focus_node_id else {}
-        if context_id is None:
-            syllabus_context = ""
-        elif focus_node_id:
-            syllabus_context = engine.focus_context(context_id)
-        else:
-            syllabus_context = engine.suggestion_context(context_id)
-        last_tutor_message = self._last_assistant_message()
-        board_text = None if self._board_state.is_blank else self._board_state.user_text
-
-        try:
-            result = await self._grader.grade(
-                turn_text=turn_text,
-                board_text=board_text,
-                focus_node_id=focus_node_id,
-                levels=levels,
-                syllabus_context=syllabus_context,
-                next_suggestion_node_id=nxt_id,
-                next_suggestion_label=nxt_label,
-                recommend_intent=rec.intent,
-                recommend_directive=rec.directive,
-                last_tutor_message=last_tutor_message,
-            )
-        except Exception:
-            logger.exception("grader raised; skipping turn grading")
-            return
-
-        if not result.set_focus_node_id and focus_node_id is None:
-            anchor = engine.focus_on_introduce_engagement(turn_text)
-            if anchor:
-                result = GradeResult(
-                    set_focus_node_id=anchor,
-                    updates=list(result.updates),
-                )
-
-        if not result.updates and not result.set_focus_node_id:
-            return
-
-        changed = engine.apply_grade_result(result)
-
-        if not changed:
-            return
-
-        # Persist + publish so the frontend reflects grader-driven evolution
-        # even when the LLM called no progress tool this turn.
-        try:
-            await _persist_progress_via_store(engine)
-        except Exception:
-            logger.exception("failed to persist graded progress state")
-        try:
-            room = self._get_room()
-            if room is not None:
-                from app.progress.publisher import publish_session_progress
-
-                await publish_session_progress(room, engine.snapshot_update())
-        except Exception:
-            logger.exception("failed to publish graded progress snapshot")
-
-    def _last_assistant_message(self) -> str | None:
-        """Return the most recent non-empty assistant message from session history."""
-        sess = resolve_agent_session(self)
-        history = getattr(sess, "history", None) if sess is not None else None
-        items = getattr(history, "items", None)
-        if not isinstance(items, list):
-            return None
-        for item in reversed(items):
-            role = getattr(item, "role", None)
-            if role != "assistant":
-                continue
-            text = getattr(item, "text_content", None)
-            if isinstance(text, str) and text.strip():
-                return text
-            extracted = _extract_text(item)
-            if extracted.strip():
-                return extracted
-        return None
 
     # ── lifecycle ──────────────────────────────────────────────────────
 

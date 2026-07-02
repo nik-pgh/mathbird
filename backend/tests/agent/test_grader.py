@@ -307,7 +307,7 @@ async def test_grade_turn_sets_focus_from_grader(monkeypatch: pytest.MonkeyPatch
     async def _noop_persist(engine):  # noqa: ANN001
         return None
 
-    monkeypatch.setattr("app.agent.whiteboard_agent._persist_progress_via_store", _noop_persist)
+    monkeypatch.setattr("app.agent.turn_context.grade._persist_progress_via_store", _noop_persist)
     engine = _engine()
     grader = _FakeGrader()
     agent = WhiteboardAgent(
@@ -320,7 +320,9 @@ async def test_grade_turn_sets_focus_from_grader(monkeypatch: pytest.MonkeyPatch
     )
     agent._fake_session_for_tests = _FakeSession()  # type: ignore[attr-defined]
 
-    await agent._grade_turn(ChatMessage(role="user", content=["yes, let's do that next"]))
+    from app.agent.turn_context.grade import grade_student_turn
+
+    await grade_student_turn(agent, ChatMessage(role="user", content=["yes, let's do that next"]))
 
     assert engine.state.focus is not None
     assert engine.state.focus.problem_id == "ch-1-p-1"
@@ -350,7 +352,7 @@ async def test_grade_turn_engine_fallback_when_grader_returns_empty(
     async def _noop_persist(engine):  # noqa: ANN001
         return None
 
-    monkeypatch.setattr("app.agent.whiteboard_agent._persist_progress_via_store", _noop_persist)
+    monkeypatch.setattr("app.agent.turn_context.grade._persist_progress_via_store", _noop_persist)
     engine = _engine()
     agent = WhiteboardAgent(
         instructions="be a tutor",
@@ -362,7 +364,9 @@ async def test_grade_turn_engine_fallback_when_grader_returns_empty(
     )
     agent._fake_session_for_tests = _FakeSession()  # type: ignore[attr-defined]
 
-    await agent._grade_turn(ChatMessage(role="user", content=["almost nothing"]))
+    from app.agent.turn_context.grade import grade_student_turn
+
+    await grade_student_turn(agent, ChatMessage(role="user", content=["almost nothing"]))
 
     assert engine.state.focus is not None
     assert engine.state.focus.concept_id == "ch-1-c-a"
