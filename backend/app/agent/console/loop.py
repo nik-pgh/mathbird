@@ -5,7 +5,11 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from app.agent.console.identity import resolve_local_identity
+from app.agent.console.identity import (
+    lookup_doc_filename,
+    lookup_user_email,
+    resolve_local_identity,
+)
 from app.agent.console.render import render_turn_panel
 from app.agent.console.runtime import local_text_job
 from app.agent.console.turn import run_text_turn
@@ -42,6 +46,8 @@ async def run_console(*, show_context: bool = False) -> None:
     async with local_text_job() as ctx:
         room = ctx.room
         user_id, active_doc_id = await resolve_local_identity(settings)
+        doc_filename = await lookup_doc_filename(active_doc_id)
+        user_email = lookup_user_email(user_id)
 
         bundle = await build_session_bundle(
             room=room,
@@ -52,7 +58,13 @@ async def run_console(*, show_context: bool = False) -> None:
         )
         engine = bundle.session_data.progress_engine
 
-        print_banner(doc_id=active_doc_id, user_id=user_id)
+        print_banner(
+            doc_id=active_doc_id,
+            user_id=user_id,
+            doc_filename=doc_filename,
+            user_email=user_email,
+            settings=settings,
+        )
 
         # No room= — avoids RoomIO on an unconnected fake room (local_participant errors).
         await bundle.session.start(agent=bundle.agent, record=False)

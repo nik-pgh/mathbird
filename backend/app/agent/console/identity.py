@@ -115,3 +115,23 @@ async def resolve_local_identity(settings: Settings) -> tuple[str | None, str | 
         need_doc=active_doc_id is None,
     )
     return user_id or prompted_user, active_doc_id or prompted_doc
+
+
+async def lookup_doc_filename(doc_id: str | None) -> str | None:
+    if not doc_id:
+        return None
+    docs = await list_document_summaries()
+    for doc in docs:
+        if doc.doc_id == doc_id:
+            return doc.filename
+    return None
+
+
+def lookup_user_email(user_id: str | None) -> str | None:
+    if not user_id:
+        return None
+    try:
+        user = UserStore().get_by_id(user_id)
+    except Exception:
+        return None
+    return user.email if user else None

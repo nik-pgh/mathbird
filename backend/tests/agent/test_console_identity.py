@@ -103,3 +103,40 @@ async def _async_docs():
             content_type="application/pdf",
         )
     ]
+
+
+@pytest.mark.asyncio
+async def test_lookup_doc_filename(monkeypatch) -> None:
+    from app.agent.console.identity import lookup_doc_filename
+
+    monkeypatch.setattr(
+        "app.agent.console.identity.list_document_summaries",
+        lambda: _async_docs(),
+    )
+
+    assert await lookup_doc_filename("doc-abc") == "book.pdf"
+    assert await lookup_doc_filename("missing") is None
+    assert await lookup_doc_filename(None) is None
+
+
+def test_lookup_user_email(monkeypatch) -> None:
+    from app.agent.console.identity import lookup_user_email
+    from app.auth.store import User
+
+    user = User(
+        id="user-1",
+        google_sub="sub",
+        email="student@example.com",
+        name="Student",
+        created_at="2024-01-01T00:00:00+00:00",
+    )
+
+    class _FakeStore:
+        def get_by_id(self, user_id: str) -> User | None:
+            return user if user_id == "user-1" else None
+
+    monkeypatch.setattr("app.agent.console.identity.UserStore", _FakeStore)
+
+    assert lookup_user_email("user-1") == "student@example.com"
+    assert lookup_user_email("missing") is None
+    assert lookup_user_email(None) is None
