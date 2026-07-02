@@ -4,7 +4,7 @@ import AuthGate from "./components/auth/AuthGate";
 import LoginPage from "./pages/LoginPage";
 import UploadPage from "./pages/UploadPage";
 
-const evalsEnabled = import.meta.env.VITE_EVALS_ENABLED === "true";
+import { evalsEnabled } from "./lib/features";
 
 const SessionPage = lazy(() => import("./pages/SessionPage"));
 const EvalDashboardPage = lazy(() => import("./pages/EvalDashboardPage"));

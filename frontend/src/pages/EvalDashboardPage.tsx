@@ -112,6 +112,7 @@ function reportTabLabel(tab: RetrievalEvalReportTab): string {
 
 export default function EvalDashboardPage() {
   const [catalog, setCatalog] = useState<EvalCatalog | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTabId, setActiveTabId] = useState("structured");
 
   useEffect(() => {
@@ -120,15 +121,17 @@ export default function EvalDashboardPage() {
       .then((loaded) => {
         if (cancelled) return;
         setCatalog(loaded);
+        setLoadError(null);
         setActiveTabId(loaded.retrievalEvalReports[0]?.id ?? "structured");
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
           setCatalog({
             structuredEvalSources: [],
             structuredEvalCatalog: [],
             retrievalEvalReports: [],
           });
+          setLoadError(err instanceof Error ? err.message : String(err));
         }
       });
     return () => {
@@ -151,6 +154,19 @@ export default function EvalDashboardPage() {
         <main className="eval-main">
           <p className="route-fallback" aria-busy="true">
             Loading evaluation reports…
+          </p>
+        </main>
+      </>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <>
+        <SessionTopbar />
+        <main className="eval-main">
+          <p className="session-error" role="alert">
+            Couldn&apos;t load evaluation reports: {loadError}
           </p>
         </main>
       </>

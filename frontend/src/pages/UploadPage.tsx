@@ -14,6 +14,7 @@ import {
   clearActiveDocId,
   getActiveDocId,
   setActiveDocId,
+  subscribeActiveDocId,
 } from "../lib/activeDoc";
 
 interface UploadJob {
@@ -49,11 +50,13 @@ export default function UploadPage() {
     const poll = window.setInterval(() => {
       listDocuments()
         .then(setDocs)
-        .catch(() => undefined);
+        .catch((e) => setError(String(e)));
     }, 3000);
 
     return () => window.clearInterval(poll);
   }, []);
+
+  useEffect(() => subscribeActiveDocId(setActiveDocIdState), []);
 
   const updateJob = useCallback(
     (tmpId: string, patch: Partial<UploadJob>) =>
