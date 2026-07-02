@@ -30,6 +30,11 @@ from pydantic import BaseModel
 
 from app.auth import User, get_current_user
 from app.config import get_settings
+from app.documents.access import (
+    assert_doc_access,
+    filter_summaries_for_user,
+    read_document_meta,
+)
 from app.documents.catalog import (
     SIDECAR_NAME,
     SYLLABUS_NAME,
@@ -189,7 +194,7 @@ def _find_stored_pdf(objects: list[StoredObject], doc_id: str) -> StoredObject |
 @router.post("/documents", response_model=DocumentResponse, status_code=201)
 async def upload_document(
     file: Annotated[UploadFile, File(description="PDF document to ingest")],
-    _user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_user)],
 ) -> DocumentResponse:
     if (file.content_type or "").lower() != "application/pdf":
         raise HTTPException(status_code=415, detail="Only application/pdf is accepted.")
@@ -200,19 +205,28 @@ async def upload_document(
 
     storage = get_storage()
     stored = await storage.put(key, file.file, content_type="application/pdf")
+    await _write_sidecar(
+        storage,
+        doc_id,
+        {
+            "uploaded_by_user_id": user.id,
+            "uploaded_at": datetime.now(UTC).isoformat(),
+        },
+    )
     return DocumentResponse.from_stored(doc_id, stored, status="uploaded")
 
 
 @router.post("/documents/{doc_id}/ingest", response_model=DocumentResponse)
 async def ingest_document(
     doc_id: str,
-    _user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_user)],
 ) -> DocumentResponse:
     storage = get_storage()
     objects = await storage.list()
     stored = _find_stored_pdf(objects, doc_id)
     if stored is None:
         raise HTTPException(status_code=404, detail="Document not found.")
+    await assert_doc_access(storage, doc_id, user)
 
     try:
         async with _local_pdf_path(storage, stored) as pdf_path:
@@ -225,7 +239,9 @@ async def ingest_document(
     except Exception as exc:
         logger.exception("Document ingestion failed for doc_id=%s key=%s", doc_id, stored.key)
         raise HTTPException(status_code=502, detail="Document ingestion failed.") from exc
+    existing = await read_document_meta(storage, doc_id)
     sidecar_payload: dict[str, Any] = {
+        **existing,
         "indexed": True,
         "indexed_at": datetime.now(UTC).isoformat(),
         "syllabus_ready": syllabus_ready,
@@ -243,9 +259,9 @@ async def ingest_document(
 
 @router.get("/documents", response_model=DocumentListResponse)
 async def list_documents(
-    _user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_user)],
 ) -> DocumentListResponse:
-    summaries = await list_document_summaries()
+    summaries = filter_summaries_for_user(await list_document_summaries(), user)
     return DocumentListResponse(
         documents=[
             DocumentResponse(
@@ -265,9 +281,10 @@ async def list_documents(
 @router.get("/documents/{doc_id}/syllabus", response_model=Syllabus)
 async def get_document_syllabus(
     doc_id: str,
-    _user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_user)],
 ) -> Syllabus:
     storage = get_storage()
+    await assert_doc_access(storage, doc_id, user)
     syllabus = await load_syllabus(storage, doc_id)
     if syllabus is None:
         raise HTTPException(status_code=404, detail="Syllabus not found.")
@@ -277,9 +294,10 @@ async def get_document_syllabus(
 @router.get("/documents/{doc_id}/file")
 async def get_document_file(
     doc_id: str,
-    _user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_user)],
 ):
     storage = get_storage()
+    await assert_doc_access(storage, doc_id, user)
     objects = await storage.list()
     stored = _find_stored_pdf(objects, doc_id)
     if stored is None:

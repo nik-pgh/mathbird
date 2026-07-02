@@ -18,6 +18,8 @@ from pydantic import BaseModel, Field
 
 from app.auth import User, get_optional_user
 from app.config import get_settings
+from app.documents.access import resolve_token_doc_id
+from app.storage import get_storage
 
 router = APIRouter()
 
@@ -83,10 +85,14 @@ async def create_token(
     metadata: dict[str, str] = {}
     if user:
         metadata["user_id"] = user.id
-    # Use the requested doc_id, or fall back to the sample doc for guests.
-    doc_id = req.doc_id
-    if not doc_id and is_guest and settings.guest_sample_doc_id:
-        doc_id = settings.guest_sample_doc_id
+    storage = get_storage()
+    doc_id = await resolve_token_doc_id(
+        req.doc_id,
+        user=user,
+        is_guest=is_guest,
+        storage=storage,
+        settings=settings,
+    )
     if doc_id:
         metadata["active_doc_id"] = doc_id
     builder = builder.with_metadata(json.dumps(metadata))

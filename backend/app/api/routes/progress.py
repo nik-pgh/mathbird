@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from app.auth import User, get_current_user
+from app.documents.access import assert_doc_access
 from app.progress import FocusPointer, ProgressState, get_progress_store
 from app.storage import get_storage
 
@@ -27,6 +28,8 @@ async def get_progress(
     user: Annotated[User, Depends(get_current_user)],
 ) -> ProgressState:
     store = get_progress_store(get_storage())
+    storage = get_storage()
+    await assert_doc_access(storage, doc_id, user)
     state = await store.load(user.id, doc_id)
     if state is None or state.user_id != user.id:
         raise HTTPException(status_code=404, detail="Progress not found.")
@@ -40,6 +43,8 @@ async def patch_progress(
     user: Annotated[User, Depends(get_current_user)],
 ) -> ProgressState:
     store = get_progress_store(get_storage())
+    storage = get_storage()
+    await assert_doc_access(storage, doc_id, user)
     state = await store.load(user.id, doc_id)
     if state is None:
         state = ProgressState(

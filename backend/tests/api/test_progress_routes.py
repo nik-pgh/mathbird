@@ -15,6 +15,7 @@ from app.config import get_settings
 from app.progress.models import FocusPointer, ProblemProgress, ProgressState
 from app.progress.store import get_progress_store, progress_key
 from app.storage import base as storage_mod
+from tests.api.conftest import seed_owned_doc
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +23,7 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("STORAGE_BACKEND", "local")
     monkeypatch.setenv("STORAGE_LOCAL_DIR", str(tmp_path))
     monkeypatch.setenv("AUTH_JWT_SECRET", "test-secret-key-at-least-32-chars!!")
-    monkeypatch.setenv("AUTH_DB_PATH", str(tmp_path / "auth.db"))
+    monkeypatch.setenv("LEGACY_DOC_ACCESS", "deny")
     get_settings.cache_clear()
     storage_mod.get_storage.cache_clear()
     yield tmp_path
@@ -45,6 +46,7 @@ def _auth_clients() -> tuple[TestClient, TestClient, str, str]:
 async def test_get_progress_returns_saved_state(isolated_storage: Path) -> None:
     client_a, _client_b, user_a_id, _user_b_id = _auth_clients()
     doc_id = "doc-1"
+    seed_owned_doc(isolated_storage, doc_id, user_a_id)
     state = ProgressState(
         user_id=user_a_id,
         doc_id=doc_id,
@@ -64,6 +66,7 @@ async def test_get_progress_returns_saved_state(isolated_storage: Path) -> None:
 async def test_user_cannot_read_other_users_progress(isolated_storage: Path) -> None:
     _client_a, client_b, user_a_id, _user_b_id = _auth_clients()
     doc_id = "doc-1"
+    seed_owned_doc(isolated_storage, doc_id, user_a_id)
     state = ProgressState(
         user_id=user_a_id,
         doc_id=doc_id,
@@ -72,12 +75,13 @@ async def test_user_cannot_read_other_users_progress(isolated_storage: Path) -> 
     await get_progress_store(storage_mod.get_storage()).save(state)
 
     res = client_b.get(f"/api/progress/{doc_id}")
-    assert res.status_code == 404
+    assert res.status_code == 403
 
 
 def test_patch_progress_updates_focus(auth_client: TestClient, isolated_storage: Path) -> None:
     user = UserStore().upsert_google_user("sub-test", "t@example.com", "T")
     doc_id = "doc-1"
+    seed_owned_doc(isolated_storage, doc_id, user.id)
     path = isolated_storage / progress_key(user.id, doc_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

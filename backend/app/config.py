@@ -27,6 +27,7 @@ RerankerProvider = Literal["none"]
 RagIngestionMode = Literal["sync"]
 BoardReaderName = Literal["null", "openai_vision"]
 BoardExtractorName = Literal["null", "openai"]
+LegacyDocAccess = Literal["allow", "deny"]
 GraderName = Literal["null", "openai"]
 
 
@@ -84,6 +85,10 @@ class Settings(BaseSettings):
     # Leave empty to disable guest mode. When set, unauthenticated token
     # requests fall back to this doc_id so the agent can search it.
     guest_sample_doc_id: str = ""
+
+    # Pre-ownership uploads (no uploaded_by_user_id in meta.json). deny = invisible
+    # except guest_sample_doc_id; allow = any authenticated user may access.
+    legacy_doc_access: LegacyDocAccess = "deny"
 
     # Local script identity (``agent_console``, ``simulate_conversation.py``) when
     # no LiveKit participant metadata is available.

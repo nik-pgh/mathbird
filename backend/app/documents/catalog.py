@@ -23,6 +23,7 @@ class DocumentSummary:
     syllabus_ready: bool
     size: int
     content_type: str
+    uploaded_by_user_id: str | None = None
 
 
 def filename_from_storage_key(key: str) -> str:
@@ -49,22 +50,19 @@ async def list_document_summaries() -> list[DocumentSummary]:
     objects = await storage.list()
 
     docs: dict[str, StoredObject] = {}
-    sidecar_doc_ids: set[str] = set()
     for obj in objects:
         head, _, tail = obj.key.partition("/")
         if not tail:
             continue
-        if tail == SIDECAR_NAME:
-            sidecar_doc_ids.add(head)
-            continue
-        if tail == SYLLABUS_NAME:
+        if tail in (SIDECAR_NAME, SYLLABUS_NAME):
             continue
         docs.setdefault(head, obj)
 
     results: list[DocumentSummary] = []
     for doc_id, obj in sorted(docs.items(), key=lambda item: item[1].key):
-        status: DocStatus = "indexed" if doc_id in sidecar_doc_ids else "uploaded"
-        meta = await _read_sidecar(storage, doc_id) if doc_id in sidecar_doc_ids else {}
+        meta = await _read_sidecar(storage, doc_id)
+        status: DocStatus = "indexed" if meta.get("indexed") else "uploaded"
+        owner = meta.get("uploaded_by_user_id")
         results.append(
             DocumentSummary(
                 doc_id=doc_id,
@@ -75,6 +73,7 @@ async def list_document_summaries() -> list[DocumentSummary]:
                 syllabus_ready=bool(meta.get("syllabus_ready")),
                 size=obj.size,
                 content_type=obj.content_type,
+                uploaded_by_user_id=owner if isinstance(owner, str) and owner else None,
             )
         )
     return results
