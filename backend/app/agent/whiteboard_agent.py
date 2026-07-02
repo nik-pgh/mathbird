@@ -30,6 +30,7 @@ from livekit.agents.llm import ChatContext, ChatMessage
 
 from app.agent.grader.base import Grader
 from app.agent.math_speech import spoken_math_stream
+from app.agent.turn_context.grading_task import PendingGrader
 from app.agent.turn_context.prepare import prepare_turn_context
 from app.agent.turn_context.session import resolve_agent_session, resolve_session_data
 from app.agent.whiteboard.cache import BoardCache
@@ -68,6 +69,7 @@ class WhiteboardAgent(Agent):
         self._buffer: str = ""
         self._last_sentence: str | None = None
         self._worker: asyncio.Task | None = None
+        self._pending_grader = PendingGrader()
         # Production: ``self.session`` is set by the framework on bind.
         # Tests inject ``self._fake_session_for_tests`` for the room lookup.
         self._fake_session_for_tests: Any | None = None

@@ -39,8 +39,8 @@ class TurnRunResult:
 async def prepare_user_turn(agent: WhiteboardAgent, user_input: str) -> PreparedTurn:
     turn_ctx = agent.chat_ctx.copy()
     user_message = ChatMessage(role="user", content=[user_input])
-    snapshot = await prepare_turn_context(agent, turn_ctx, user_message)
-    return PreparedTurn(turn_ctx, user_message, snapshot)
+    prepared = await prepare_turn_context(agent, turn_ctx, user_message)
+    return PreparedTurn(turn_ctx, user_message, prepared.snapshot)
 
 
 async def run_text_turn(

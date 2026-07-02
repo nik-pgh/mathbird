@@ -98,5 +98,6 @@ async def test_run_text_turn_runs_grader_before_llm(monkeypatch: pytest.MonkeyPa
     assert isinstance(result, TurnRunResult)
     assert isinstance(result.run, RunResult)
     assert result.snapshot.injections
+    await agent._pending_grader.drain()
     assert engine.state.focus is not None
     assert engine.state.focus.concept_id == "ch-1-c-a"

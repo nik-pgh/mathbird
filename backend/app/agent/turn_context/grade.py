@@ -64,6 +64,13 @@ def _last_assistant_message(agent: WhiteboardAgent) -> str | None:
     return None
 
 
+async def run_grade_turn_safe(agent: WhiteboardAgent, new_message: ChatMessage) -> None:
+    try:
+        await grade_student_turn(agent, new_message)
+    except Exception:
+        logger.exception("background grader task failed")
+
+
 async def grade_student_turn(agent: WhiteboardAgent, new_message: ChatMessage) -> None:
     """Assess the student's latest turn and advance the student model.
 
