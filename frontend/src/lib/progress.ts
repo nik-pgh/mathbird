@@ -19,8 +19,29 @@ export interface ProblemProgressSnapshot {
   chapter_id: string;
   concept_id: string;
   label: string;
-  status: "not_started" | "in_progress" | "mastered";
+  // Full ordinal mastery level (5 values). introduced/practicing/proficient
+  // are the partial-progress states between not_started and mastered.
+  status:
+    | "not_started"
+    | "introduced"
+    | "practicing"
+    | "proficient"
+    | "mastered";
   attempts: number;
+}
+
+export interface ConceptProgressSnapshot {
+  // Concept-level progress row (additive; older clients can ignore it).
+  concept_id: string;
+  chapter_id: string;
+  label: string;
+  level:
+    | "not_started"
+    | "introduced"
+    | "practicing"
+    | "proficient"
+    | "mastered";
+  has_open_misconceptions: boolean;
 }
 
 export interface SessionProgressUpdate {
@@ -29,6 +50,8 @@ export interface SessionProgressUpdate {
   next_suggestion: FocusPointer | null;
   summary: ProgressSummary;
   nodes: ProblemProgressSnapshot[];
+  // Additive: pre-Phase-D payloads omit it; defaults to empty.
+  concepts?: ConceptProgressSnapshot[];
 }
 
 export function decodeSessionProgressUpdate(

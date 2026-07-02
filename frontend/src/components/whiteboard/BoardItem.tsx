@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import DOMPurify from "dompurify";
 import type {
   AiBoardDiagram,
@@ -11,13 +11,15 @@ import { renderMathTextToHtml } from "../../lib/mathText";
 
 let diagramRenderCounter = 0;
 
-export default function BoardItem({ item }: { item: AiBoardItem }) {
+const BoardItem = memo(function BoardItem({ item }: { item: AiBoardItem }) {
   if (item.kind === "text") return <TextItem item={item} />;
   if (item.kind === "plot") return <PlotItem item={item} />;
   if (item.kind === "shape") return <ShapeItem item={item} />;
   if (item.kind === "diagram") return <DiagramItem item={item} />;
   return null;
-}
+});
+
+export default BoardItem;
 
 function TextItem({ item }: { item: AiBoardText }) {
   const html = useMemo(

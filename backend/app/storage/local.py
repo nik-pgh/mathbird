@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import mimetypes
 import shutil
 from collections.abc import AsyncIterator
@@ -25,13 +26,7 @@ class LocalStorage:
             raise ValueError(f"Invalid storage key: {key}")
         return candidate
 
-    async def put(
-        self,
-        key: str,
-        data: BinaryIO,
-        *,
-        content_type: str,
-    ) -> StoredObject:
+    def _put_sync(self, key: str, data: BinaryIO, *, content_type: str) -> StoredObject:
         dest = self._path(key)
         dest.parent.mkdir(parents=True, exist_ok=True)
         with dest.open("wb") as f:
@@ -44,12 +39,29 @@ class LocalStorage:
             content_type=content_type,
         )
 
+    async def put(
+        self,
+        key: str,
+        data: BinaryIO,
+        *,
+        content_type: str,
+    ) -> StoredObject:
+        return await asyncio.to_thread(self._put_sync, key, data, content_type=content_type)
+
     @asynccontextmanager
     async def open(self, key: str) -> AsyncIterator[BinaryIO]:
-        with self._path(key).open("rb") as stream:
-            yield stream
+        path = self._path(key)
 
-    async def list(self, prefix: str = "") -> list[StoredObject]:
+        def _open() -> BinaryIO:
+            return path.open("rb")
+
+        stream = await asyncio.to_thread(_open)
+        try:
+            yield stream
+        finally:
+            await asyncio.to_thread(stream.close)
+
+    def _list_sync(self, prefix: str) -> list[StoredObject]:
         base = self._path(prefix) if prefix else self.root
         if not base.exists():
             return []
@@ -69,7 +81,14 @@ class LocalStorage:
             )
         return results
 
+    async def list(self, prefix: str = "") -> list[StoredObject]:
+        return await asyncio.to_thread(self._list_sync, prefix)
+
     async def delete(self, key: str) -> None:
         path = self._path(key)
-        if path.exists():
-            path.unlink()
+
+        def _delete() -> None:
+            if path.exists():
+                path.unlink()
+
+        await asyncio.to_thread(_delete)

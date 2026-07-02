@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import {
@@ -6,7 +6,7 @@ import {
   listDocuments,
   requestToken,
 } from "../lib/api";
-import { getActiveDocId } from "../lib/activeDoc";
+import { getActiveDocId, subscribeActiveDocId } from "../lib/activeDoc";
 import SessionTopbar from "../components/session/SessionTopbar";
 import { SessionToolbarProvider } from "../components/session/SessionToolbarContext";
 import SharedReasoningWorkspace from "../components/session/SharedReasoningWorkspace";
@@ -30,7 +30,9 @@ export default function SessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeDoc, setActiveDoc] = useState<UploadedDocument | null>(null);
 
-  const activeDocId = useMemo(() => getActiveDocId(), []);
+  const [activeDocId, setActiveDocId] = useState<string | null>(() => getActiveDocId());
+
+  useEffect(() => subscribeActiveDocId(setActiveDocId), []);
 
   // Resolve filename for the textbook overlay title.
   // Skip in guest mode — listDocuments requires auth.
@@ -41,8 +43,10 @@ export default function SessionPage() {
         const found = list.find((d) => d.doc_id === activeDocId) ?? null;
         setActiveDoc(found);
       })
-      .catch(() => {
-        /* non-fatal — popover still works without a filename */
+      .catch((err) => {
+        setError(
+          err instanceof Error ? err.message : "Couldn't load document library.",
+        );
       });
   }, [activeDocId, isGuest]);
 
@@ -75,11 +79,11 @@ export default function SessionPage() {
     setConn(null);
   }, []);
 
-  const filename = useMemo(() => {
+  const filename = (() => {
     if (!activeDoc) return null;
     const parts = activeDoc.key.split("/");
     return parts[parts.length - 1] || activeDoc.doc_id;
-  }, [activeDoc]);
+  })();
 
   return (
     <SessionToolbarProvider>

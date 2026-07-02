@@ -18,15 +18,18 @@ export default function TextbookOverlay({
   onClose,
 }: Props) {
   const [src, setSrc] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!docId || displayMode === "hidden" || displayMode === "collapsed") {
       setSrc(null);
+      setError(null);
       return;
     }
 
     let objectUrl: string | null = null;
     let cancelled = false;
+    setError(null);
 
     fetchDocumentPdfBlob(docId)
       .then((url) => {
@@ -37,7 +40,12 @@ export default function TextbookOverlay({
         objectUrl = url;
         setSrc(`${url}#toolbar=0&navpanes=0&view=FitH&zoom=page-width`);
       })
-      .catch(() => setSrc(null));
+      .catch((err) => {
+        if (!cancelled) {
+          setSrc(null);
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -81,6 +89,10 @@ export default function TextbookOverlay({
             src={src}
             title={title ?? "Textbook"}
           />
+        ) : error ? (
+          <p className="textbook-overlay-loading" role="alert">
+            Couldn&apos;t load textbook: {error}
+          </p>
         ) : (
           <p className="textbook-overlay-loading">Loading textbook…</p>
         )}

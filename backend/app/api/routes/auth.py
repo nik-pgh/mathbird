@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from app.auth import get_current_user, issue_token
 from app.auth.google import build_google_auth_url, exchange_code_for_profile
-from app.auth.store import User, UserStore
+from app.auth.store import User, get_user_store
 from app.config import get_settings
 
 router = APIRouter()
@@ -60,7 +60,7 @@ async def google_callback(
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
 
     profile = await exchange_code_for_profile(code, settings=settings)
-    user = UserStore().upsert_google_user(
+    user = get_user_store().upsert_google_user(
         profile["sub"],
         profile.get("email") or "",
         profile.get("name") or profile.get("email") or "User",
@@ -74,6 +74,7 @@ async def google_callback(
         token,
         httponly=True,
         samesite="lax",
+        secure=settings.auth_cookie_secure,
         path="/",
         max_age=settings.auth_jwt_expiry_hours * 3600,
     )

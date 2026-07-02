@@ -5,12 +5,14 @@ from __future__ import annotations
 import base64
 import json
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.api.main import app
 from app.config import get_settings
+from tests.api.conftest import make_auth_client, upload_pdf
 
 
 @pytest.fixture(autouse=True)
@@ -57,31 +59,32 @@ def test_guest_token_uses_sample_doc(monkeypatch: pytest.MonkeyPatch) -> None:
         get_settings.cache_clear()
 
 
-def test_guest_token_with_explicit_doc_id_overrides_sample(
+def test_guest_token_with_explicit_doc_id_rejects_non_sample(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Even in guest mode, an explicit doc_id wins over the sample default."""
     monkeypatch.setenv("GUEST_SAMPLE_DOC_ID", "sample-goodfellow-ch2")
     get_settings.cache_clear()
     try:
         client = TestClient(app)
         res = client.post("/api/token", json={"doc_id": "my-custom-doc"})
-        assert res.status_code == 200
-
-        payload = _decode_jwt_payload(res.json()["token"])
-        metadata = json.loads(payload["metadata"])
-        assert metadata["active_doc_id"] == "my-custom-doc"
+        assert res.status_code == 403
     finally:
         get_settings.cache_clear()
 
 
-def test_token_request_includes_user_id_and_active_doc_id(auth_client: TestClient) -> None:
-    res = auth_client.post("/api/token", json={"doc_id": "abc123"})
+def test_token_request_includes_user_id_and_active_doc_id(
+    auth_client: TestClient,
+    isolated_storage: Path,  # noqa: ARG001
+) -> None:
+    created = upload_pdf(auth_client, "owned.pdf")
+    doc_id = created["doc_id"]
+
+    res = auth_client.post("/api/token", json={"doc_id": doc_id})
     assert res.status_code == 200
 
     payload = _decode_jwt_payload(res.json()["token"])
     metadata = json.loads(payload["metadata"])
-    assert metadata["active_doc_id"] == "abc123"
+    assert metadata["active_doc_id"] == doc_id
     assert "user_id" in metadata
 
 
@@ -92,3 +95,13 @@ def test_token_request_without_doc_id_includes_user_id_only(auth_client: TestCli
     payload = _decode_jwt_payload(res.json()["token"])
     metadata = json.loads(payload["metadata"])
     assert metadata.keys() == {"user_id"}
+
+
+def test_token_rejects_foreign_doc_id(
+    auth_client: TestClient,
+    isolated_storage: Path,  # noqa: ARG001
+) -> None:
+    other_client = make_auth_client("sub-other", "other@example.com")
+    created = upload_pdf(other_client, "other.pdf")
+    res = auth_client.post("/api/token", json={"doc_id": created["doc_id"]})
+    assert res.status_code == 403

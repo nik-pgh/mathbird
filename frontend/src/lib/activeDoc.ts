@@ -33,3 +33,15 @@ export function setActiveDocId(docId: string | null): void {
 export function clearActiveDocId(): void {
   setActiveDocId(null);
 }
+
+/** Cross-tab updates when another tab changes the active document. */
+export function subscribeActiveDocId(
+  onChange: (docId: string | null) => void,
+): () => void {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== KEY) return;
+    onChange(event.newValue);
+  };
+  window.addEventListener("storage", onStorage);
+  return () => window.removeEventListener("storage", onStorage);
+}

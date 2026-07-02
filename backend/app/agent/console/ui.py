@@ -15,26 +15,43 @@ if TYPE_CHECKING:
     from livekit.agents import llm
     from livekit.agents.voice.run_result import RunEvent
 
+    from app.config import Settings
+
 _console = Console(highlight=False)
 
 
-def print_banner(*, doc_id: str | None, user_id: str | None) -> None:
-    meta: list[str] = []
-    if doc_id:
-        meta.append(f"doc [cyan]{_short_id(doc_id)}[/cyan]")
-    if user_id:
-        meta.append(f"user [cyan]{_short_id(user_id)}[/cyan]")
-    subtitle = " · ".join(meta) if meta else "[dim]no doc filter[/dim]"
+def print_banner(
+    *,
+    doc_id: str | None,
+    user_id: str | None,
+    doc_filename: str | None = None,
+    user_email: str | None = None,
+    settings: Settings | None = None,
+) -> None:
+    lines = ["[bold]mathbird tutor[/bold]", _format_setup_line("Document", doc_id, doc_filename)]
+    lines.append(_format_setup_line("User", user_id, user_email))
+    if settings is not None:
+        lines.append(f"Grader    [yellow]{settings.grader}[/yellow]")
+        lines.append(f"RAG       [yellow]{settings.rag_provider}[/yellow]")
+    lines.append("[dim]Type a message · Ctrl+C to exit[/dim]")
     _console.print()
     _console.print(
         Panel(
-            f"[bold]mathbird tutor[/bold]  {subtitle}\n"
-            "[dim]Type a message · Ctrl+C to exit[/dim]",
+            "\n".join(lines),
             border_style="bright_blue",
             padding=(0, 1),
         )
     )
     _console.print()
+
+
+def _format_setup_line(label: str, value_id: str | None, detail: str | None) -> str:
+    if not value_id:
+        return f"{label:<9} [dim]none[/dim]"
+    text = f"[cyan]{_short_id(value_id)}[/cyan]"
+    if detail:
+        text = f"{text}  {detail}"
+    return f"{label:<9} {text}"
 
 
 def print_user_message(text: str) -> None:

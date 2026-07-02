@@ -9,6 +9,10 @@ Usage (from ``backend/``)::
         simulations/scenarios/problem_help.yaml \\
         --verbose
 
+    uv run python -m scripts.simulate_conversation \\
+        simulations/scenarios/progression_demo.yaml \\
+        --show-context
+
 Scenario ``user_id`` / ``doc_id`` override ``SIM_USER_ID`` / ``SIM_ACTIVE_DOC_ID``.
 """
 
@@ -20,18 +24,26 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from livekit import rtc
 
+from app.agent.console.render import render_turn_panel
 from app.agent.console.runtime import local_text_job
+from app.agent.console.turn import await_turn_grading, run_text_turn
 from app.agent.console.ui import format_run_event
+from app.agent.grader.base import GradeResult
+from app.agent.grader.fake import FakeGrader
 from app.agent.providers import ensure_livekit_plugins_registered
 from app.agent.session_factory import build_session_bundle, send_initial_greeting
 from app.agent.simulation import assert_turn_expectations, load_scenario
 from app.config import Settings, get_settings
 
+if TYPE_CHECKING:
+    from app.agent.whiteboard import SessionData
 
-def _apply_board_text(session_data, text: str | None) -> None:
+
+def _apply_board_text(session_data: SessionData, text: str | None) -> None:
     if not text:
         return
     state = session_data.board_state
@@ -40,13 +52,23 @@ def _apply_board_text(session_data, text: str | None) -> None:
     state.refreshed_at = time.time()
 
 
+def _scripted_grader_for_scenario(scenario) -> FakeGrader | None:
+    has_scripted_results = any(turn.grader_result is not None for turn in scenario.turns)
+    if not has_scripted_results:
+        return None
+    queued_results = [turn.grader_result or GradeResult() for turn in scenario.turns]
+    return FakeGrader(queued_results)
+
+
 async def run_scenario(
     scenario_path: Path,
     *,
     settings: Settings,
     verbose: bool = False,
+    show_context: bool = False,
 ) -> None:
     scenario = load_scenario(scenario_path)
+    scripted_grader = _scripted_grader_for_scenario(scenario)
     user_id = scenario.user_id or settings.sim_user_id or None
     active_doc_id = scenario.doc_id or settings.sim_active_doc_id or None
 
@@ -63,8 +85,10 @@ async def run_scenario(
                 user_id=user_id,
                 active_doc_id=active_doc_id,
                 text_only=True,
+                grader=scripted_grader,
             )
             _apply_board_text(bundle.session_data, scenario.board_text)
+            engine = bundle.session_data.progress_engine
 
             await bundle.session.start(agent=bundle.agent, record=False)
 
@@ -72,7 +96,7 @@ async def run_scenario(
                 if scenario.greeting:
                     await send_initial_greeting(
                         bundle.session,
-                        has_progress=bundle.session_data.progress_engine is not None,
+                        has_progress=engine is not None,
                     )
                     if verbose:
                         print(
@@ -87,21 +111,37 @@ async def run_scenario(
                     )
                     _apply_board_text(bundle.session_data, board_text)
 
-                    print(f"\n--- {label}: student ---", flush=True)
-                    print(turn.student, flush=True)
+                    if not show_context:
+                        print(f"\n--- {label}: student ---", flush=True)
+                        print(turn.student, flush=True)
 
-                    run = bundle.session.run(user_input=turn.student)
-                    await run
+                    result = await run_text_turn(bundle.session, bundle.agent, turn.student)
+                    await result.run
+                    await await_turn_grading(result)
 
                     if verbose:
                         print(f"--- {label}: events ---", flush=True)
-                        for event in run.events:
+                        for event in result.run.events:
                             print(
                                 json.dumps(format_run_event(event), ensure_ascii=False),
                                 flush=True,
                             )
 
-                    assert_turn_expectations(run, turn.expect, turn_label=label)
+                    if show_context:
+                        render_turn_panel(
+                            turn_number=index,
+                            user_text=turn.student,
+                            context=result.snapshot,
+                            run=result.run,
+                            engine=engine,
+                        )
+
+                    assert_turn_expectations(
+                        result.run,
+                        turn.expect,
+                        turn_label=label,
+                        engine=engine,
+                    )
                     print(f"  ✓ {label} expectations passed", flush=True)
             finally:
                 await bundle.listener.aclose()
@@ -121,7 +161,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "-v",
         "--verbose",
         action="store_true",
-        help="Print RunResult events after each turn",
+        help="Print RunResult events after each turn (raw JSON, deep debugging).",
+    )
+    parser.add_argument(
+        "-c",
+        "--show-context",
+        action="store_true",
+        help=(
+            "Show the LLM context nudge before each turn (board + progress injection) "
+            "and the progress snapshot after. Pairs with -v."
+        ),
     )
     return parser.parse_args(argv)
 
@@ -140,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:
                 scenario_path,
                 settings=get_settings(),
                 verbose=args.verbose,
+                show_context=args.show_context,
             )
         )
     except AssertionError as exc:

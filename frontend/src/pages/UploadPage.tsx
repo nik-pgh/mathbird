@@ -8,11 +8,13 @@ import {
   ingestDocument,
   listDocuments,
   uploadPdf,
+  waitForDocumentReady,
 } from "../lib/api";
 import {
   clearActiveDocId,
   getActiveDocId,
   setActiveDocId,
+  subscribeActiveDocId,
 } from "../lib/activeDoc";
 
 interface UploadJob {
@@ -37,7 +39,6 @@ export default function UploadPage() {
     listDocuments()
       .then((list) => {
         setDocs(list);
-        // Clear active selection if it points to a doc that no longer exists.
         const stored = getActiveDocId();
         if (stored && !list.some((d) => d.doc_id === stored)) {
           clearActiveDocId();
@@ -45,7 +46,17 @@ export default function UploadPage() {
         }
       })
       .catch((e) => setError(String(e)));
+
+    const poll = window.setInterval(() => {
+      listDocuments()
+        .then(setDocs)
+        .catch((e) => setError(String(e)));
+    }, 3000);
+
+    return () => window.clearInterval(poll);
   }, []);
+
+  useEffect(() => subscribeActiveDocId(setActiveDocIdState), []);
 
   const updateJob = useCallback(
     (tmpId: string, patch: Partial<UploadJob>) =>
@@ -67,7 +78,10 @@ export default function UploadPage() {
         const uploaded = await uploadPdf(job.file);
         updateJob(job.tmpId, { stage: "indexing", docId: uploaded.doc_id });
 
-        const indexed = await ingestDocument(uploaded.doc_id);
+        await ingestDocument(uploaded.doc_id);
+        const indexed = await waitForDocumentReady(uploaded.doc_id, {
+          intervalMs: 500,
+        });
         // Job complete: prepend the document and drop the row.
         setDocs((prev) => [indexed, ...prev]);
         removeJob(job.tmpId);
@@ -101,7 +115,8 @@ export default function UploadPage() {
   const handleReindex = useCallback(async (docId: string) => {
     setReindexingDocId(docId);
     try {
-      const indexed = await ingestDocument(docId);
+      await ingestDocument(docId);
+      const indexed = await waitForDocumentReady(docId, { intervalMs: 500 });
       setDocs((prev) => prev.map((d) => (d.doc_id === docId ? indexed : d)));
     } catch (e) {
       setError(String(e));

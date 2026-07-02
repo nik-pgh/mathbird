@@ -72,3 +72,47 @@ async def test_publish_session_progress_encodes_snapshot() -> None:
     call = room.local_participant.calls[0]
     assert call.topic == SESSION_PROGRESS_TOPIC
     assert b'"op":"snapshot"' in call.payload or b'"op": "snapshot"' in call.payload
+
+
+@pytest.mark.asyncio
+async def test_snapshot_includes_concept_rows() -> None:
+    """Phase D: the wire carries concept-level rows alongside problem rows."""
+    import json
+
+    engine = _engine()
+    engine.set_level("ch-1-p-1", "mastered")
+    room = _FakeRoom()
+    await publish_session_progress(room, engine.snapshot_update())
+
+    payload = json.loads(room.local_participant.calls[0].payload)
+    assert "concepts" in payload
+    assert len(payload["concepts"]) == 1
+    concept = payload["concepts"][0]
+    assert concept["concept_id"] == "ch-1-c-a"
+    # Problem mastered → concept effective level mastered.
+    assert concept["level"] == "mastered"
+    assert concept["has_open_misconceptions"] is False
+
+
+@pytest.mark.asyncio
+async def test_snapshot_problem_status_is_full_level() -> None:
+    """Phase D: problem ``status`` is the full ordinal level, not collapsed."""
+    import json
+
+    engine = _engine()
+    engine.set_level("ch-1-p-1", "proficient")
+    room = _FakeRoom()
+    await publish_session_progress(room, engine.snapshot_update())
+
+    payload = json.loads(room.local_participant.calls[0].payload)
+    problem = payload["nodes"][0]
+    assert problem["status"] == "proficient"
+    # Round-trip: the JSON field set must match what the TS interface declares.
+    expected_problem_keys = {
+        "problem_id", "chapter_id", "concept_id", "label", "status", "attempts"
+    }
+    assert set(problem.keys()) == expected_problem_keys
+    expected_concept_keys = {
+        "concept_id", "chapter_id", "label", "level", "has_open_misconceptions"
+    }
+    assert set(payload["concepts"][0].keys()) == expected_concept_keys

@@ -1,4 +1,7 @@
+import { useCallback, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { logout } from "../../lib/api";
+import { evalsEnabled } from "../../lib/features";
 import { useSessionToolbarContent } from "./SessionToolbarContext";
 
 /** Top bar shared by both routes. Pass `session` to render session-mode controls. */
@@ -15,6 +18,19 @@ export default function SessionTopbar({ session }: Props) {
   const navigate = useNavigate();
   const onLibrary = location.pathname === "/";
   const toolbarContent = useSessionToolbarContent();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = useCallback(async () => {
+    setSigningOut(true);
+    try {
+      await logout();
+      navigate("/login");
+    } catch {
+      navigate("/login");
+    } finally {
+      setSigningOut(false);
+    }
+  }, [navigate]);
 
   if (session) {
     return (
@@ -23,18 +39,28 @@ export default function SessionTopbar({ session }: Props) {
           mathbird
         </Link>
         <div className="topbar-session-center">{toolbarContent}</div>
-        <span
-          className={`pill topbar-session-end ${
-            session.status === "disconnected" ? "danger" : ""
-          }`}
-        >
-          <span className="dot" />
-          {session.status === "connecting"
-            ? "Connecting…"
-            : session.status === "disconnected"
-              ? "Disconnected"
-              : session.label ?? "Session"}
-        </span>
+        <div className="topbar-session-end">
+          <button
+            type="button"
+            className="btn"
+            onClick={() => void handleSignOut()}
+            disabled={signingOut}
+          >
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+          <span
+            className={`pill ${
+              session.status === "disconnected" ? "danger" : ""
+            }`}
+          >
+            <span className="dot" />
+            {session.status === "connecting"
+              ? "Connecting…"
+              : session.status === "disconnected"
+                ? "Disconnected"
+                : session.label ?? "Session"}
+          </span>
+        </div>
       </header>
     );
   }
@@ -48,15 +74,25 @@ export default function SessionTopbar({ session }: Props) {
         <Link className={onLibrary ? "active" : ""} to="/">
           Library
         </Link>
-        <Link
-          className={location.pathname === "/evals" ? "active" : ""}
-          to="/evals"
-        >
-          Evals
-        </Link>
+        {evalsEnabled ? (
+          <Link
+            className={location.pathname === "/evals" ? "active" : ""}
+            to="/evals"
+          >
+            Evals
+          </Link>
+        ) : null}
       </nav>
       <div className="spacer" />
 
+      <button
+        type="button"
+        className="btn"
+        onClick={() => void handleSignOut()}
+        disabled={signingOut}
+      >
+        {signingOut ? "Signing out…" : "Sign out"}
+      </button>
       <button
         className="btn primary"
         onClick={() => navigate("/session")}

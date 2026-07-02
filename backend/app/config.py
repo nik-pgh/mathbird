@@ -25,8 +25,11 @@ EmbeddingProvider = Literal[
 ]
 RerankerProvider = Literal["none"]
 RagIngestionMode = Literal["sync"]
+RagPrefetchMode = Literal["null", "focus_change", "always"]
 BoardReaderName = Literal["null", "openai_vision"]
 BoardExtractorName = Literal["null", "openai"]
+LegacyDocAccess = Literal["allow", "deny"]
+GraderName = Literal["null", "openai"]
 
 
 class Settings(BaseSettings):
@@ -77,12 +80,17 @@ class Settings(BaseSettings):
     oauth_redirect_url: str = "http://localhost:8000/api/auth/google/callback"
     auth_db_path: str = "./auth.db"
     auth_cookie_name: str = "mathbird_session"
+    auth_cookie_secure: bool = False
     frontend_url: str = "http://localhost:5173"
 
     # Guest sessions — pre-indexed doc_id for "try without signup" flow.
     # Leave empty to disable guest mode. When set, unauthenticated token
     # requests fall back to this doc_id so the agent can search it.
     guest_sample_doc_id: str = ""
+
+    # Pre-ownership uploads (no uploaded_by_user_id in meta.json). deny = invisible
+    # except guest_sample_doc_id; allow = any authenticated user may access.
+    legacy_doc_access: LegacyDocAccess = "deny"
 
     # Local script identity (``agent_console``, ``simulate_conversation.py``) when
     # no LiveKit participant metadata is available.
@@ -106,6 +114,7 @@ class Settings(BaseSettings):
     reranker_provider: RerankerProvider = "none"
     rag_ingestion_mode: RagIngestionMode = "sync"
     rag_top_k: int = 4
+    rag_prefetch_mode: RagPrefetchMode = "focus_change"
 
     # LlamaParse / LlamaCloud
     llamaparse_api_key: str = ""
@@ -158,12 +167,25 @@ class Settings(BaseSettings):
     board_reader_model: str = "gpt-4o-mini"
     board_reader_interval_seconds: float = 2.0
     board_reader_max_image_dim: int = 512
+    board_reader_max_png_bytes: int = 1_048_576
+
+    # PDF uploads
+    max_upload_bytes: int = 50_000_000
 
     # AiBoard extractor — second LLM that watches the agent's spoken
     # sentences and publishes board items per sentence. Off by default.
     board_extractor: BoardExtractorName = "null"
     board_extractor_model: str = "gpt-4o-mini"
     board_extractor_timeout_seconds: float = 2.0
+    board_extractor_queue_size: int = 20
+
+    # Student-model grader — a second LLM that assesses each student turn and
+    # updates mastery levels / misconceptions, so the student model evolves
+    # every turn without relying on the main LLM calling progress tools. Off
+    # by default; opt in with GRADER=openai.
+    grader: GraderName = "null"
+    grader_model: str = "gpt-4o-mini"
+    grader_timeout_seconds: float = 5.0
 
     # Observability (Arize Phoenix LLM/RAG tracing). Off by default. To enable,
     # set ``PHOENIX_ENABLED=true``; for local UI run ``uv run phoenix serve``.

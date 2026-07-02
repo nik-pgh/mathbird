@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { getMe, type User } from "../../lib/auth";
+import { getMe, type User } from "../../lib/api";
 
 interface Props {
   children: ReactNode;

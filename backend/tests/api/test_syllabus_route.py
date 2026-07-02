@@ -13,6 +13,7 @@ from app.rag import retriever as retriever_mod
 from app.storage import base as storage_mod
 from app.syllabus.models import Chapter, Concept, Problem, Syllabus
 from app.syllabus.store import load_syllabus, save_syllabus, syllabus_key
+from tests.api.conftest import seed_owned_doc
 
 
 @pytest.fixture(autouse=True)
@@ -73,7 +74,11 @@ async def test_save_and_load_syllabus_round_trip(isolated_storage: Path) -> None
 
 
 def test_get_syllabus_route_returns_tree(auth_client: TestClient, isolated_storage: Path) -> None:
+    from app.auth.store import UserStore
+
+    user = UserStore().upsert_google_user("sub-test", "test@example.com", "Test User")
     doc_id = "doc-abc"
+    seed_owned_doc(isolated_storage, doc_id, user.id)
     path = isolated_storage / syllabus_key(doc_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     syllabus = _sample_syllabus(doc_id)
@@ -86,4 +91,4 @@ def test_get_syllabus_route_returns_tree(auth_client: TestClient, isolated_stora
 
 def test_get_syllabus_route_404_when_missing(auth_client: TestClient) -> None:
     res = auth_client.get("/api/documents/missing/syllabus")
-    assert res.status_code == 404
+    assert res.status_code == 403

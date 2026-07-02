@@ -4,10 +4,12 @@ import type { Syllabus } from "../../lib/syllabus";
 
 export function useSyllabus(docId: string | null) {
   const [syllabus, setSyllabus] = useState<Syllabus | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!docId) {
       setSyllabus(null);
+      setError(null);
       return;
     }
 
@@ -17,11 +19,13 @@ export function useSyllabus(docId: string | null) {
       .then((loaded) => {
         if (!cancelled) {
           setSyllabus(loaded);
+          setError(null);
         }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
           setSyllabus(null);
+          setError(err instanceof Error ? err.message : String(err));
         }
       });
 
@@ -30,5 +34,5 @@ export function useSyllabus(docId: string | null) {
     };
   }, [docId]);
 
-  return syllabus;
+  return { syllabus, error };
 }

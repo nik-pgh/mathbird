@@ -5,11 +5,13 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 from starlette.datastructures import Headers
 
 from app.api.routes import documents
 from app.auth.store import User
+from app.documents import ingest_jobs
+from app.documents.ingest_work import ingest_stored_pdf, local_pdf_path
 from app.storage import StoredObject
 
 FAKE_USER = User(
@@ -93,9 +95,9 @@ async def test_upload_document_stores_pdf_without_ingesting(
     )
     retriever = FakeRetriever()
     monkeypatch.setattr(documents, "get_storage", lambda: storage)
-    monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
+    monkeypatch.setattr(ingest_jobs, "get_retriever", lambda: retriever)
 
-    response = await documents.upload_document(pdf_upload(), _user=FAKE_USER)
+    response = await documents.upload_document(pdf_upload(), FAKE_USER)
 
     assert response.uri == local_pdf.as_uri()
     assert response.status == "uploaded"
@@ -103,10 +105,7 @@ async def test_upload_document_stores_pdf_without_ingesting(
     assert storage.opened_keys == []
 
 
-async def test_ingest_document_uses_local_file_uri_without_opening_storage(
-    tmp_path,
-    monkeypatch,
-) -> None:
+async def test_local_pdf_path_uses_file_uri_without_opening_storage(tmp_path) -> None:
     local_pdf = tmp_path / "stored book.pdf"
     local_pdf.write_bytes(b"%PDF-1.7\nlocal")
     storage = FakeStorage(
@@ -119,15 +118,11 @@ async def test_ingest_document_uses_local_file_uri_without_opening_storage(
         data=b"unused",
     )
     retriever = FakeRetriever()
-    monkeypatch.setattr(documents, "get_storage", lambda: storage)
-    monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
 
-    response = await documents.ingest_document("doc-1", _user=FAKE_USER)
+    async with local_pdf_path(storage, storage.stored) as pdf_path:
+        await retriever.ingest_pdf(pdf_path, doc_id="doc-1")
 
-    assert response.uri == local_pdf.as_uri()
-    assert response.status == "indexed"
     assert retriever.ingested_paths == [str(local_pdf)]
-    assert retriever.ingested_doc_ids == ["doc-1"]
     assert retriever.path_existed_during_ingest
     assert storage.opened_keys == []
 
@@ -146,14 +141,11 @@ async def test_ingest_document_copies_non_file_storage_to_temp_pdf_for_ingestion
         data=pdf_bytes,
     )
     retriever = FakeRetriever(expected_bytes=pdf_bytes)
-    monkeypatch.setattr(documents, "get_storage", lambda: storage)
-    monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
+    monkeypatch.setattr(ingest_jobs, "get_retriever", lambda: retriever)
 
-    response = await documents.ingest_document("doc-1", _user=FAKE_USER)
+    await ingest_stored_pdf(storage, storage.stored, doc_id="doc-1", retriever=retriever)
 
     temp_path = Path(retriever.ingested_paths[0])
-    assert response.uri == "s3://mathbird/doc-1/book.pdf"
-    assert response.status == "indexed"
     assert temp_path.name == "book.pdf"
     assert retriever.path_existed_during_ingest
     assert not temp_path.exists()
@@ -174,10 +166,9 @@ async def test_ingest_document_sanitizes_encoded_separators_in_temp_filename(
         data=pdf_bytes,
     )
     retriever = FakeRetriever(expected_bytes=pdf_bytes)
-    monkeypatch.setattr(documents, "get_storage", lambda: storage)
-    monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
+    monkeypatch.setattr(ingest_jobs, "get_retriever", lambda: retriever)
 
-    await documents.ingest_document("doc-1", _user=FAKE_USER)
+    await ingest_stored_pdf(storage, storage.stored, doc_id="doc-1", retriever=retriever)
 
     temp_path = Path(retriever.ingested_paths[0])
     assert temp_path.name == "escape.pdf"
@@ -196,11 +187,9 @@ async def test_ingest_document_preserves_stored_pdf_when_ingestion_fails(monkeyp
         data=b"%PDF-1.7\n",
     )
     retriever = FakeRetriever(fail=True)
-    monkeypatch.setattr(documents, "get_storage", lambda: storage)
-    monkeypatch.setattr(documents, "get_retriever", lambda: retriever)
+    monkeypatch.setattr(ingest_jobs, "get_retriever", lambda: retriever)
 
-    with pytest.raises(HTTPException) as exc_info:
-        await documents.ingest_document("doc-1", _user=FAKE_USER)
+    with pytest.raises(RuntimeError, match="parse failed"):
+        await ingest_stored_pdf(storage, storage.stored, doc_id="doc-1", retriever=retriever)
 
-    assert exc_info.value.status_code == 502
     assert storage.deleted_keys == []

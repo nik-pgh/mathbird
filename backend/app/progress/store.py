@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import io
 import json
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from typing import Any, Protocol, runtime_checkable
 
 from app.progress.models import ProgressState
+from app.storage.utils import open_storage_stream
 
 PROGRESS_FILENAME = "progress.json"
 
@@ -24,30 +23,13 @@ class ProgressStore(Protocol):
     async def save(self, state: ProgressState) -> None: ...
 
 
-@asynccontextmanager
-async def _open_storage_stream(storage: Any, key: str) -> AsyncIterator[Any]:
-    opened = storage.open(key)
-    if hasattr(opened, "__await__"):
-        opened = await opened
-    if hasattr(opened, "__aenter__"):
-        async with opened as stream:
-            yield stream
-        return
-    try:
-        yield opened
-    finally:
-        close = getattr(opened, "close", None)
-        if close is not None:
-            close()
-
-
 class StorageProgressStore:
     def __init__(self, storage: Any) -> None:
         self._storage = storage
 
     async def load(self, user_id: str, doc_id: str) -> ProgressState | None:
         try:
-            async with _open_storage_stream(self._storage, progress_key(user_id, doc_id)) as stream:
+            async with open_storage_stream(self._storage, progress_key(user_id, doc_id)) as stream:
                 payload = json.loads(stream.read().decode("utf-8"))
         except (FileNotFoundError, OSError, json.JSONDecodeError, ValueError):
             return None

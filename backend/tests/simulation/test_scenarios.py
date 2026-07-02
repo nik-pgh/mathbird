@@ -7,6 +7,8 @@ import yaml
 from livekit.agents.llm import ChatMessage, FunctionCall
 from livekit.agents.voice.run_result import RunResult
 
+from app.agent.grader.base import GradeResult
+from app.agent.grader.fake import FakeGrader
 from app.agent.session_factory import parse_participant_metadata, resolve_session_identity
 from app.agent.simulation.assertions import assert_turn_expectations
 from app.agent.simulation.scenarios import TurnExpectation, load_scenario
@@ -69,6 +71,71 @@ def test_load_scenario_from_yaml(tmp_path) -> None:
     assert scenario.turns[0].expect.assistant_contains == ["hi"]
 
 
+def test_load_scenario_grader_result_from_yaml(tmp_path) -> None:
+    path = tmp_path / "scenario.yaml"
+    path.write_text(
+        yaml.dump(
+            {
+                "name": "demo",
+                "turns": [
+                    {
+                        "student": "hello",
+                        "grader_result": {
+                            "set_focus_node_id": "ch-1-p-1",
+                            "updates": [{"node_id": "ch-1-p-1", "level": "practicing"}],
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scenario = load_scenario(path)
+    turn = scenario.turns[0]
+    assert turn.grader_result is not None
+    assert turn.grader_result.set_focus_node_id == "ch-1-p-1"
+    assert len(turn.grader_result.updates) == 1
+    assert turn.grader_result.updates[0].node_id == "ch-1-p-1"
+    assert turn.grader_result.updates[0].level == "practicing"
+
+
+@pytest.mark.asyncio
+async def test_fake_grader_pops_results_in_order() -> None:
+    grader = FakeGrader(
+        [
+            GradeResult(set_focus_node_id="ch-1-p-1"),
+            GradeResult(),
+        ]
+    )
+
+    first = await grader.grade(
+        turn_text="turn 1",
+        board_text=None,
+        focus_node_id=None,
+        levels={},
+        syllabus_context="",
+    )
+    second = await grader.grade(
+        turn_text="turn 2",
+        board_text=None,
+        focus_node_id=None,
+        levels={},
+        syllabus_context="",
+    )
+
+    assert first.set_focus_node_id == "ch-1-p-1"
+    assert second == GradeResult()
+    with pytest.raises(RuntimeError, match="exhausted"):
+        await grader.grade(
+            turn_text="turn 3",
+            board_text=None,
+            focus_node_id=None,
+            levels={},
+            syllabus_context="",
+        )
+
+
 def _run_with_events(items) -> RunResult:
     run = RunResult(user_input="test", output_type=None)
     for item in items:
@@ -123,6 +190,118 @@ async def test_tutor_greeting_scenario_live() -> None:
         pytest.skip("OPENAI_API_KEY not set")
 
     scenario_path = (
-        Path(__file__).resolve().parents[1] / "simulations/scenarios/tutor_greeting.yaml"
+        Path(__file__).resolve().parents[2] / "simulations/scenarios/tutor_greeting.yaml"
     )
     await run_scenario(scenario_path, settings=settings)
+
+
+# --------------------------------------------------------- progression assertions
+
+def _engine_for_progression_tests():
+    from app.progress.engine import ProgressEngine
+    from app.progress.models import ProgressState
+    from app.syllabus.models import Chapter, Concept, Problem, Syllabus
+
+    syllabus = Syllabus(
+        doc_id="doc-1",
+        built_at="t",
+        chapters=[
+            Chapter(
+                id="ch-1",
+                number=1,
+                title="Chapter 1",
+                concepts=[
+                    Concept(
+                        id="ch-1-c-a",
+                        title="Concept A",
+                        problems=[
+                            Problem(
+                                id="ch-1-p-1",
+                                kind="exercise",
+                                label="Problem 1",
+                                block_id="b1",
+                                page_number=1,
+                            ),
+                            Problem(
+                                id="ch-1-p-2",
+                                kind="exercise",
+                                label="Problem 2",
+                                block_id="b2",
+                                page_number=2,
+                            ),
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+    state = ProgressState(user_id="u1", doc_id="doc-1", updated_at="t")
+    return ProgressEngine(syllabus=syllabus, state=state)
+
+
+@pytest.mark.asyncio
+async def test_assert_progression_passes_on_matching_level() -> None:
+    engine = _engine_for_progression_tests()
+    engine.set_focus("ch-1-p-1")  # → practicing
+    run = _run_with_events([ChatMessage(role="assistant", content=["ok"])])
+    expect = TurnExpectation(node_level={"ch-1-p-1": "practicing"}, focus_node="ch-1-p-1")
+    # Should not raise.
+    assert_turn_expectations(run, expect, turn_label="turn 1", engine=engine)
+
+
+@pytest.mark.asyncio
+async def test_assert_progression_fails_on_wrong_level() -> None:
+    engine = _engine_for_progression_tests()
+    engine.set_focus("ch-1-p-1")  # → practicing, not mastered
+    run = _run_with_events([ChatMessage(role="assistant", content=["ok"])])
+    expect = TurnExpectation(node_level={"ch-1-p-1": "mastered"})
+    with pytest.raises(AssertionError, match="ch-1-p-1"):
+        assert_turn_expectations(run, expect, turn_label="turn 1", engine=engine)
+
+
+@pytest.mark.asyncio
+async def test_assert_progression_checks_next_suggestion() -> None:
+    engine = _engine_for_progression_tests()
+    engine.record_mastery("ch-1-p-1", solved=True, explained=True)  # → mastered, next is p-2
+    run = _run_with_events([ChatMessage(role="assistant", content=["ok"])])
+    expect = TurnExpectation(next_suggestion_node="ch-1-p-2")
+    assert_turn_expectations(run, expect, turn_label="turn 1", engine=engine)
+
+
+@pytest.mark.asyncio
+async def test_assert_progression_checks_misconception() -> None:
+    engine = _engine_for_progression_tests()
+    engine.record_misconception("ch-1-p-1", "sign error distributing the negative")
+    run = _run_with_events([ChatMessage(role="assistant", content=["ok"])])
+    expect = TurnExpectation(misconceptions_contain={"ch-1-p-1": "sign error"})
+    assert_turn_expectations(run, expect, turn_label="turn 1", engine=engine)
+
+
+@pytest.mark.asyncio
+async def test_assert_progression_skipped_without_engine() -> None:
+    """When no engine is passed, progression fields are silently ignored."""
+    run = _run_with_events([ChatMessage(role="assistant", content=["ok"])])
+    expect = TurnExpectation(node_level={"ch-1-p-1": "mastered"})
+    # Should not raise — no engine supplied.
+    assert_turn_expectations(run, expect, turn_label="turn 1")
+
+
+def test_progression_demo_syllabus_fixture_loads() -> None:
+    """The hand-authored fixture must deserialize into a Syllabus."""
+    import json
+    from pathlib import Path
+
+    from app.syllabus.models import Syllabus
+
+    fixture = (
+        Path(__file__).resolve().parents[2]
+        / "simulations/fixtures/progression_demo_syllabus.json"
+    )
+    syllabus = Syllabus.model_validate(json.loads(fixture.read_text(encoding="utf-8")))
+    assert syllabus.doc_id == "progression-demo"
+    # Two concepts with problems + the engine can track them.
+    problems = [
+        p for ch in syllabus.chapters for c in ch.concepts for p in c.problems
+    ]
+    assert len(problems) == 3
+

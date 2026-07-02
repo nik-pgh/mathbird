@@ -4,6 +4,7 @@ import sqlite3
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from functools import lru_cache
 
 from app.config import get_settings
 
@@ -30,7 +31,7 @@ class User:
 class UserStore:
     def __init__(self) -> None:
         settings = get_settings()
-        self._conn = sqlite3.connect(settings.auth_db_path)
+        self._conn = sqlite3.connect(settings.auth_db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute(_SCHEMA)
         self._conn.commit()
@@ -73,6 +74,11 @@ class UserStore:
             (limit,),
         ).fetchall()
         return [_row_to_user(row) for row in rows]
+
+
+@lru_cache
+def get_user_store() -> UserStore:
+    return UserStore()
 
 
 def _row_to_user(row: sqlite3.Row) -> User:

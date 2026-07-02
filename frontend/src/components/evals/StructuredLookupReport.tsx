@@ -8,8 +8,7 @@ import {
   StructuredEvalTarget,
   buildStructuredComparisonReport,
   defaultStructuredSelection,
-  structuredEvalCatalog,
-  structuredEvalSources,
+  type EvalReportSource,
 } from "../../lib/evalCatalog";
 import {
   formatLatency,
@@ -38,14 +37,17 @@ function toggleSelected(
   return [...selected, item].sort((a, b) => a.shortLabel.localeCompare(b.shortLabel));
 }
 
-export default function StructuredLookupReport() {
-  const [selected, setSelected] = useState(() =>
-    defaultStructuredSelection(structuredEvalCatalog),
-  );
+interface Props {
+  catalog: readonly StructuredEvalTarget[];
+  sources: readonly EvalReportSource[];
+}
+
+export default function StructuredLookupReport({ catalog, sources }: Props) {
+  const [selected, setSelected] = useState(() => defaultStructuredSelection(catalog));
 
   const report = useMemo(
-    () => buildStructuredComparisonReport(selected),
-    [selected],
+    () => buildStructuredComparisonReport(selected, sources),
+    [selected, sources],
   );
 
   if (!report || report.targets.length === 0) {
@@ -84,12 +86,10 @@ export default function StructuredLookupReport() {
             </span>
           </p>
           <StructuredConfigPicker
-            catalog={structuredEvalCatalog}
+            catalog={catalog}
             selectedIds={selected.map((item) => item.catalogId)}
             onToggle={(catalogId) =>
-              setSelected((current) =>
-                toggleSelected(current, catalogId, structuredEvalCatalog),
-              )
+              setSelected((current) => toggleSelected(current, catalogId, catalog))
             }
           />
         </div>
@@ -100,7 +100,7 @@ export default function StructuredLookupReport() {
           </div>
           <div>
             <dt>Sources</dt>
-            <dd>{structuredEvalSources.length} JSON file(s)</dd>
+            <dd>{sources.length} JSON file(s)</dd>
           </div>
         </dl>
       </header>
@@ -126,7 +126,7 @@ export default function StructuredLookupReport() {
         </article>
         <article className="eval-summary-card">
           <span>Available configs</span>
-          <strong>{structuredEvalCatalog.length}</strong>
+          <strong>{catalog.length}</strong>
           <p>Toggle chunk policy and retrieval path above</p>
         </article>
       </section>

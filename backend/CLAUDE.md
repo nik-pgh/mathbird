@@ -37,10 +37,13 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 1. **All env vars go through `app.config.Settings`.** Never `os.environ.get(...)` outside `config.py`. Add the field with a default, then `get_settings().my_field`.
 2. **Provider/storage/retriever/board-reader choices are `Literal` types.** Adding a new option = add to the Literal + add a branch in the factory + add the dep. Never modify call sites.
 3. **Vendor SDKs stay isolated to provider boundaries.** `from livekit.plugins import deepgram` lives in `app/agent/providers/stt.py` and not in business code. Same rule for `openai`, `cartesia`, `elevenlabs`, `boto3`, LlamaIndex, Qdrant, etc.: keep vendor imports inside agent provider modules, storage modules, RAG implementation modules under `app/rag/`, and board-reader modules under `app/agent/whiteboard/reader/`. Lazy imports keep startup fast and let users skip plugins they don't need.
-4. **Function tools are the agent's API surface.** New LLM-callable capabilities = a new `@function_tool` async function in `app/agent/tools.py`, returned from `build_function_tools()`. The agent picks it up automatically. **Write the docstring carefully** — the LLM reads it. Current LLM-facing tools: `search_documents` (RAG) + `read_user_board` (student board reading). AiBoard writes are NOT done by the LLM — they come from the per-sentence `BoardExtractor` in `app/agent/whiteboard/extractor/` watching the agent's transcription stream.
+4. **Function tools are the agent's API surface.** New LLM-callable capabilities = a new `@function_tool` async function in `app/agent/tools.py`, returned from `build_function_tools()`. The agent picks it up automatically. **Write the docstring carefully** — the LLM reads it. Current LLM-facing tools:
+   - Always: `search_documents` (RAG), `read_user_board` (student board reading).
+   - When progress is loaded: `get_progress`, `list_problems` (read-only syllabus map).
+   AiBoard writes are NOT done by the LLM — they come from the per-sentence `BoardExtractor` in `app/agent/whiteboard/extractor/` watching the agent's transcription stream. **Progress mutations are NOT tutor tools** — they flow through the grader (`app/agent/grader/`) scheduled in the background by `prepare_turn_context`; extend the grader seam, do not re-add `set_focus` / `record_mastery` to `build_function_tools()`.
 5. **`Settings` reads `.env` AND `../.env`.** The repo-root `.env` is the canonical location for shared secrets. `backend/README.md` says `cp ../.env.example ../.env`.
 6. **Singletons are cached.** `get_settings()`, `get_storage()`, `get_retriever()`, and `get_board_reader()` are all `lru_cache` or module-level. Restart the process to pick up env changes; clear caches in tests.
-7. **Whiteboard wire format is mirrored by hand.** Pydantic schemas in `app/agent/whiteboard/messages.py` are mirrored in `frontend/src/lib/whiteboard.ts`. No codegen — update both sides in the same change.
+7. **Whiteboard wire format is mirrored by hand.** Pydantic schemas in `app/agent/whiteboard/messages.py` are mirrored in `frontend/src/lib/whiteboard.ts`. No codegen — update both sides in the same change. **Same applies to the progress wire:** `app/progress/messages.py` is mirrored in `frontend/src/lib/progress.ts` and `frontend/src/lib/roadmapProgress.ts` (which duplicates the `ProblemStatus` type) — change all three in one commit.
 
 ## Quick "where to add..." map
 
@@ -49,6 +52,8 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 | New STT/LLM/TTS/VAD vendor | `app/agent/providers/<modality>.py` + `Literal` in `config.py` + dep in `pyproject.toml` |
 | New LLM capability | `app/agent/tools.py` (new `@function_tool`, add to `build_function_tools`) |
 | Built-in RAG implementation | Set `RAG_PROVIDER=llamaindex_qdrant`; add a new module under `app/rag/` only for another provider. |
+| New grader backend | `app/agent/grader/<name>.py` + `Literal` `GraderName` in `config.py` + branch in `factory.py` |
+| New progress field on the wire | `app/progress/messages.py` + mirror in `frontend/src/lib/progress.ts` + `frontend/src/lib/roadmapProgress.ts` (same commit) |
 | New HTTP endpoint | New file in `app/api/routes/`, mount in `app/api/main.py` |
 | New storage backend | New file in `app/storage/` implementing `StorageBackend`; branch in `get_storage()` + `Literal` |
 | New whiteboard item kind | Pydantic model in `app/agent/whiteboard/messages.py`, extend `AiBoardItem`; mirror in `frontend/src/lib/whiteboard.ts`; render in `BoardItem.tsx` |
@@ -59,6 +64,7 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 | Add observability (LLM/RAG tracing) | Already wired via `app/observability.py`; toggle with `PHOENIX_ENABLED=true` |
 | New conversation simulation scenario | YAML in `simulations/scenarios/`; extend `TurnExpectation` in `app/agent/simulation/scenarios.py` if new assertion types are needed |
 | Debug agent without voice | `scripts/agent_console.py` or `scripts/simulate_conversation.py` — both use `session_factory.py` + `app/agent/console/` |
+| Per-turn LLM context (board/progress/RAG inject) | `app/agent/turn_context/` (`prepare_turn_context`, `TurnContextBuilder`, `PendingGrader`); console display in `app/agent/console/render.py` |
 | Interactive console doc/user picker | `app/agent/console/identity.py`; toggle with `SIM_INTERACTIVE` / pre-set `SIM_USER_ID` / `SIM_ACTIVE_DOC_ID` |
 
 ## Gotchas
@@ -75,4 +81,10 @@ Python 3.11+. Ruff line length 100, selecting `E, F, I, UP, B`.
 - **Agent persona is YAML, not env.** `Settings.agent_instructions` is a `@property` that calls `_load_persona(persona_file)` — there is no `AGENT_INSTRUCTIONS` env var anymore. The default `backend/personas/default.yaml` ships a math-tutor prompt; swap with `PERSONA_FILE=/path/to/other.yaml` (the YAML must define a non-empty top-level `instructions:` string).
 - **Phoenix tracing must be imported first.** `app/agent/main.py` calls `setup_phoenix()` at the top of the module, before any `livekit` or provider imports. Don't reorder — livekit caches unpatched OpenAI/LlamaIndex method references and the spans go missing. The HTTP API (`app/api/main.py`) does the same on its hot path.
 - **Phoenix deps are core.** `uv sync` installs `arize-phoenix` and OpenInference instrumentors. Export is still off until `PHOENIX_ENABLED=true`.
-- **Local script identity.** `agent_console` and `simulate_conversation.py` have no LiveKit participant metadata. Set `SIM_USER_ID` / `SIM_ACTIVE_DOC_ID` in `.env`, or let `SIM_INTERACTIVE=true` (default) prompt on stdin. Use `app/agent/console/runtime.py` (`local_text_job`) for text-only LLM sessions without STT/TTS.
+- **Local script identity.** `agent_console` and `simulate_conversation.py` have no LiveKit participant metadata. Set `SIM_USER_ID` / `SIM_ACTIVE_DOC_ID` in `.env`, or let `SIM_INTERACTIVE=true` (default) prompt on stdin. Use `app/agent/console/runtime.py` (`local_text_job`) for text-only LLM sessions without STT/TTS. Typed turns call `prepare_turn_context` via `run_text_turn` so grading matches voice; use `agent_console -c` to inspect injected context.
+- **Grader-primary progress.** `GRADER` defaults to `"null"` (no per-turn grading). With syllabus + progress loaded but `GRADER=null`, state is injected read-only and does not advance — `build_session_bundle` logs a warning. Set `GRADER=openai` (plus `OPENAI_API_KEY`) for production sessions where progress should evolve every turn. YAML simulators can script grader output via `grader_result` per turn and `FakeGrader` in `simulate_conversation.py`.
+- **Parallel grader timing.** Grading runs off the hot path so the tutor can reply while the grader LLM works:
+  1. **Turn N — tutor sees N−1 progress.** `[session progress]` / `[next action]` injections reflect state *after* turn N−1's grade (unchanged semantics).
+  2. **Turn N — grade in background.** `prepare_turn_context` schedules the turn-N grader via `PendingGrader` and returns immediately; the tutor LLM + TTS proceed in parallel.
+  3. **Turn N+1 — drain before inject.** The next `prepare_turn_context` calls `PendingGrader.drain()` first, awaiting turn N's grade before building injections — so turn N+1's tutor context includes grade N's mutations.
+  4. **Mid-turn `get_progress` may lag.** If the student turn's grader is still running, `get_progress` / `list_problems` read pre-grade-N state (same snapshot the tutor was given). Do not assume tool output matches the post-grade state until the next turn's prepare.

@@ -21,6 +21,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from app.config import get_settings
+
 from .messages import USER_BOARD_TOPIC, UserBoardSnapshot
 from .state import BoardState
 
@@ -79,6 +81,15 @@ def install_user_board_listener(
             png_bytes = base64.b64decode(snap.png_b64)
         except Exception:
             logger.exception("dropping snapshot with invalid base64")
+            return
+
+        max_bytes = get_settings().board_reader_max_png_bytes
+        if len(png_bytes) > max_bytes:
+            logger.warning(
+                "dropping user_board snapshot over size cap (%d > %d)",
+                len(png_bytes),
+                max_bytes,
+            )
             return
 
         try:

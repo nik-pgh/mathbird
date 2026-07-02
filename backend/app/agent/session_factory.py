@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from livekit.agents import AgentSession, JobContext
 
+from app.agent.grader import Grader, get_grader
 from app.agent.providers import build_llm, build_stt, build_tts, build_vad
 from app.agent.tools import build_function_tools
 from app.agent.whiteboard import (
@@ -92,6 +93,7 @@ async def build_session_bundle(
     user_id: str | None = None,
     active_doc_id: str | None = None,
     text_only: bool = False,
+    grader: Grader | None = None,
 ) -> SessionBundle:
     """Wire STT/LLM/TTS/VAD, whiteboard state, tools, and ``WhiteboardAgent``.
 
@@ -104,6 +106,7 @@ async def build_session_bundle(
     board_cache = BoardCache()
     board_reader = get_board_reader()
     board_extractor = get_board_extractor()
+    grader = grader if grader is not None else get_grader()
     listener = install_user_board_listener(
         room=room,
         state=board_state,
@@ -122,6 +125,12 @@ async def build_session_bundle(
                 user_id,
                 active_doc_id,
             )
+
+    if progress_engine is not None and settings.grader == "null":
+        logger.warning(
+            "Progress tracking loaded but GRADER=null — progress will not advance. "
+            "Set GRADER=openai for grader-primary sessions."
+        )
 
     session_data = SessionData(
         board_state=board_state,
@@ -153,6 +162,7 @@ async def build_session_bundle(
         board_state=board_state,
         board_cache=board_cache,
         extractor=board_extractor,
+        grader=grader,
         progress_engine=progress_engine,
     )
 

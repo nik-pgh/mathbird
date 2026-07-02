@@ -4,15 +4,34 @@ from __future__ import annotations
 
 import io
 import json
+import time
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.main import app
 from app.config import get_settings
 from app.rag import retriever as retriever_mod
-from app.storage import base as storage_mod
+from tests.api.conftest import upload_pdf
+
+
+def _poll_doc_status(
+    client: TestClient,
+    doc_id: str,
+    wanted: str,
+    *,
+    timeout: float = 5.0,
+) -> str:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        listing = client.get("/api/documents").json()
+        status = next(d["status"] for d in listing["documents"] if d["doc_id"] == doc_id)
+        if status == wanted:
+            return status
+        if wanted == "indexed" and status == "failed":
+            pytest.fail("ingest failed")
+        time.sleep(0.05)
+    pytest.fail(f"timed out waiting for status={wanted}")
 
 
 @pytest.fixture(autouse=True)
@@ -21,7 +40,10 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("STORAGE_BACKEND", "local")
     monkeypatch.setenv("STORAGE_LOCAL_DIR", str(tmp_path))
     monkeypatch.setenv("RAG_PROVIDER", "null")
+    monkeypatch.setenv("LEGACY_DOC_ACCESS", "deny")
     get_settings.cache_clear()
+    from app.storage import base as storage_mod
+
     storage_mod.get_storage.cache_clear()
     retriever_mod._singleton = None
     yield tmp_path
@@ -30,14 +52,9 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     retriever_mod._singleton = None
 
 
-def _upload_pdf(client: TestClient, name: str = "doc.pdf") -> dict:
-    return client.post(
-        "/api/documents",
-        files={"file": (name, io.BytesIO(b"%PDF-1.4\nstub\n"), "application/pdf")},
-    ).json()
-
-
 def test_documents_require_auth(isolated_storage: Path) -> None:  # noqa: ARG001
+    from app.api.main import app
+
     client = TestClient(app)
     res = client.get("/api/documents")
     assert res.status_code == 401
@@ -49,7 +66,7 @@ def test_uploaded_doc_status_uploaded_then_indexed(
 ) -> None:
     client = auth_client
 
-    created = _upload_pdf(client)
+    created = upload_pdf(client)
     assert created["status"] == "uploaded"
     doc_id = created["doc_id"]
 
@@ -58,8 +75,10 @@ def test_uploaded_doc_status_uploaded_then_indexed(
     assert statuses[doc_id] == "uploaded"
 
     ingest_res = client.post(f"/api/documents/{doc_id}/ingest")
-    assert ingest_res.status_code == 200
-    assert ingest_res.json()["status"] == "indexed"
+    assert ingest_res.status_code == 202
+    assert ingest_res.json()["status"] == "ingesting"
+
+    _poll_doc_status(client, doc_id, "indexed")
 
     sidecar = isolated_storage / doc_id / "meta.json"
     assert sidecar.exists()
@@ -67,6 +86,7 @@ def test_uploaded_doc_status_uploaded_then_indexed(
     assert payload["indexed"] is True
     assert "indexed_at" in payload
     assert payload.get("syllabus_ready") is False
+    assert "uploaded_by_user_id" in payload
 
     listing = client.get("/api/documents").json()
     statuses = {d["doc_id"]: d["status"] for d in listing["documents"]}
@@ -110,16 +130,15 @@ def test_ingest_builds_syllabus_when_parser_available(
 
     monkeypatch.setenv("LLAMAPARSE_API_KEY", "test-key")
     get_settings.cache_clear()
-    monkeypatch.setattr("app.api.routes.documents.parse_pdf_to_document", _fake_parse)
+    monkeypatch.setattr("app.documents.ingest_work.parse_pdf_to_document", _fake_parse)
 
     client = auth_client
-    created = _upload_pdf(client)
+    created = upload_pdf(client)
     doc_id = created["doc_id"]
 
     ingest_res = client.post(f"/api/documents/{doc_id}/ingest")
-    assert ingest_res.status_code == 200
-    body = ingest_res.json()
-    assert body["syllabus_ready"] is True
+    assert ingest_res.status_code == 202
+    _poll_doc_status(client, doc_id, "indexed")
 
     sidecar = json.loads((isolated_storage / doc_id / "meta.json").read_text())
     assert sidecar["syllabus_ready"] is True
@@ -127,19 +146,18 @@ def test_ingest_builds_syllabus_when_parser_available(
 
     syllabus_res = client.get(f"/api/documents/{doc_id}/syllabus")
     assert syllabus_res.status_code == 200
-    first_exercise = (
-        syllabus_res.json()["chapters"][0]["concepts"][0]["problems"][0]["exercise_number"]
-    )
+    first_exercise = syllabus_res.json()["chapters"][0]["concepts"][0]["problems"][0][
+        "exercise_number"
+    ]
     assert first_exercise == "1"
 
 
-def test_ingest_failure_preserves_file_and_502(
+def test_ingest_failure_marks_sidecar_failed(
     isolated_storage: Path,
     monkeypatch: pytest.MonkeyPatch,
     auth_client: TestClient,
 ) -> None:
-    """If the retriever raises, ingest returns 502 but leaves the PDF in place
-    so the user can retry via the Re-index path."""
+    """If the retriever raises, background ingest marks failed but keeps the PDF."""
 
     class _RaisingRetriever:
         async def retrieve(self, query, *, top_k=4, doc_ids=()):  # noqa: ARG002
@@ -151,22 +169,24 @@ def test_ingest_failure_preserves_file_and_502(
     monkeypatch.setattr(retriever_mod, "_singleton", _RaisingRetriever())
 
     client = auth_client
-    created = _upload_pdf(client)
+    created = upload_pdf(client)
     doc_id = created["doc_id"]
     pdf_path = isolated_storage / created["key"]
     assert pdf_path.exists()
 
     res = client.post(f"/api/documents/{doc_id}/ingest")
-    assert res.status_code == 502
+    assert res.status_code == 202
 
-    # PDF remains for retry; sidecar never written.
+    _poll_doc_status(client, doc_id, "failed")
+
     assert pdf_path.exists()
-    assert not (isolated_storage / doc_id / "meta.json").exists()
+    sidecar = json.loads((isolated_storage / doc_id / "meta.json").read_text())
+    assert sidecar.get("indexed") is not True
+    assert sidecar.get("ingest_status") == "failed"
 
-    # Listing still surfaces the doc with status="uploaded".
     listing = client.get("/api/documents").json()
     statuses = {d["doc_id"]: d["status"] for d in listing["documents"]}
-    assert statuses[doc_id] == "uploaded"
+    assert statuses[doc_id] == "failed"
 
 
 def test_get_document_file_returns_pdf_bytes(
@@ -174,7 +194,7 @@ def test_get_document_file_returns_pdf_bytes(
     auth_client: TestClient,
 ) -> None:
     client = auth_client
-    created = _upload_pdf(client, name="textbook.pdf")
+    created = upload_pdf(client, name="textbook.pdf")
     doc_id = created["doc_id"]
 
     res = client.get(f"/api/documents/{doc_id}/file")
@@ -189,7 +209,7 @@ def test_get_document_file_quotes_download_filename_safely(
     auth_client: TestClient,
 ) -> None:
     client = auth_client
-    created = _upload_pdf(client, name='bad"name.pdf')
+    created = upload_pdf(client, name='bad"name.pdf')
     doc_id = created["doc_id"]
 
     res = client.get(f"/api/documents/{doc_id}/file")
@@ -199,10 +219,40 @@ def test_get_document_file_quotes_download_filename_safely(
     assert 'bad"name.pdf' not in res.headers["content-disposition"]
 
 
+def test_upload_rejects_non_pdf_bytes(auth_client: TestClient) -> None:
+    res = auth_client.post(
+        "/api/documents",
+        files={"file": ("fake.pdf", io.BytesIO(b"not-a-pdf"), "application/pdf")},
+    )
+    assert res.status_code == 415
+
+
+def test_upload_rejects_oversized_pdf(
+    auth_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MAX_UPLOAD_BYTES", "100")
+    get_settings.cache_clear()
+    try:
+        res = auth_client.post(
+            "/api/documents",
+            files={
+                "file": (
+                    "big.pdf",
+                    io.BytesIO(b"%PDF-1.4\n" + b"x" * 200),
+                    "application/pdf",
+                )
+            },
+        )
+        assert res.status_code == 413
+    finally:
+        get_settings.cache_clear()
+
+
 def test_get_document_file_404_for_unknown_id(
     isolated_storage: Path,  # noqa: ARG001
     auth_client: TestClient,
 ) -> None:
     client = auth_client
     res = client.get("/api/documents/does-not-exist/file")
-    assert res.status_code == 404
+    assert res.status_code == 403

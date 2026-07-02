@@ -1,7 +1,28 @@
-import type { ProgressSummary, SessionProgressUpdate } from "./progress";
+import type {
+  ConceptProgressSnapshot,
+  ProgressSummary,
+  SessionProgressUpdate,
+} from "./progress";
 import type { Syllabus, SyllabusChapter, SyllabusProblem } from "./syllabus";
 
+// The wire carries 5 ordinal mastery levels; the roadmap view model collapses
+// them into 3 display buckets (introduced/practicing/proficient → in_progress)
+// so the existing bar/detail rendering stays stable.
 export type ProblemStatus = "not_started" | "in_progress" | "mastered";
+
+type MasteryLevel =
+  | "not_started"
+  | "introduced"
+  | "practicing"
+  | "proficient"
+  | "mastered";
+
+/** Collapse a 5-level wire status into the 3-bucket display status. */
+function toDisplayStatus(level: MasteryLevel): ProblemStatus {
+  if (level === "mastered") return "mastered";
+  if (level === "not_started") return "not_started";
+  return "in_progress";
+}
 
 export interface RoadmapProblemView {
   id: string;
@@ -18,6 +39,10 @@ export interface RoadmapConceptView {
   problems: RoadmapProblemView[];
   masteredCount: number;
   totalCount: number;
+  // Backend-reported concept level (preferred over client derivation when
+  // present); null when the wire carries no concept rows.
+  level: MasteryLevel | null;
+  hasOpenMisconceptions: boolean;
 }
 
 export interface RoadmapChapterView {
@@ -143,7 +168,13 @@ export function buildRoadmapViewModel(
 
   const statusById = new Map<string, ProblemStatus>();
   for (const node of snapshot?.nodes ?? []) {
-    statusById.set(node.problem_id, node.status);
+    statusById.set(node.problem_id, toDisplayStatus(node.status));
+  }
+
+  // Backend concept levels (preferred over client-side derivation when present).
+  const conceptById = new Map<string, ConceptProgressSnapshot>();
+  for (const concept of snapshot?.concepts ?? []) {
+    conceptById.set(concept.concept_id, concept);
   }
 
   const focusId = snapshot?.focus?.problem_id ?? null;
@@ -208,12 +239,15 @@ export function buildRoadmapViewModel(
         chapterProblems.push(problemView);
       }
 
+      const backendConcept = conceptById.get(concept.id) ?? null;
       concepts.push({
         id: concept.id,
         title: concept.title,
         problems: conceptProblems,
         masteredCount: conceptProblems.filter((problem) => problem.status === "mastered").length,
         totalCount: conceptProblems.length,
+        level: backendConcept?.level ?? null,
+        hasOpenMisconceptions: backendConcept?.has_open_misconceptions ?? false,
       });
     }
 
