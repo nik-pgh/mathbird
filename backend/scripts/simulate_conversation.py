@@ -28,11 +28,8 @@ from typing import TYPE_CHECKING
 
 from livekit import rtc
 
-from app.agent.console.context_view import (
-    assistant_reply,
-    print_llm_context,
-    print_progress_snapshot,
-)
+from app.agent.console.context_view import print_llm_context, print_progress_snapshot
+from app.agent.console.render import assistant_reply
 from app.agent.console.runtime import local_text_job
 from app.agent.console.turn import run_text_turn
 from app.agent.console.ui import format_run_event

@@ -10,21 +10,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from livekit.agents.voice.run_result import RunEvent
+from app.agent.console.render import format_progress_lines
 
+if TYPE_CHECKING:
     from app.agent.whiteboard import SessionData
     from app.progress.engine import ProgressEngine
-
-
-def assistant_reply(events: list[RunEvent]) -> str:
-    """Concatenate assistant message text from a turn's ``RunResult`` events."""
-    parts: list[str] = []
-    for event in events:
-        if event.type != "message" or event.item.role != "assistant":
-            continue
-        parts.append(event.item.text_content)
-    return "\n".join(parts)
 
 
 def _indent(text: str, prefix: str = "  ") -> str:
@@ -60,36 +50,5 @@ def print_llm_context(session_data: SessionData, engine: ProgressEngine | None) 
 
 def print_progress_snapshot(engine: ProgressEngine) -> None:
     """Engine state after the turn — focus, summary, recommendation, touched nodes."""
-    state = engine.state
-    summary = engine.summary()
-    focus = state.focus
-    focus_node = (focus.problem_id or focus.concept_id) if focus is not None else None
-    if focus_node is not None:
-        level = engine.effective_level(focus_node)
-        print(f"  focus: {focus_node} ({level})", flush=True)
-    else:
-        print("  focus: (none yet)", flush=True)
-    print(
-        f"  mastered: {summary.mastered}/{summary.total} · in progress: {summary.in_progress}",
-        flush=True,
-    )
-
-    rec = engine.recommend()
-    print(f"  recommend [{rec.intent}]: {rec.directive}", flush=True)
-
-    touched: list[str] = []
-    for node_id, node in state.nodes.items():
-        level = engine.effective_level(node_id)
-        bits: list[str] = []
-        if level != "not_started":
-            bits.append(level)
-        if node.hints_given:
-            bits.append(f"hints={node.hints_given}")
-        if node.misconceptions:
-            bits.append(f"misconceptions={node.misconceptions}")
-        if bits:
-            touched.append(f"{node_id}: {' / '.join(bits)}")
-    if touched:
-        print("  nodes:", flush=True)
-        for line in touched:
-            print(f"    - {line}", flush=True)
+    for line in format_progress_lines(engine):
+        print(f"  {line}", flush=True)
