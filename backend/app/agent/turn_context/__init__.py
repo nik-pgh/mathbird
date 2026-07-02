@@ -2,6 +2,7 @@
 
 from .builder import TurnContextBuilder
 from .session import resolve_agent_session, resolve_session_data
+from .snapshot import snapshot_from_turn_ctx
 from .types import (
     InjectionBlock,
     InjectionKind,
@@ -17,4 +18,5 @@ __all__ = [
     "classify_injection_kind",
     "resolve_agent_session",
     "resolve_session_data",
+    "snapshot_from_turn_ctx",
 ]
