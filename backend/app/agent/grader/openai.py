@@ -78,7 +78,11 @@ explanation in their own words. Partial or imitated reasoning stays at \
 practicing/proficient.
 - ``misconception_additions`` should capture specific, named errors \
 (e.g. "confused matrix transpose with inverse", "sign error distributing the \
-negative"). Phrase each as a reusable diagnostic, not a turn transcript.
+negative"). Phrase each as a reusable diagnostic, not a turn transcript. \
+Only add misconceptions when the student asserts incorrect mathematics. Do NOT \
+record misconceptions when the student asks clarifying questions about tutor \
+wording (e.g. "what do you mean by ordered?") or pushes back on ambiguous \
+tutor phrasing.
 - ``clear_misconceptions=true`` only when the student explicitly corrected a \
 previously recorded error this turn.
 - ``hint_given=true`` when ``last_tutor_message`` gave a substantive hint \

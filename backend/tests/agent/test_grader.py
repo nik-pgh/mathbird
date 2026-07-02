@@ -148,6 +148,43 @@ async def test_openai_grader_applies_solved_update() -> None:
 
 
 @pytest.mark.asyncio
+async def test_openai_grader_skips_misconception_for_clarifying_question() -> None:
+    """Clarifying questions about tutor wording must not record misconceptions.
+
+    When a student asks what the tutor meant (e.g. "what do you mean by that?")
+    rather than asserting incorrect math, the grader should emit no
+    misconception_additions. The mocked response models correct grader behavior;
+    the system prompt also instructs the model not to treat such turns as errors.
+    """
+
+    def factory(_GradedNode, _GradeResponse):
+        return _GradeResponse(updates=[])
+
+    grader = OpenAIGrader(model="test", timeout=5.0, client=_FakeClient(factory))
+    engine = _engine()
+    engine.set_focus("ch-1-p-1")
+
+    result = await grader.grade(
+        turn_text="what do you mean by that?",
+        board_text=None,
+        focus_node_id="ch-1-p-1",
+        levels=engine.nearby_levels("ch-1-p-1"),
+        syllabus_context=engine.focus_context("ch-1-p-1"),
+        last_tutor_message="Remember to keep the terms in ordered form.",
+    )
+    engine.apply_grade_result(result)
+    assert result.updates == []
+    assert engine.state.nodes["ch-1-p-1"].misconceptions == []
+
+
+def test_openai_grader_prompt_rejects_clarifying_question_misconceptions() -> None:
+    """System prompt must tell the model not to grade clarifying questions as errors."""
+    from app.agent.grader.openai import _SYSTEM_PROMPT
+
+    assert "Do NOT record misconceptions when the student asks clarifying questions" in _SYSTEM_PROMPT
+
+
+@pytest.mark.asyncio
 async def test_openai_grader_records_misconception() -> None:
 
     def factory(_GradedNode, _GradeResponse):
