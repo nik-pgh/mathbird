@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import HTTPException, Request
 
 from app.auth.jwt import decode_token
-from app.auth.store import User, UserStore
+from app.auth.store import User, get_user_store
 from app.config import get_settings
 
 
@@ -20,7 +20,7 @@ def get_current_user(request: Request) -> User:
     except Exception as exc:
         raise HTTPException(status_code=401, detail="Invalid session") from exc
 
-    user = UserStore().get_by_id(user_id)
+    user = get_user_store().get_by_id(user_id)
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
     return user
@@ -44,4 +44,4 @@ def get_optional_user(request: Request) -> User | None:
     except Exception:
         return None
 
-    return UserStore().get_by_id(user_id)
+    return get_user_store().get_by_id(user_id)

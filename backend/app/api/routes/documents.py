@@ -44,6 +44,7 @@ from app.documents.catalog import (
 )
 from app.rag import get_retriever
 from app.storage import StoredObject, get_storage
+from app.storage.utils import open_storage_stream
 from app.syllabus import Syllabus, build_heuristic_syllabus, load_syllabus, save_syllabus
 from app.syllabus.parse import parse_pdf_to_document
 
@@ -91,21 +92,8 @@ class DocumentListResponse(BaseModel):
 
 @asynccontextmanager
 async def _open_storage_stream(storage: Any, key: str) -> AsyncIterator[Any]:
-    opened = storage.open(key)
-    if hasattr(opened, "__await__"):
-        opened = await opened
-
-    if hasattr(opened, "__aenter__"):
-        async with opened as stream:
-            yield stream
-        return
-
-    try:
-        yield opened
-    finally:
-        close = getattr(opened, "close", None)
-        if close is not None:
-            close()
+    async with open_storage_stream(storage, key) as stream:
+        yield stream
 
 
 async def _read_sidecar(storage: Any, doc_id: str) -> dict[str, Any]:

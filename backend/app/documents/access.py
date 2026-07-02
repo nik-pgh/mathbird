@@ -10,19 +10,13 @@ from fastapi import HTTPException
 from app.auth.store import User
 from app.config import Settings, get_settings
 from app.documents.catalog import DocumentSummary, sidecar_key
+from app.storage.utils import open_storage_stream
 
 
 async def read_document_meta(storage: Any, doc_id: str) -> dict[str, Any]:
     try:
-        opened = storage.open(sidecar_key(doc_id))
-        if hasattr(opened, "__await__"):
-            opened = await opened
-
-        if hasattr(opened, "__aenter__"):
-            async with opened as handle:
-                payload = json.load(handle)
-        else:
-            payload = json.load(opened)
+        async with open_storage_stream(storage, sidecar_key(doc_id)) as handle:
+            payload = json.load(handle)
     except (FileNotFoundError, OSError, json.JSONDecodeError, ValueError, TypeError):
         return {}
     return payload if isinstance(payload, dict) else {}

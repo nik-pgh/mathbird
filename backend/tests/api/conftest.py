@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.auth import issue_token
-from app.auth.store import UserStore
+from app.auth.store import get_user_store
 from app.config import get_settings
 from app.rag import retriever as retriever_mod
 from app.storage import base as storage_mod
@@ -22,8 +22,10 @@ def auth_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setenv("AUTH_JWT_SECRET", "test-secret-key-at-least-32-chars!!")
     monkeypatch.setenv("AUTH_DB_PATH", str(tmp_path / "auth.db"))
     get_settings.cache_clear()
+    get_user_store.cache_clear()
     yield
     get_settings.cache_clear()
+    get_user_store.cache_clear()
 
 
 @pytest.fixture
@@ -49,7 +51,7 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterato
 def auth_client(auth_env: None) -> TestClient:
     from app.api.main import app
 
-    user = UserStore().upsert_google_user("sub-test", "test@example.com", "Test User")
+    user = get_user_store().upsert_google_user("sub-test", "test@example.com", "Test User")
     token = issue_token(user.id)
     client = TestClient(app)
     client.cookies.set(get_settings().auth_cookie_name, token)
@@ -59,7 +61,7 @@ def auth_client(auth_env: None) -> TestClient:
 def make_auth_client(google_sub: str, email: str, *, name: str | None = None) -> TestClient:
     from app.api.main import app
 
-    user = UserStore().upsert_google_user(google_sub, email, name or email.split("@")[0])
+    user = get_user_store().upsert_google_user(google_sub, email, name or email.split("@")[0])
     token = issue_token(user.id)
     client = TestClient(app)
     client.cookies.set(get_settings().auth_cookie_name, token)

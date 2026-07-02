@@ -6,6 +6,7 @@ to use it. Requires the ``boto3`` extra (already in pyproject.toml).
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import BinaryIO
@@ -35,13 +36,7 @@ class S3Storage:
             aws_secret_access_key=secret_key,
         )
 
-    async def put(
-        self,
-        key: str,
-        data: BinaryIO,
-        *,
-        content_type: str,
-    ) -> StoredObject:
+    def _put_sync(self, key: str, data: BinaryIO, *, content_type: str) -> StoredObject:
         self.client.upload_fileobj(
             data,
             self.bucket,
@@ -56,21 +51,31 @@ class S3Storage:
             content_type=head.get("ContentType", content_type),
         )
 
+    async def put(
+        self,
+        key: str,
+        data: BinaryIO,
+        *,
+        content_type: str,
+    ) -> StoredObject:
+        return await asyncio.to_thread(self._put_sync, key, data, content_type=content_type)
+
     @asynccontextmanager
     async def open(self, key: str) -> AsyncIterator[BinaryIO]:
-        try:
-            response = self.client.get_object(Bucket=self.bucket, Key=key)
-        except self.client.exceptions.NoSuchKey as err:  # pragma: no cover - depends on live S3
-            # Normalize the not-found contract with LocalStorage so callers can
-            # rely on FileNotFoundError for missing keys across backends.
-            raise FileNotFoundError(key) from err
-        body = response["Body"]
+        def _get_object() -> BinaryIO:
+            try:
+                response = self.client.get_object(Bucket=self.bucket, Key=key)
+            except self.client.exceptions.NoSuchKey as err:  # pragma: no cover
+                raise FileNotFoundError(key) from err
+            return response["Body"]
+
+        body = await asyncio.to_thread(_get_object)
         try:
             yield body
         finally:
-            body.close()
+            await asyncio.to_thread(body.close)
 
-    async def list(self, prefix: str = "") -> list[StoredObject]:
+    def _list_sync(self, prefix: str) -> list[StoredObject]:
         paginator = self.client.get_paginator("list_objects_v2")
         results: list[StoredObject] = []
         for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
@@ -85,5 +90,8 @@ class S3Storage:
                 )
         return results
 
+    async def list(self, prefix: str = "") -> list[StoredObject]:
+        return await asyncio.to_thread(self._list_sync, prefix)
+
     async def delete(self, key: str) -> None:
-        self.client.delete_object(Bucket=self.bucket, Key=key)
+        await asyncio.to_thread(self.client.delete_object, Bucket=self.bucket, Key=key)
