@@ -8,9 +8,18 @@ from urllib.parse import unquote
 
 from app.storage import StoredObject, get_storage
 
-DocStatus = Literal["uploaded", "indexed"]
+DocStatus = Literal["uploaded", "ingesting", "indexed", "failed"]
 SIDECAR_NAME = "meta.json"
 SYLLABUS_NAME = "syllabus.json"
+
+
+def ingest_status_from_meta(meta: dict[str, Any]) -> DocStatus:
+    explicit = meta.get("ingest_status")
+    if explicit in ("uploaded", "ingesting", "indexed", "failed"):
+        return explicit  # type: ignore[return-value]
+    if meta.get("indexed"):
+        return "indexed"
+    return "uploaded"
 
 
 @dataclass(frozen=True)
@@ -61,7 +70,7 @@ async def list_document_summaries() -> list[DocumentSummary]:
     results: list[DocumentSummary] = []
     for doc_id, obj in sorted(docs.items(), key=lambda item: item[1].key):
         meta = await _read_sidecar(storage, doc_id)
-        status: DocStatus = "indexed" if meta.get("indexed") else "uploaded"
+        status: DocStatus = ingest_status_from_meta(meta)  # type: ignore[assignment]
         owner = meta.get("uploaded_by_user_id")
         results.append(
             DocumentSummary(

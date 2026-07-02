@@ -6,12 +6,35 @@ import io
 import json
 from pathlib import Path
 
+import time
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.config import get_settings
 from app.rag import retriever as retriever_mod
 from tests.api.conftest import upload_pdf
+
+
+def _poll_doc_status(
+    client: TestClient,
+    doc_id: str,
+    wanted: str,
+    *,
+    timeout: float = 5.0,
+) -> str:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        listing = client.get("/api/documents").json()
+        status = next(
+            d["status"] for d in listing["documents"] if d["doc_id"] == doc_id
+        )
+        if status == wanted:
+            return status
+        if wanted == "indexed" and status == "failed":
+            pytest.fail("ingest failed")
+        time.sleep(0.05)
+    pytest.fail(f"timed out waiting for status={wanted}")
 
 
 @pytest.fixture(autouse=True)
@@ -55,8 +78,10 @@ def test_uploaded_doc_status_uploaded_then_indexed(
     assert statuses[doc_id] == "uploaded"
 
     ingest_res = client.post(f"/api/documents/{doc_id}/ingest")
-    assert ingest_res.status_code == 200
-    assert ingest_res.json()["status"] == "indexed"
+    assert ingest_res.status_code == 202
+    assert ingest_res.json()["status"] == "ingesting"
+
+    _poll_doc_status(client, doc_id, "indexed")
 
     sidecar = isolated_storage / doc_id / "meta.json"
     assert sidecar.exists()
@@ -108,16 +133,15 @@ def test_ingest_builds_syllabus_when_parser_available(
 
     monkeypatch.setenv("LLAMAPARSE_API_KEY", "test-key")
     get_settings.cache_clear()
-    monkeypatch.setattr("app.api.routes.documents.parse_pdf_to_document", _fake_parse)
+    monkeypatch.setattr("app.documents.ingest_work.parse_pdf_to_document", _fake_parse)
 
     client = auth_client
     created = upload_pdf(client)
     doc_id = created["doc_id"]
 
     ingest_res = client.post(f"/api/documents/{doc_id}/ingest")
-    assert ingest_res.status_code == 200
-    body = ingest_res.json()
-    assert body["syllabus_ready"] is True
+    assert ingest_res.status_code == 202
+    _poll_doc_status(client, doc_id, "indexed")
 
     sidecar = json.loads((isolated_storage / doc_id / "meta.json").read_text())
     assert sidecar["syllabus_ready"] is True
@@ -131,13 +155,12 @@ def test_ingest_builds_syllabus_when_parser_available(
     assert first_exercise == "1"
 
 
-def test_ingest_failure_preserves_file_and_502(
+def test_ingest_failure_marks_sidecar_failed(
     isolated_storage: Path,
     monkeypatch: pytest.MonkeyPatch,
     auth_client: TestClient,
 ) -> None:
-    """If the retriever raises, ingest returns 502 but leaves the PDF in place
-    so the user can retry via the Re-index path."""
+    """If the retriever raises, background ingest marks failed but keeps the PDF."""
 
     class _RaisingRetriever:
         async def retrieve(self, query, *, top_k=4, doc_ids=()):  # noqa: ARG002
@@ -155,17 +178,18 @@ def test_ingest_failure_preserves_file_and_502(
     assert pdf_path.exists()
 
     res = client.post(f"/api/documents/{doc_id}/ingest")
-    assert res.status_code == 502
+    assert res.status_code == 202
 
-    # PDF remains for retry; indexed flag not set on sidecar.
+    _poll_doc_status(client, doc_id, "failed")
+
     assert pdf_path.exists()
     sidecar = json.loads((isolated_storage / doc_id / "meta.json").read_text())
     assert sidecar.get("indexed") is not True
+    assert sidecar.get("ingest_status") == "failed"
 
-    # Listing still surfaces the doc with status="uploaded".
     listing = client.get("/api/documents").json()
     statuses = {d["doc_id"]: d["status"] for d in listing["documents"]}
-    assert statuses[doc_id] == "uploaded"
+    assert statuses[doc_id] == "failed"
 
 
 def test_get_document_file_returns_pdf_bytes(

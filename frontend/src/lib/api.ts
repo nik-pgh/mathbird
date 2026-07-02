@@ -10,7 +10,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 const fetchInit: RequestInit = { credentials: "include" };
 
-export type DocStatus = "uploaded" | "indexed" | "failed";
+export type DocStatus = "uploaded" | "ingesting" | "indexed" | "failed";
 
 export interface UploadedDocument {
   doc_id: string;
@@ -29,8 +29,11 @@ export interface TokenResponse {
   identity: string;
 }
 
-async function jsonOrThrow<T>(res: Response): Promise<T> {
-  if (!res.ok) {
+async function jsonOrThrow<T>(
+  res: Response,
+  okStatuses: number[] = [200, 201],
+): Promise<T> {
+  if (!okStatuses.includes(res.status)) {
     const detail = await res.text();
     throw new Error(`API ${res.status}: ${detail || res.statusText}`);
   }
@@ -53,7 +56,30 @@ export async function ingestDocument(docId: string): Promise<UploadedDocument> {
     `${API_BASE}/api/documents/${encodeURIComponent(docId)}/ingest`,
     { method: "POST", ...fetchInit },
   );
-  return jsonOrThrow<UploadedDocument>(res);
+  return jsonOrThrow<UploadedDocument>(res, [200, 202]);
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Poll the library until a document finishes background ingest. */
+export async function waitForDocumentReady(
+  docId: string,
+  opts?: { intervalMs?: number; timeoutMs?: number },
+): Promise<UploadedDocument> {
+  const intervalMs = opts?.intervalMs ?? 1500;
+  const timeoutMs = opts?.timeoutMs ?? 10 * 60_000;
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const docs = await listDocuments();
+    const doc = docs.find((d) => d.doc_id === docId);
+    if (doc?.status === "indexed") return doc;
+    if (doc?.status === "failed") {
+      throw new Error("Document ingestion failed.");
+    }
+    await sleep(intervalMs);
+  }
+  throw new Error("Timed out waiting for document ingestion.");
 }
 
 export async function listDocuments(): Promise<UploadedDocument[]> {

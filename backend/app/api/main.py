@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.documents.ingest_jobs import reconcile_stuck_ingests
 from app.observability import setup_phoenix
 
 from .routes import auth, documents, progress, token
@@ -33,6 +34,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     phoenix_task: asyncio.Task[None] | None = None
     if not settings.auth_jwt_secret:
         logger.warning("AUTH_JWT_SECRET is not set — login and session routes will fail")
+    await reconcile_stuck_ingests()
     if settings.phoenix_enabled:
         phoenix_task = asyncio.create_task(asyncio.to_thread(setup_phoenix))
     yield

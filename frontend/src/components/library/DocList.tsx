@@ -33,10 +33,15 @@ export default function DocList({
     <ul className="doc-list">
       {docs.map((d) => {
         const indexed = d.status === "indexed";
+        const ingesting = d.status === "ingesting";
+        const failed = d.status === "failed";
         const isActive = activeDocId === d.doc_id;
         const isReindexing = reindexingDocId === d.doc_id;
         return (
-          <li key={d.doc_id} className={`doc-row ${indexed ? "indexed" : "unindexed"}`}>
+          <li
+            key={d.doc_id}
+            className={`doc-row ${indexed ? "indexed" : ingesting ? "ingesting" : "unindexed"}`}
+          >
             <label className="doc-pick">
               <input
                 type="radio"
@@ -53,10 +58,10 @@ export default function DocList({
               {!indexed && (
                 <button
                   className="reindex"
-                  disabled={isReindexing}
+                  disabled={isReindexing || ingesting}
                   onClick={() => onReindex(d.doc_id)}
                 >
-                  {isReindexing ? "Indexing..." : "Re-index"}
+                  {ingesting || isReindexing ? "Indexing..." : failed ? "Retry" : "Re-index"}
                 </button>
               )}
             </span>

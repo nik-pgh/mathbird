@@ -4,7 +4,6 @@ from app.documents.access import (
     assert_doc_access,
     filter_summaries_for_user,
     guest_can_access_doc,
-    read_document_meta,
     resolve_token_doc_id,
     user_can_access_doc,
 )
@@ -16,6 +15,7 @@ from app.documents.catalog import (
     list_document_summaries,
     sidecar_key,
 )
+from app.documents.ingest_work import read_document_meta
 
 __all__ = [
     "SIDECAR_NAME",

@@ -2,24 +2,14 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from fastapi import HTTPException
 
 from app.auth.store import User
 from app.config import Settings, get_settings
-from app.documents.catalog import DocumentSummary, sidecar_key
-from app.storage.utils import open_storage_stream
-
-
-async def read_document_meta(storage: Any, doc_id: str) -> dict[str, Any]:
-    try:
-        async with open_storage_stream(storage, sidecar_key(doc_id)) as handle:
-            payload = json.load(handle)
-    except (FileNotFoundError, OSError, json.JSONDecodeError, ValueError, TypeError):
-        return {}
-    return payload if isinstance(payload, dict) else {}
+from app.documents.catalog import DocumentSummary
+from app.documents.ingest_work import read_document_meta
 
 
 def user_can_access_doc(
