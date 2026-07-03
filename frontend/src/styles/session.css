@@ -206,7 +206,7 @@
 
 .grid-drop-preview {
   position: absolute;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   border: 2px dashed rgba(47, 111, 237, 0.55);
   border-radius: 8px;
@@ -233,6 +233,7 @@
 
 .sticky-note {
   position: absolute;
+  z-index: 2;
   display: grid;
   grid-template-rows: 28px minmax(0, 1fr);
   min-width: 160px;
@@ -442,6 +443,7 @@
 
 .tutor-object {
   position: absolute;
+  z-index: 2;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
