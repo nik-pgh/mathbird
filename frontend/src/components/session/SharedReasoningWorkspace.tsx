@@ -11,6 +11,12 @@ import {
   encodeAiUpdate,
 } from "../../lib/whiteboard";
 import { useBoardChannel } from "../whiteboard/useBoardChannel";
+import {
+  clampStudentCardSize,
+  GRID_CELL_SIZE,
+  snapPositionToGrid,
+  studentCardDefaultSize,
+} from "../../lib/boardPlacement";
 import CanvasViewport from "./CanvasViewport";
 import HandwritingPanel from "./HandwritingPanel";
 import PrivateBoardInkLayer from "./PrivateBoardInkLayer";
@@ -23,6 +29,7 @@ import SessionBoardTools from "./SessionBoardTools";
 import { useRegisterSessionToolbar } from "./SessionToolbarContext";
 import VoiceComposer from "./VoiceComposer";
 import {
+  buildGridMovePreview,
   initialWorkspaceState,
   workspaceReducer,
 } from "./workspaceReducer";
@@ -173,6 +180,12 @@ export default function SharedReasoningWorkspace({
   const moveStickyNote = useCallback((id: string, position: { x: number; y: number }) => {
     dispatch({ type: "move_sticky_note", id, position });
   }, []);
+
+  const buildMovePreview = useCallback(
+    (id: string, size: { width: number; height: number }, livePosition: { x: number; y: number }) =>
+      buildGridMovePreview(state, id, size, livePosition),
+    [state],
+  );
 
   const resizeStickyNote = useCallback((id: string, size: { width: number; height: number }) => {
     dispatch({ type: "resize_sticky_note", id, size });
@@ -481,6 +494,7 @@ export default function SharedReasoningWorkspace({
               onResizeObject={resizeObject}
               onActivateObject={activateObject}
               onCollapseObject={collapseObject}
+              buildMovePreview={buildMovePreview}
             />
             <StickyNoteLayer
               notes={state.stickyNotes}
@@ -491,6 +505,7 @@ export default function SharedReasoningWorkspace({
               onMoveNote={moveStickyNote}
               onResizeNote={resizeStickyNote}
               onTextChange={updateStickyNoteText}
+              buildMovePreview={buildMovePreview}
             />
             {state.studentCards.map((card) => (
               <HandwritingPanel
@@ -512,6 +527,7 @@ export default function SharedReasoningWorkspace({
                 onCaptureStateChange={setStudentCardCaptureActive}
                 onStrokeTargeted={setActiveInkTarget}
                 onSelect={selectStudentCard}
+                buildMovePreview={buildMovePreview}
               />
             ))}
           </CanvasViewport>
@@ -537,23 +553,29 @@ function defaultHandwritingLayout(
 ): { position: { x: number; y: number }; size: { width: number; height: number } } | null {
   if (boardWidth <= 0 || boardHeight <= 0) return null;
 
-  const margin = boardWidth <= 560 ? 12 : 18;
-  const maxWidth = Math.min(520, boardWidth - margin * 2);
-  const width = Math.max(280, maxWidth);
-  let height = width * 0.75;
+  const maxCols = Math.max(2, Math.floor(boardWidth / GRID_CELL_SIZE));
+  const width = Math.min(studentCardDefaultSize().width, maxCols * GRID_CELL_SIZE);
+  const size = clampStudentCardSize({ width, height: width * 0.75 });
 
-  if (height > boardHeight - margin * 2) {
-    height = Math.max(210, boardHeight - margin * 2);
+  if (size.height > boardHeight) {
+    const fittedWidth = Math.max(270, Math.floor(boardHeight / 0.75 / GRID_CELL_SIZE) * GRID_CELL_SIZE);
+    const fitted = clampStudentCardSize({ width: fittedWidth, height: fittedWidth * 0.75 });
+    if (fitted.height <= boardHeight && fitted.width <= boardWidth) {
+      return {
+        position: snapPositionToGrid({
+          x: Math.max(0, (boardWidth - fitted.width) / 2),
+          y: Math.max(0, (boardHeight - fitted.height) / 2),
+        }),
+        size: fitted,
+      };
+    }
   }
 
-  const finalWidth = Math.min(width, height / 0.75);
-  const finalHeight = finalWidth * 0.75;
-
   return {
-    position: {
-      x: Math.round((boardWidth - finalWidth) / 2),
-      y: Math.round((boardHeight - finalHeight) / 2),
-    },
-    size: { width: finalWidth, height: finalHeight },
+    position: snapPositionToGrid({
+      x: Math.max(0, (boardWidth - size.width) / 2),
+      y: Math.max(0, (boardHeight - size.height) / 2),
+    }),
+    size,
   };
 }

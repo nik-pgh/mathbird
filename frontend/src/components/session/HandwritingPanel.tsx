@@ -8,8 +8,11 @@ import {
   decodeUserSnapshot,
   encodeUserSnapshot,
 } from "../../lib/whiteboard";
+import { clampStudentCardSize, type GridMovePreview } from "../../lib/boardPlacement";
+import GridDropPreview from "./GridDropPreview";
 import { useCanvasViewportContext } from "./CanvasViewportContext";
-import type { InkColor, InkTool, InkTarget } from "./workspaceTypes";
+import { useGridItemDrag } from "./useGridItemDrag";
+import type { InkColor, InkTool, InkTarget, Point as BoardPoint, Size } from "./workspaceTypes";
 
 type InkCommand = {
   id: number;
@@ -33,6 +36,7 @@ interface Props {
   onCaptureStateChange: (cardId: string, value: boolean) => void;
   onStrokeTargeted: (target: Extract<InkTarget, { kind: "student_card" }>) => void;
   onSelect?: (cardId: string) => void;
+  buildMovePreview: (id: string, size: Size, livePosition: BoardPoint) => GridMovePreview;
 }
 
 const SNAPSHOT_INTERVAL_MS = 2000;
@@ -41,13 +45,6 @@ const CANVAS_BG = "#fffaf0";
 
 type Point = [number, number, number];
 type Stroke = { tool: InkTool; color: InkColor; points: Point[] };
-
-type DragState = {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  startPosition: { x: number; y: number };
-};
 
 type ResizeState = {
   pointerId: number;
@@ -72,11 +69,11 @@ function HandwritingPanel({
   onCaptureStateChange,
   onStrokeTargeted,
   onSelect,
+  buildMovePreview,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const positionRef = useRef(position);
   const sizeRef = useRef(size);
-  const dragRef = useRef<DragState | null>(null);
   const resizeRef = useRef<ResizeState | null>(null);
   const snapshotTimerRef = useRef<number | null>(null);
   const snapshotVersionRef = useRef(0);
@@ -89,6 +86,20 @@ function HandwritingPanel({
   const [drawing, setDrawing] = useState<Stroke | null>(null);
   const [draftLabel, setDraftLabel] = useState(label);
   const { isSpacePan, clientToWorld, viewport } = useCanvasViewportContext();
+  const {
+    preview,
+    previewSize,
+    beginDrag,
+    moveDrag,
+    endDrag,
+    cancelDrag,
+    displayPosition,
+  } = useGridItemDrag({
+    clientToWorld,
+    onCommit: (id, nextPosition) => onMove(id, nextPosition),
+    buildMovePreview,
+  });
+  const renderedPosition = displayPosition(cardId, position);
 
   const { send } = useBoardChannel<
     typeof USER_BOARD_TOPIC,
@@ -296,34 +307,26 @@ function HandwritingPanel({
     if (e.button !== 0 || isSpacePan) return;
 
     onSelect?.(cardId);
-    const world = clientToWorld(e.clientX, e.clientY);
-    dragRef.current = {
-      pointerId: e.pointerId,
-      startX: world.x,
-      startY: world.y,
-      startPosition: positionRef.current,
-    };
+    beginDrag(
+      cardId,
+      e.pointerId,
+      e.clientX,
+      e.clientY,
+      positionRef.current,
+      sizeRef.current,
+    );
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const onDragHandlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== e.pointerId) return;
-
-    const world = clientToWorld(e.clientX, e.clientY);
-    onMove(cardId, {
-      x: drag.startPosition.x + (world.x - drag.startX),
-      y: drag.startPosition.y + (world.y - drag.startY),
-    });
+    moveDrag(e.pointerId, e.clientX, e.clientY);
   };
 
-  const endDrag = (e: React.PointerEvent<HTMLElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== e.pointerId) return;
+  const endDragHandle = (e: React.PointerEvent<HTMLElement>) => {
+    endDrag(e.pointerId);
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    dragRef.current = null;
   };
 
   const onResizePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -344,11 +347,14 @@ function HandwritingPanel({
 
     const widthDelta = (e.clientX - resize.startX) / viewport.zoom;
     const heightDelta = (e.clientY - resize.startY) / viewport.zoom / 0.75;
-    const edgeDelta = Math.max(widthDelta, heightDelta);
-    onResize(cardId, {
-      width: resize.startSize.width + edgeDelta,
-      height: (resize.startSize.width + edgeDelta) * 0.75,
-    });
+    const edgeDelta = widthDelta >= 0 && heightDelta >= 0
+      ? Math.max(widthDelta, heightDelta)
+      : Math.min(widthDelta, heightDelta);
+    const nextWidth = resize.startSize.width + edgeDelta;
+    onResize(cardId, clampStudentCardSize({
+      width: nextWidth,
+      height: nextWidth * 0.75,
+    }));
   };
 
   const endResize = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -361,16 +367,18 @@ function HandwritingPanel({
   };
 
   return (
-    <section
-      className={`handwriting-panel ${isCapturing ? "capturing" : ""}${
-        selected ? " is-selected" : ""
-      }`}
-      style={{
-        left: position.x,
-        top: position.y,
-        width: size.width,
-        height: size.height,
-      }}
+    <>
+      <GridDropPreview preview={preview} size={previewSize} />
+      <section
+        className={`handwriting-panel ${isCapturing ? "capturing" : ""}${
+          selected ? " is-selected" : ""
+        }`}
+        style={{
+          left: renderedPosition.x,
+          top: renderedPosition.y,
+          width: size.width,
+          height: size.height,
+        }}
       data-student-card-id={cardId}
       aria-label={`${label} handwriting card`}
     >
@@ -388,10 +396,10 @@ function HandwritingPanel({
           title="Move card"
           onPointerDown={onDragHandlePointerDown}
           onPointerMove={onDragHandlePointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
+          onPointerUp={endDragHandle}
+          onPointerCancel={endDragHandle}
           onLostPointerCapture={() => {
-            dragRef.current = null;
+            cancelDrag();
           }}
         >
           <GripVertical size={14} aria-hidden="true" />
@@ -430,6 +438,7 @@ function HandwritingPanel({
         }}
       />
     </section>
+    </>
   );
 }
 

@@ -1,6 +1,13 @@
 import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { GripVertical } from "lucide-react";
+import {
+  clampStickyNoteSize,
+  gridKeyboardResizeStep,
+  type GridMovePreview,
+} from "../../lib/boardPlacement";
+import GridDropPreview from "./GridDropPreview";
 import { useCanvasViewportContext } from "./CanvasViewportContext";
+import { useGridItemDrag } from "./useGridItemDrag";
 import type { Point, Size, StickyNoteState } from "./workspaceTypes";
 
 interface Props {
@@ -10,12 +17,7 @@ interface Props {
   onMoveNote: (id: string, position: Point) => void;
   onResizeNote: (id: string, size: Size) => void;
   onTextChange: (id: string, text: string) => void;
-}
-
-interface DragState {
-  noteId: string;
-  pointerId: number;
-  offset: Point;
+  buildMovePreview: (id: string, size: Size, livePosition: Point) => GridMovePreview;
 }
 
 interface ResizeState {
@@ -34,9 +36,7 @@ const KEYBOARD_RESIZE_DELTAS: Record<string, { width: number; height: number }> 
 };
 
 function keyboardResizeStep(event: KeyboardEvent<HTMLButtonElement>): number {
-  if (event.altKey) return 4;
-  if (event.shiftKey) return 48;
-  return 16;
+  return gridKeyboardResizeStep(event);
 }
 
 export default function StickyNoteLayer({
@@ -46,55 +46,30 @@ export default function StickyNoteLayer({
   onMoveNote,
   onResizeNote,
   onTextChange,
+  buildMovePreview,
 }: Props) {
-  const dragRef = useRef<DragState | null>(null);
   const resizeRef = useRef<ResizeState | null>(null);
   const { clientToWorld, viewport } = useCanvasViewportContext();
+  const {
+    preview,
+    previewSize,
+    beginDrag,
+    moveDrag,
+    endDrag,
+    cancelDrag,
+    displayPosition,
+  } = useGridItemDrag({
+    clientToWorld,
+    onCommit: onMoveNote,
+    buildMovePreview,
+  });
 
   useEffect(() => {
     if (notes.length === 0) {
-      dragRef.current = null;
+      cancelDrag();
       resizeRef.current = null;
     }
-  }, [notes.length]);
-
-  const beginDrag = (
-    event: PointerEvent<HTMLElement>,
-    note: StickyNoteState,
-  ) => {
-    if (event.button !== 0) return;
-    event.stopPropagation();
-    onSelectNote(note.id);
-    const world = clientToWorld(event.clientX, event.clientY);
-    dragRef.current = {
-      noteId: note.id,
-      pointerId: event.pointerId,
-      offset: {
-        x: world.x - note.position.x,
-        y: world.y - note.position.y,
-      },
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const moveDrag = (event: PointerEvent<HTMLElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const world = clientToWorld(event.clientX, event.clientY);
-    onMoveNote(drag.noteId, {
-      x: world.x - drag.offset.x,
-      y: world.y - drag.offset.y,
-    });
-  };
-
-  const endDrag = (event: PointerEvent<HTMLElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    dragRef.current = null;
-  };
+  }, [cancelDrag, notes.length]);
 
   const beginResize = (
     event: PointerEvent<HTMLButtonElement>,
@@ -118,10 +93,11 @@ export default function StickyNoteLayer({
     if (!resize || resize.pointerId !== event.pointerId) return;
     const dx = (event.clientX - resize.startX) / viewport.zoom;
     const dy = (event.clientY - resize.startY) / viewport.zoom;
-    onResizeNote(resize.noteId, {
-      width: resize.startSize.width + dx,
-      height: resize.startSize.height + dy,
-    });
+    const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+    onResizeNote(resize.noteId, clampStickyNoteSize({
+      width: resize.startSize.width + delta,
+      height: resize.startSize.height + delta,
+    }));
   };
 
   const endResize = (event: PointerEvent<HTMLButtonElement>) => {
@@ -143,63 +119,94 @@ export default function StickyNoteLayer({
     event.preventDefault();
     event.stopPropagation();
     const step = keyboardResizeStep(event);
-    onResizeNote(note.id, {
-      width: note.size.width + delta.width * step,
-      height: note.size.height + delta.height * step,
-    });
+    const widthDelta = delta.width * step;
+    const heightDelta = delta.height * step;
+    const edgeDelta = widthDelta !== 0 ? widthDelta : heightDelta;
+    onResizeNote(note.id, clampStickyNoteSize({
+      width: note.size.width + edgeDelta,
+      height: note.size.height + edgeDelta,
+    }));
   };
 
   return (
     <div className="sticky-note-layer" aria-label="Private sticky notes">
-      {notes.map((note) => (
-        <section
-          key={note.id}
-          className={`sticky-note${selectedNoteId === note.id ? " is-selected" : ""}`}
-          style={{
-            left: note.position.x,
-            top: note.position.y,
-            width: note.size.width,
-            height: note.size.height,
-          }}
-          data-sticky-note-id={note.id}
-          onPointerDown={(event) => {
-            if ((event.target as HTMLElement).closest(".sticky-note-text")) return;
-            onSelectNote(note.id);
-          }}
-        >
-          <header
-            className="sticky-note-handle"
-            onPointerDown={(event) => beginDrag(event, note)}
-            onPointerMove={moveDrag}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-            onLostPointerCapture={() => {
-              dragRef.current = null;
+      <GridDropPreview preview={preview} size={previewSize} />
+      {notes.map((note) => {
+        const position = displayPosition(note.id, note.position);
+        return (
+          <section
+            key={note.id}
+            className={`sticky-note${selectedNoteId === note.id ? " is-selected" : ""}`}
+            style={{
+              left: position.x,
+              top: position.y,
+              width: note.size.width,
+              height: note.size.height,
+            }}
+            data-sticky-note-id={note.id}
+            onPointerDown={(event) => {
+              if ((event.target as HTMLElement).closest(".sticky-note-text")) return;
+              onSelectNote(note.id);
             }}
           >
-            <GripVertical size={14} aria-hidden="true" />
-          </header>
-          <textarea
-            className="sticky-note-text"
-            value={note.text}
-            onChange={(event) => onTextChange(note.id, event.target.value)}
-            onPointerDown={(event) => event.stopPropagation()}
-            aria-label="Sticky note text"
-            spellCheck={false}
-          />
-          <button
-            className="sticky-note-resize"
-            type="button"
-            aria-label="Resize sticky note"
-            onPointerDown={(event) => beginResize(event, note)}
-            onPointerMove={moveResize}
-            onPointerUp={endResize}
-            onPointerCancel={endResize}
-            onLostPointerCapture={endResize}
-            onKeyDown={(event) => resizeWithKeyboard(event, note)}
-          />
-        </section>
-      ))}
+            <header
+              className="sticky-note-handle"
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                onSelectNote(note.id);
+                beginDrag(
+                  note.id,
+                  event.pointerId,
+                  event.clientX,
+                  event.clientY,
+                  note.position,
+                  note.size,
+                );
+                event.currentTarget.setPointerCapture(event.pointerId);
+              }}
+              onPointerMove={(event) => {
+                moveDrag(event.pointerId, event.clientX, event.clientY);
+              }}
+              onPointerUp={(event) => {
+                endDrag(event.pointerId);
+                if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                  event.currentTarget.releasePointerCapture(event.pointerId);
+                }
+              }}
+              onPointerCancel={(event) => {
+                cancelDrag(event.pointerId);
+                if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                  event.currentTarget.releasePointerCapture(event.pointerId);
+                }
+              }}
+              onLostPointerCapture={() => {
+                cancelDrag();
+              }}
+            >
+              <GripVertical size={14} aria-hidden="true" />
+            </header>
+            <textarea
+              className="sticky-note-text"
+              value={note.text}
+              onChange={(event) => onTextChange(note.id, event.target.value)}
+              onPointerDown={(event) => event.stopPropagation()}
+              aria-label="Sticky note text"
+              spellCheck={false}
+            />
+            <button
+              className="sticky-note-resize"
+              type="button"
+              aria-label="Resize sticky note"
+              onPointerDown={(event) => beginResize(event, note)}
+              onPointerMove={moveResize}
+              onPointerUp={endResize}
+              onPointerCancel={endResize}
+              onLostPointerCapture={endResize}
+              onKeyDown={(event) => resizeWithKeyboard(event, note)}
+            />
+          </section>
+        );
+      })}
     </div>
   );
 }

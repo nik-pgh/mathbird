@@ -3,15 +3,20 @@ import DOMPurify from "dompurify";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { CANVAS_WHEEL_IGNORE_ATTR } from "../../lib/canvasViewport";
 import {
+  clampToCellSpan,
   COLLAPSED_TUTOR_RIBBON_HEIGHT,
   deriveTutorBoardTitle,
+  gridKeyboardResizeStep,
   truncateTutorBoardTitle,
   tutorCardSizeForKind,
+  type GridMovePreview,
 } from "../../lib/boardPlacement";
 import { renderMathTextToHtml } from "../../lib/mathText";
 import BoardItem from "../whiteboard/BoardItem";
+import GridDropPreview from "./GridDropPreview";
 import { useCanvasViewportContext } from "./CanvasViewportContext";
-import type { BoardObject, Point } from "./workspaceTypes";
+import { useGridItemDrag } from "./useGridItemDrag";
+import type { BoardObject, Point, Size } from "./workspaceTypes";
 
 interface Props {
   objects: BoardObject[];
@@ -19,12 +24,7 @@ interface Props {
   onResizeObject: (id: string, size: { width: number; height: number }) => void;
   onActivateObject: (id: string) => void;
   onCollapseObject: (id: string) => void;
-}
-
-interface DragState {
-  objectId: string;
-  pointerId: number;
-  offset: Point;
+  buildMovePreview: (id: string, size: Size, livePosition: Point) => GridMovePreview;
 }
 
 interface ResizeState {
@@ -50,9 +50,7 @@ const KEYBOARD_RESIZE_DELTAS: Record<string, { width: number; height: number }> 
 };
 
 function keyboardResizeStep(event: KeyboardEvent<HTMLButtonElement>): number {
-  if (event.altKey) return 4;
-  if (event.shiftKey) return 48;
-  return 16;
+  return gridKeyboardResizeStep(event);
 }
 
 export default function TutorObjectLayer({
@@ -61,10 +59,23 @@ export default function TutorObjectLayer({
   onResizeObject,
   onActivateObject,
   onCollapseObject,
+  buildMovePreview,
 }: Props) {
-  const dragRef = useRef<DragState | null>(null);
   const resizeRef = useRef<ResizeState | null>(null);
   const { clientToWorld, viewport } = useCanvasViewportContext();
+  const {
+    preview,
+    previewSize,
+    beginDrag,
+    moveDrag,
+    endDrag,
+    cancelDrag,
+    displayPosition,
+  } = useGridItemDrag({
+    clientToWorld,
+    onCommit: onMoveObject,
+    buildMovePreview,
+  });
 
   const beginResize = (
     event: PointerEvent<HTMLButtonElement>,
@@ -87,10 +98,10 @@ export default function TutorObjectLayer({
     if (!resize || resize.pointerId !== event.pointerId) return;
     const dx = (event.clientX - resize.startX) / viewport.zoom;
     const dy = (event.clientY - resize.startY) / viewport.zoom;
-    onResizeObject(resize.objectId, {
+    onResizeObject(resize.objectId, clampToCellSpan({
       width: resize.startSize.width + dx,
       height: resize.startSize.height + dy,
-    });
+    }));
   };
 
   const endResize = (event: PointerEvent<HTMLButtonElement>) => {
@@ -113,16 +124,18 @@ export default function TutorObjectLayer({
     event.preventDefault();
     event.stopPropagation();
     const step = keyboardResizeStep(event);
-    onResizeObject(object.id, {
+    onResizeObject(object.id, clampToCellSpan({
       width: size.width + delta.width * step,
       height: size.height + delta.height * step,
-    });
+    }));
   };
 
   return (
     <div className="tutor-object-layer" aria-label="Tutor visual objects">
+      <GridDropPreview preview={preview} size={previewSize} />
       {objects.map((object, index) => {
         const size = object.size ?? tutorCardSizeForKind(object.kind);
+        const position = displayPosition(object.id, object.position);
         const title = deriveTutorBoardTitle(object.item, index + 1);
         const { display: headerTitle, truncated: titleTruncated } =
           truncateTutorBoardTitle(title);
@@ -133,6 +146,9 @@ export default function TutorObjectLayer({
               { USE_PROFILES: { html: true, mathMl: true, svg: true } },
             );
         const isCollapsed = object.collapsed === true;
+        const dragSize = isCollapsed
+          ? { width: size.width, height: COLLAPSED_TUTOR_RIBBON_HEIGHT }
+          : size;
 
         return (
           <article
@@ -142,8 +158,8 @@ export default function TutorObjectLayer({
             }`}
             style={{
               position: "absolute",
-              left: object.position.x,
-              top: object.position.y,
+              left: position.x,
+              top: position.y,
               width: size.width,
               minHeight: isCollapsed ? COLLAPSED_TUTOR_RIBBON_HEIGHT : undefined,
               height: isCollapsed ? COLLAPSED_TUTOR_RIBBON_HEIGHT : size.height,
@@ -155,44 +171,33 @@ export default function TutorObjectLayer({
               className="tutor-object-handle"
               onPointerDown={(event) => {
                 if (event.button !== 0) return;
-                const world = clientToWorld(event.clientX, event.clientY);
-                dragRef.current = {
-                  objectId: object.id,
-                  pointerId: event.pointerId,
-                  offset: {
-                    x: world.x - object.position.x,
-                    y: world.y - object.position.y,
-                  },
-                };
+                beginDrag(
+                  object.id,
+                  event.pointerId,
+                  event.clientX,
+                  event.clientY,
+                  object.position,
+                  dragSize,
+                );
                 event.currentTarget.setPointerCapture(event.pointerId);
               }}
               onPointerMove={(event) => {
-                const drag = dragRef.current;
-                if (!drag || drag.pointerId !== event.pointerId) return;
-                const world = clientToWorld(event.clientX, event.clientY);
-                onMoveObject(drag.objectId, {
-                  x: world.x - drag.offset.x,
-                  y: world.y - drag.offset.y,
-                });
+                moveDrag(event.pointerId, event.clientX, event.clientY);
               }}
               onPointerUp={(event) => {
-                const drag = dragRef.current;
-                if (!drag || drag.pointerId !== event.pointerId) return;
+                endDrag(event.pointerId);
                 if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                   event.currentTarget.releasePointerCapture(event.pointerId);
                 }
-                dragRef.current = null;
               }}
               onPointerCancel={(event) => {
-                const drag = dragRef.current;
-                if (!drag || drag.pointerId !== event.pointerId) return;
+                cancelDrag(event.pointerId);
                 if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                   event.currentTarget.releasePointerCapture(event.pointerId);
                 }
-                dragRef.current = null;
               }}
               onLostPointerCapture={() => {
-                dragRef.current = null;
+                cancelDrag();
               }}
             >
               <span className="tutor-object-title" title={title}>
