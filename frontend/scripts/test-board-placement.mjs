@@ -38,7 +38,7 @@ const {
 } = sandbox.exports;
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
-assert.deepEqual(plain(studentCardDefaultSize()), { width: 540, height: 360 });
+assert.deepEqual(plain(studentCardDefaultSize()), { width: 360, height: 270 });
 assert.deepEqual(plain(stickyNoteDefaultSize()), { width: 180, height: 180 });
 assert.deepEqual(
   plain(clampStudentCardSize({ width: 400, height: 300 })),
@@ -62,7 +62,7 @@ const studentPlacement = findOpenGridCell({
   viewport: { pan: { x: 0, y: 0 }, zoom: 1 },
   boardSize: { width: 900, height: 600 },
 });
-assert.deepEqual(plain(studentPlacement), { x: 0, y: 0 });
+assert.deepEqual(plain(studentPlacement), { x: 270, y: 180 });
 
 const occupiedAfterStudent = occupiedCells(
   [],
@@ -75,7 +75,7 @@ const stickyPlacement = findOpenGridCell({
   viewport: { pan: { x: 0, y: 0 }, zoom: 1 },
   boardSize: { width: 900, height: 600 },
 });
-assert.deepEqual(plain(stickyPlacement), { x: 540, y: 0 });
+assert.deepEqual(plain(stickyPlacement), { x: 180, y: 0 });
 assert.deepEqual(plain(snapPositionToGrid({ x: 460, y: 280 })), { x: 450, y: 270 });
 
 assert.deepEqual(plain(tutorCardSizeForKind("text")), { width: 340, height: 180 });
@@ -120,7 +120,7 @@ const emptyGridPlacement = findOpenGridCell({
   viewport: { pan: { x: 0, y: 0 }, zoom: 1 },
   boardSize: { width: 900, height: 640 },
 });
-assert.deepEqual(plain(emptyGridPlacement), { x: 0, y: 0 });
+assert.deepEqual(plain(emptyGridPlacement), { x: 360, y: 270 });
 
 const occupiedAfterFirst = new Set();
 addRectToOccupied(occupiedAfterFirst, { x: 0, y: 0 }, { width: 360, height: 180 });
@@ -130,7 +130,7 @@ const secondGridPlacement = findOpenGridCell({
   viewport: { pan: { x: 0, y: 0 }, zoom: 1 },
   boardSize: { width: 900, height: 640 },
 });
-assert.deepEqual(plain(secondGridPlacement), { x: 360, y: 0 });
+assert.deepEqual(plain(secondGridPlacement), { x: 360, y: 270 });
 
 assert.deepEqual(
   plain(clampTutorCardSize({ width: 100, height: 90 })),
@@ -305,7 +305,11 @@ assert.deepEqual(
 );
 assert.deepEqual(
   plain(resizedTutor.objects.map((object) => object.position)),
-  plain(flowState.objects.map((object) => object.position)),
+  [
+    { x: 720, y: 0 },
+    { x: 360, y: 0 },
+    { x: 0, y: 270 },
+  ],
 );
 
 const firstTutorMoved = workspaceReducer(resizedTutor, {
@@ -329,7 +333,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   plain(pushedMove.objects.find((object) => object.id === textItem.id).position),
-  { x: 540, y: 180 },
+  { x: 360, y: 180 },
 );
 
 const unknownTutorMoved = workspaceReducer(resizedTutor, {
@@ -394,7 +398,7 @@ assert.deepEqual(
 );
 assert.deepEqual(
   plain(pushedStickyMove.studentCards.find((card) => card.id === "student-card-1").position),
-  { x: 0, y: 450 },
+  { x: 0, y: 0 },
 );
 
 const updatedStickyNote = workspaceReducer(movedStickyNote, {

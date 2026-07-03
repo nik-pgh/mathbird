@@ -72,7 +72,7 @@ const STICKY_NOTE_MIN_SIZE = 90;
 const STICKY_NOTE_MAX_SIZE = 360;
 
 export function studentCardDefaultSize(): BoardSize {
-  return { width: 540, height: 360 };
+  return { width: 360, height: 270 };
 }
 
 export function stickyNoteDefaultSize(): BoardSize {
@@ -434,6 +434,34 @@ export function visibleCellRange(viewport: ViewportLike, boardSize: BoardSize): 
   };
 }
 
+function rectFitsInVisible(rect: BoardRect, visible: BoardRect): boolean {
+  return (
+    rect.x >= visible.x
+    && rect.y >= visible.y
+    && rect.x + rect.width <= visible.x + visible.width
+    && rect.y + rect.height <= visible.y + visible.height
+  );
+}
+
+function spiralCellOrigins(
+  originCol: number,
+  originRow: number,
+  maxRadius: number,
+): Array<{ col: number; row: number }> {
+  const origins: Array<{ col: number; row: number }> = [];
+  for (let radius = 0; radius <= maxRadius; radius += 1) {
+    for (let row = originRow - radius; row <= originRow + radius; row += 1) {
+      for (let col = originCol - radius; col <= originCol + radius; col += 1) {
+        if (radius > 0 && Math.abs(col - originCol) !== radius && Math.abs(row - originRow) !== radius) {
+          continue;
+        }
+        origins.push({ col, row });
+      }
+    }
+  }
+  return origins;
+}
+
 export function findOpenGridCell({
   span,
   size,
@@ -451,24 +479,30 @@ export function findOpenGridCell({
     width: span.cols * GRID_CELL_SIZE,
     height: span.rows * GRID_CELL_SIZE,
   };
-  const range = visibleCellRange(viewport, boardSize);
+  const visible = visibleWorldRect(viewport, boardSize);
+  const originCol = Math.round(
+    (visible.x + visible.width / 2 - resolvedSize.width / 2) / GRID_CELL_SIZE,
+  );
+  const originRow = Math.round(
+    (visible.y + visible.height / 2 - resolvedSize.height / 2) / GRID_CELL_SIZE,
+  );
+  const allowNegative = visible.x < 0 || visible.y < 0;
+  const maxRadius = FALLBACK_EXPANSION_STEPS + Math.ceil(
+    Math.max(visible.width / GRID_CELL_SIZE, visible.height / GRID_CELL_SIZE),
+  );
 
-  for (let expansion = 0; expansion <= FALLBACK_EXPANSION_STEPS; expansion += 1) {
-    const colMin = range.colMin - expansion;
-    const colMax = range.colMax + expansion;
-    const rowMin = range.rowMin - expansion;
-    const rowMax = range.rowMax + expansion;
-    const allowNegative = range.colMin < 0 || range.rowMin < 0;
-    const scanColMin = allowNegative ? colMin : Math.max(0, colMin);
-    const scanRowMin = allowNegative ? rowMin : Math.max(0, rowMin);
+  const tryCell = (col: number, row: number, requireVisible: boolean) => {
+    if (!allowNegative && (col < 0 || row < 0)) return null;
+    const position = cellToWorld(col, row);
+    const rect = occupantRect(position, resolvedSize);
+    if (requireVisible && !rectFitsInVisible(rect, visible)) return null;
+    return rectIsFree(rect, occupied) ? position : null;
+  };
 
-    for (let row = scanRowMin; row <= rowMax; row += 1) {
-      for (let col = scanColMin; col <= colMax; col += 1) {
-        const position = cellToWorld(col, row);
-        if (rectIsFree(occupantRect(position, resolvedSize), occupied)) {
-          return position;
-        }
-      }
+  for (const requireVisible of [true, false]) {
+    for (const { col, row } of spiralCellOrigins(originCol, originRow, maxRadius)) {
+      const placement = tryCell(col, row, requireVisible);
+      if (placement) return placement;
     }
   }
 
@@ -479,7 +513,7 @@ export function findOpenGridCell({
       maxRow = row + 1;
     }
   }
-  return cellToWorld(0, maxRow);
+  return cellToWorld(Math.max(0, originCol), maxRow);
 }
 
 export function deriveTutorBoardTitle(
