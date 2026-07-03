@@ -43,6 +43,14 @@ def sidecar_key(doc_id: str) -> str:
     return f"{doc_id}/{SIDECAR_NAME}"
 
 
+def is_document_storage_key(key: str) -> bool:
+    """True for uploaded PDF objects ({doc_id}/{filename}), not sidecars or progress."""
+    parts = key.strip("/").split("/")
+    if len(parts) != 2:
+        return False
+    return parts[1] not in (SIDECAR_NAME, SYLLABUS_NAME)
+
+
 async def list_document_summaries() -> list[DocumentSummary]:
     """Return one row per uploaded doc_id, newest storage keys first."""
     from app.documents.ingest_work import read_document_meta
@@ -52,12 +60,10 @@ async def list_document_summaries() -> list[DocumentSummary]:
 
     docs: dict[str, StoredObject] = {}
     for obj in objects:
-        head, _, tail = obj.key.partition("/")
-        if not tail:
+        if not is_document_storage_key(obj.key):
             continue
-        if tail in (SIDECAR_NAME, SYLLABUS_NAME):
-            continue
-        docs.setdefault(head, obj)
+        doc_id, _, _ = obj.key.partition("/")
+        docs.setdefault(doc_id, obj)
 
     results: list[DocumentSummary] = []
     for doc_id, obj in sorted(docs.items(), key=lambda item: item[1].key):
