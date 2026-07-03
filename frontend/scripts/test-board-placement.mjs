@@ -16,87 +16,125 @@ const compileTs = (sourceText) => ts.transpileModule(sourceText, {
 const sandbox = { exports: {} };
 vm.runInNewContext(compileTs(source), sandbox, { filename: "boardPlacement.ts" });
 
-const { findOpenBoardPosition, rectsOverlap, truncateTutorBoardTitle, tutorCardSizeForKind } =
-  sandbox.exports;
+const {
+  addRectToOccupied,
+  clampStickyNoteSize,
+  clampStudentCardSize,
+  clampToCellSpan,
+  clampTutorCardSize,
+  cellToWorld,
+  COLLAPSED_TUTOR_RIBBON_HEIGHT,
+  deriveTutorBoardTitle,
+  findOpenGridCell,
+  GRID_CELL_SIZE,
+  occupiedCells,
+  snapPositionToGrid,
+  spanForSize,
+  stickyNoteDefaultSize,
+  studentCardDefaultSize,
+  truncateTutorBoardTitle,
+  tutorCardSizeForKind,
+  worldToCell,
+} = sandbox.exports;
 const plain = (value) => JSON.parse(JSON.stringify(value));
-const rectAt = (position, size) => ({ ...plain(position), ...size });
-const assertNoOverlap = (candidate, occupied) => {
-  for (const rect of occupied) {
-    assert.equal(
-      rectsOverlap(candidate, rect),
-      false,
-      `expected ${JSON.stringify(candidate)} not to overlap ${JSON.stringify(rect)}`,
-    );
-  }
-};
 
-assert.equal(rectsOverlap({ x: 0, y: 0, width: 100, height: 100 }, { x: 99, y: 0, width: 100, height: 100 }), true);
-assert.equal(rectsOverlap({ x: 0, y: 0, width: 100, height: 100 }, { x: 120, y: 0, width: 100, height: 100 }), false);
-
-const first = findOpenBoardPosition({
-  size: { width: 320, height: 180 },
-  occupied: [],
-  viewport: { x: 0, y: 0, width: 900, height: 600 },
-});
-assert.deepEqual(plain(first), { x: 36, y: 36 });
-
-const second = findOpenBoardPosition({
-  size: { width: 320, height: 180 },
-  occupied: [{ x: 36, y: 36, width: 320, height: 180 }],
-  viewport: { x: 0, y: 0, width: 900, height: 600 },
-});
-assert.deepEqual(plain(second), { x: 384, y: 36 });
-assertNoOverlap(
-  rectAt(second, { width: 320, height: 180 }),
-  [{ x: 36, y: 36, width: 320, height: 180 }],
+assert.deepEqual(plain(studentCardDefaultSize()), { width: 540, height: 360 });
+assert.deepEqual(plain(stickyNoteDefaultSize()), { width: 180, height: 180 });
+assert.deepEqual(
+  plain(clampStudentCardSize({ width: 400, height: 300 })),
+  { width: 360, height: 270 },
+);
+assert.deepEqual(
+  plain(clampStickyNoteSize({ width: 120, height: 90 })),
+  { width: 90, height: 90 },
+);
+assert.deepEqual(
+  plain(clampStickyNoteSize({ width: 900, height: 800 })),
+  { width: 360, height: 360 },
 );
 
-const defaultStudentSize = { width: 520, height: 390 };
-const defaultStudentOccupied = [{ x: 36, y: 36, ...defaultStudentSize }];
-const fallbackStudent = findOpenBoardPosition({
-  size: defaultStudentSize,
-  occupied: defaultStudentOccupied,
-  viewport: { x: 0, y: 0, width: 900, height: 600 },
+const studentSize = studentCardDefaultSize();
+const stickySize = stickyNoteDefaultSize();
+const emptyOccupied = occupiedCells([], [], []);
+const studentPlacement = findOpenGridCell({
+  span: spanForSize(studentSize),
+  occupied: emptyOccupied,
+  viewport: { pan: { x: 0, y: 0 }, zoom: 1 },
+  boardSize: { width: 900, height: 600 },
 });
-assert.deepEqual(plain(fallbackStudent), { x: 584, y: 36 });
-assertNoOverlap(rectAt(fallbackStudent, defaultStudentSize), defaultStudentOccupied);
+assert.deepEqual(plain(studentPlacement), { x: 0, y: 0 });
 
-const fullVisibleGridOccupied = [
-  { x: 36, y: 36, width: 320, height: 180 },
-  { x: 384, y: 36, width: 320, height: 180 },
-  { x: 36, y: 244, width: 320, height: 180 },
-  { x: 384, y: 244, width: 320, height: 180 },
-];
-const fallbackOutsideVisibleGrid = findOpenBoardPosition({
-  size: { width: 320, height: 180 },
-  occupied: fullVisibleGridOccupied,
-  viewport: { x: 0, y: 0, width: 900, height: 600 },
-});
-assert.deepEqual(plain(fallbackOutsideVisibleGrid), { x: 732, y: 36 });
-assertNoOverlap(
-  rectAt(fallbackOutsideVisibleGrid, { width: 320, height: 180 }),
-  fullVisibleGridOccupied,
+const occupiedAfterStudent = occupiedCells(
+  [],
+  [{ id: "student-card-1", position: studentPlacement, size: studentSize }],
+  [],
 );
+const stickyPlacement = findOpenGridCell({
+  span: spanForSize(stickySize),
+  occupied: occupiedAfterStudent,
+  viewport: { pan: { x: 0, y: 0 }, zoom: 1 },
+  boardSize: { width: 900, height: 600 },
+});
+assert.deepEqual(plain(stickyPlacement), { x: 540, y: 0 });
+assert.deepEqual(plain(snapPositionToGrid({ x: 460, y: 280 })), { x: 450, y: 270 });
 
 assert.deepEqual(plain(tutorCardSizeForKind("text")), { width: 340, height: 180 });
 assert.deepEqual(plain(tutorCardSizeForKind("plot")), { width: 360, height: 250 });
 assert.deepEqual(plain(tutorCardSizeForKind("shape")), { width: 340, height: 240 });
 assert.deepEqual(plain(tutorCardSizeForKind("diagram")), { width: 380, height: 260 });
 
-const {
-  COLLAPSED_TUTOR_RIBBON_HEIGHT,
-  clampTutorCardSize,
-  deriveTutorBoardTitle,
-  layoutTutorFlow,
-  tutorFlowItemHeight,
-  tutorFlowMaxColumnHeight,
-} = sandbox.exports;
-
 assert.equal(COLLAPSED_TUTOR_RIBBON_HEIGHT, 44);
+assert.equal(GRID_CELL_SIZE, 90);
+const isGridAligned = (value) => Math.abs(value % GRID_CELL_SIZE) < 1e-6;
+
+assert.deepEqual(plain(worldToCell(0, 0)), { col: 0, row: 0 });
+assert.deepEqual(plain(cellToWorld(2, 1)), { x: 180, y: 90 });
+
+assert.deepEqual(plain(spanForSize(tutorCardSizeForKind("text"))), { cols: 4, rows: 2 });
+assert.deepEqual(plain(spanForSize(tutorCardSizeForKind("plot"))), { cols: 4, rows: 3 });
+assert.deepEqual(plain(spanForSize(tutorCardSizeForKind("shape"))), { cols: 4, rows: 3 });
+assert.deepEqual(plain(spanForSize(tutorCardSizeForKind("diagram"))), { cols: 5, rows: 3 });
+
+assert.deepEqual(
+  plain(clampToCellSpan({ width: 100, height: 90 })),
+  { width: 270, height: 180 },
+);
+assert.deepEqual(
+  plain(clampToCellSpan({ width: 760, height: 560 })),
+  { width: 720, height: 540 },
+);
+
+const isolatedOccupied = occupiedCells([], [], []);
+assert.equal(isolatedOccupied.size, 0);
+const withObjectOccupied = occupiedCells(
+  [{ id: "a", position: { x: 0, y: 0 }, size: { width: 360, height: 180 }, kind: "text" }],
+  [],
+  [],
+);
+assert.ok(withObjectOccupied.has("0,0"));
+assert.ok(withObjectOccupied.has("1,0"));
+
+const emptyGridPlacement = findOpenGridCell({
+  span: { cols: 2, rows: 1 },
+  occupied: new Set(),
+  viewport: { pan: { x: 0, y: 0 }, zoom: 1 },
+  boardSize: { width: 900, height: 640 },
+});
+assert.deepEqual(plain(emptyGridPlacement), { x: 0, y: 0 });
+
+const occupiedAfterFirst = new Set();
+addRectToOccupied(occupiedAfterFirst, { x: 0, y: 0 }, { width: 360, height: 180 });
+const secondGridPlacement = findOpenGridCell({
+  span: { cols: 2, rows: 1 },
+  occupied: occupiedAfterFirst,
+  viewport: { pan: { x: 0, y: 0 }, zoom: 1 },
+  boardSize: { width: 900, height: 640 },
+});
+assert.deepEqual(plain(secondGridPlacement), { x: 360, y: 0 });
 
 assert.deepEqual(
   plain(clampTutorCardSize({ width: 100, height: 90 })),
-  { width: 280, height: 180 },
+  { width: 270, height: 180 },
 );
 assert.deepEqual(
   plain(clampTutorCardSize({ width: 900, height: 800 })),
@@ -105,17 +143,6 @@ assert.deepEqual(
 assert.deepEqual(
   plain(clampTutorCardSize({ width: 360, height: 250 })),
   { width: 360, height: 250 },
-);
-
-assert.equal(tutorFlowMaxColumnHeight(400), 520);
-assert.equal(tutorFlowMaxColumnHeight(900), 828);
-assert.equal(
-  tutorFlowItemHeight({ id: "collapsed", collapsed: true, size: { width: 340, height: 180 } }),
-  44,
-);
-assert.equal(
-  tutorFlowItemHeight({ id: "expanded", collapsed: false, size: { width: 340, height: 180 } }),
-  180,
 );
 
 assert.equal(
@@ -156,23 +183,9 @@ assert.equal(
   "Sketch 7",
 );
 
-const flow = layoutTutorFlow({
-  origin: { x: 36, y: 36 },
-  maxColumnHeight: 240,
-  items: [
-    { id: "a", collapsed: true, size: { width: 340, height: 180 } },
-    { id: "b", collapsed: false, size: { width: 340, height: 180 } },
-    { id: "c", collapsed: true, size: { width: 380, height: 260 } },
-  ],
-});
-assert.deepEqual(plain(flow.positions.a), { x: 36, y: 36 });
-assert.deepEqual(plain(flow.positions.b), { x: 36, y: 90 });
-assert.deepEqual(plain(flow.positions.c), { x: 400, y: 36 });
-assert.equal(flow.width, 744);
-assert.equal(flow.height, 234);
-
 const reducerPath = new URL("../src/components/session/workspaceReducer.ts", import.meta.url);
 const reducerSource = fs.readFileSync(reducerPath, "utf8");
+assert.doesNotMatch(reducerSource, /reflowTutorObjects/);
 const reducerModule = { exports: {} };
 const reducerSandbox = {
   exports: reducerModule.exports,
@@ -187,34 +200,52 @@ vm.runInNewContext(compileTs(reducerSource), reducerSandbox, {
 });
 
 const { initialWorkspaceState, workspaceReducer } = reducerModule.exports;
+
+const studentMoveState = workspaceReducer(initialWorkspaceState, {
+  type: "move_student_card",
+  id: "student-card-1",
+  position: { x: 200, y: 220 },
+});
+assert.deepEqual(
+  plain(studentMoveState.studentCards.find((card) => card.id === "student-card-1").position),
+  { x: 180, y: 180 },
+);
+
 const textItem = { kind: "text", id: "tutor-text-1", markdown: "Solve x + 2 = 5" };
 const withTutorObject = workspaceReducer(initialWorkspaceState, {
   type: "ai_upsert",
   items: [textItem],
 });
 const tutorObject = withTutorObject.objects[0];
-assert.deepEqual(plain(tutorObject.size), { width: 340, height: 180 });
-assert.deepEqual(plain(tutorObject.position), { x: 36, y: 36 });
+assert.deepEqual(plain(tutorObject.size), { width: 360, height: 180 });
+assert.ok(isGridAligned(tutorObject.position.x));
+assert.ok(isGridAligned(tutorObject.position.y));
 assert.equal(tutorObject.collapsed, false);
 
-const movedTutorObject = { ...tutorObject, position: { x: 420, y: 240 }, size: { width: 410, height: 210 } };
+const movedTutorObject = {
+  ...tutorObject,
+  position: { x: 360, y: 360 },
+  size: { width: 360, height: 180 },
+};
 const afterExistingUpsert = workspaceReducer(
   { ...withTutorObject, objects: [movedTutorObject] },
   { type: "ai_upsert", items: [{ ...textItem, markdown: "Updated" }] },
 );
-assert.deepEqual(plain(afterExistingUpsert.objects[0].position), { x: 420, y: 240 });
-assert.deepEqual(plain(afterExistingUpsert.objects[0].size), { width: 410, height: 210 });
+assert.deepEqual(plain(afterExistingUpsert.objects[0].position), { x: 360, y: 360 });
+assert.deepEqual(plain(afterExistingUpsert.objects[0].size), { width: 360, height: 180 });
 assert.equal(afterExistingUpsert.objects[0].collapsed, false);
 
 const shapeItem = { kind: "shape", id: "tutor-shape-1", svg: "<svg></svg>" };
 const withSecondTutorObject = workspaceReducer(
   { ...withTutorObject, objects: [movedTutorObject] },
-  { type: "ai_upsert", items: [shapeItem] },
+  { type: "ai_upsert", items: [shapeItem], boardSize: { width: 900, height: 640 } },
 );
 const shapeObject = withSecondTutorObject.objects.find((object) => object.id === shapeItem.id);
 const retainedTextObject = withSecondTutorObject.objects.find((object) => object.id === textItem.id);
-assert.deepEqual(plain(shapeObject.position), { x: 420, y: 460 });
-assert.deepEqual(plain(shapeObject.size), { width: 340, height: 240 });
+assert.ok(isGridAligned(shapeObject.position.x));
+assert.ok(isGridAligned(shapeObject.position.y));
+assert.notDeepEqual(plain(shapeObject.position), plain(movedTutorObject.position));
+assert.deepEqual(plain(shapeObject.size), { width: 360, height: 270 });
 assert.equal(shapeObject.collapsed, false);
 assert.equal(retainedTextObject.collapsed, false);
 
@@ -234,6 +265,7 @@ assert.equal(afterCollapse.objects.find((object) => object.id === textItem.id).c
 assert.equal(afterCollapse.objects.find((object) => object.id === shapeItem.id).collapsed, false);
 
 const thirdTextItem = { kind: "text", id: "tutor-text-3", markdown: "### New radical step\nsqrt(54)" };
+const positionsBeforeThird = withSecondTutorObject.objects.map((object) => plain(object.position));
 const flowState = workspaceReducer(
   afterActivation,
   {
@@ -246,12 +278,19 @@ assert.equal(flowState.objects.find((object) => object.id === textItem.id).colla
 assert.equal(flowState.objects.find((object) => object.id === shapeItem.id).collapsed, false);
 assert.equal(flowState.objects.find((object) => object.id === thirdTextItem.id).collapsed, false);
 assert.deepEqual(
-  plain(flowState.objects.map((object) => object.position)),
-  [
-    { x: 420, y: 240 },
-    { x: 420, y: 460 },
-    { x: 854, y: 240 },
-  ],
+  flowState.objects
+    .filter((object) => object.id !== thirdTextItem.id)
+    .map((object) => plain(object.position)),
+  positionsBeforeThird,
+);
+const thirdObject = flowState.objects.find((object) => object.id === thirdTextItem.id);
+assert.ok(isGridAligned(thirdObject.position.x));
+assert.ok(isGridAligned(thirdObject.position.y));
+
+const positionsBeforeCollapse = withSecondTutorObject.objects.map((object) => plain(object.position));
+assert.deepEqual(
+  afterCollapse.objects.map((object) => plain(object.position)),
+  positionsBeforeCollapse,
 );
 
 const resizedTutor = workspaceReducer(flowState, {
@@ -262,7 +301,7 @@ const resizedTutor = workspaceReducer(flowState, {
 });
 assert.deepEqual(
   plain(resizedTutor.objects.find((object) => object.id === thirdTextItem.id).size),
-  { width: 720, height: 520 },
+  { width: 720, height: 540 },
 );
 assert.deepEqual(
   plain(resizedTutor.objects.map((object) => object.position)),
@@ -272,29 +311,25 @@ assert.deepEqual(
 const firstTutorMoved = workspaceReducer(resizedTutor, {
   type: "move_object",
   id: textItem.id,
-  position: { x: 450, y: 260 },
+  position: { x: 550, y: 370 },
 });
 assert.deepEqual(
-  plain(firstTutorMoved.objects.map((object) => object.position)),
-  [
-    { x: 450, y: 260 },
-    { x: 420, y: 460 },
-    { x: 854, y: 240 },
-  ],
+  plain(firstTutorMoved.objects.find((object) => object.id === textItem.id).position),
+  { x: 540, y: 360 },
 );
 
-const secondTutorMoved = workspaceReducer(resizedTutor, {
+const pushedMove = workspaceReducer(firstTutorMoved, {
   type: "move_object",
   id: shapeItem.id,
-  position: { x: 390, y: 304 },
+  position: { x: 550, y: 370 },
 });
 assert.deepEqual(
-  plain(secondTutorMoved.objects.map((object) => object.position)),
-  [
-    { x: 420, y: 240 },
-    { x: 390, y: 304 },
-    { x: 854, y: 240 },
-  ],
+  plain(pushedMove.objects.find((object) => object.id === shapeItem.id).position),
+  { x: 540, y: 360 },
+);
+assert.deepEqual(
+  plain(pushedMove.objects.find((object) => object.id === textItem.id).position),
+  { x: 540, y: 180 },
 );
 
 const unknownTutorMoved = workspaceReducer(resizedTutor, {
@@ -336,16 +371,30 @@ assert.equal(Array.isArray(withStickyNote.stickyNotes), true);
 assert.equal(withStickyNote.stickyNotes.length, 1);
 assert.equal(withStickyNote.stickyNotes[0].id, "sticky-note-1");
 assert.equal(withStickyNote.stickyNotes[0].text, "");
-assert.deepEqual(plain(withStickyNote.stickyNotes[0].size), { width: 220, height: 160 });
+assert.deepEqual(plain(withStickyNote.stickyNotes[0].size), { width: 180, height: 180 });
 
 const movedStickyNote = workspaceReducer(withStickyNote, {
+  type: "move_sticky_note",
+  id: "sticky-note-1",
+  position: { x: 550, y: 400 },
+});
+assert.deepEqual(
+  plain(movedStickyNote.stickyNotes.find((note) => note.id === "sticky-note-1").position),
+  { x: 540, y: 360 },
+);
+
+const pushedStickyMove = workspaceReducer(movedStickyNote, {
   type: "move_sticky_note",
   id: "sticky-note-1",
   position: { x: 460, y: 280 },
 });
 assert.deepEqual(
-  plain(movedStickyNote.stickyNotes.find((note) => note.id === "sticky-note-1").position),
-  { x: 460, y: 280 },
+  plain(pushedStickyMove.stickyNotes.find((note) => note.id === "sticky-note-1").position),
+  { x: 450, y: 270 },
+);
+assert.deepEqual(
+  plain(pushedStickyMove.studentCards.find((card) => card.id === "student-card-1").position),
+  { x: 0, y: 450 },
 );
 
 const updatedStickyNote = workspaceReducer(movedStickyNote, {
@@ -365,7 +414,7 @@ const resizedStickyNote = workspaceReducer(updatedStickyNote, {
 });
 assert.deepEqual(
   plain(resizedStickyNote.stickyNotes.find((note) => note.id === "sticky-note-1").size),
-  { width: 160, height: 120 },
+  { width: 90, height: 90 },
 );
 
 const maxResizedStickyNote = workspaceReducer(updatedStickyNote, {
@@ -375,7 +424,7 @@ const maxResizedStickyNote = workspaceReducer(updatedStickyNote, {
 });
 assert.deepEqual(
   plain(maxResizedStickyNote.stickyNotes.find((note) => note.id === "sticky-note-1").size),
-  { width: 420, height: 360 },
+  { width: 360, height: 360 },
 );
 
 const withInkColor = workspaceReducer(resizedStickyNote, {
@@ -534,7 +583,7 @@ assert.match(handwritingPanelSource, /inkCommand\.target\.kind !== "student_card
 assert.match(handwritingPanelSource, /inkCommand\.target\.cardId !== cardId/);
 assert.match(handwritingPanelSource, /if \(strokesRef\.current\.length === 0\) return;/);
 assert.match(handwritingPanelSource, /releasePointerCapture\(e\.pointerId\)/);
-assert.match(handwritingPanelSource, /onLostPointerCapture=\{\(\) => \{\s*dragRef\.current = null;\s*\}\}/);
+assert.match(handwritingPanelSource, /onLostPointerCapture=\{\(\) => \{\s*cancelDrag\(\);\s*\}\}/);
 assert.match(handwritingPanelSource, /onLostPointerCapture=\{\(\) => \{\s*resizeRef\.current = null;\s*\}\}/);
 assert.doesNotMatch(handwritingPanelSource, /import\s*\{[^}]*\b(?:Eraser|Pencil|Trash2|Undo2)\b[^}]*\}\s*from "lucide-react"/);
 assert.doesNotMatch(handwritingPanelSource, /aria-label="Pen"/);
@@ -650,6 +699,9 @@ assert.doesNotMatch(sessionCss, /\.session-board-ribbon\s*\{/s);
 assert.match(sessionCss, /\.private-board-ink-layer\s*\{/s);
 assert.match(sessionCss, /\.private-board-ink-layer\s*\{[^}]*left:\s*-10000px;[^}]*top:\s*-10000px;[^}]*width:\s*20000px;[^}]*height:\s*20000px;/s);
 assert.match(sessionCss, /\.private-board-ink-svg\s*\{/s);
+assert.match(sessionCss, /\.grid-drop-preview\s*\{/s);
+assert.match(sessionCss, /\.grid-drop-preview-push\s*\{/s);
+assert.match(sessionCss, /\.grid-drop-preview-blocked\s*\{/s);
 assert.match(sessionCss, /\.sticky-note-layer\s*\{/s);
 assert.match(sessionCss, /\.sticky-note\s*\{/s);
 assert.match(sessionCss, /\.sticky-note-handle\s*\{/s);
