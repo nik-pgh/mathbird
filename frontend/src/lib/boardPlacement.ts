@@ -12,17 +12,39 @@ export interface BoardSize {
 
 export type VisualKind = "text" | "plot" | "shape" | "diagram";
 
-const PLACEMENT_GAP = 14;
-const FALLBACK_EXPANSION_STEPS = 20;
-
-export function rectsOverlap(a: BoardRect, b: BoardRect, gap = 14): boolean {
-  return !(
-    a.x + a.width + gap <= b.x
-    || b.x + b.width + gap <= a.x
-    || a.y + a.height + gap <= b.y
-    || b.y + b.height + gap <= a.y
-  );
+export interface ViewportLike {
+  pan: { x: number; y: number };
+  zoom: number;
 }
+
+export interface GridOccupant {
+  id: string;
+  position: { x: number; y: number };
+  size?: BoardSize;
+  kind?: VisualKind;
+}
+
+export interface GridOccupantSnapshot {
+  id: string;
+  position: { x: number; y: number };
+  size: BoardSize;
+}
+
+export interface GridMovePreview {
+  landing: { x: number; y: number };
+  willPush: boolean;
+  canPlace: boolean;
+}
+
+const FALLBACK_EXPANSION_STEPS = 20;
+const PUSH_SEARCH_STEPS = 48;
+
+/** 5 × 18px dot grid — finer snap than the old 180px cells. */
+export const GRID_CELL_SIZE = 90;
+export const GRID_MIN_SPAN = 1;
+export const GRID_MAX_SPAN = 8;
+
+export const COLLAPSED_TUTOR_RIBBON_HEIGHT = 44;
 
 export function tutorCardSizeForKind(kind: VisualKind): BoardSize {
   if (kind === "plot") return { width: 360, height: 250 };
@@ -31,73 +53,433 @@ export function tutorCardSizeForKind(kind: VisualKind): BoardSize {
   return { width: 340, height: 180 };
 }
 
-export const TUTOR_FLOW_COLUMN_GAP = 24;
-export const TUTOR_FLOW_ROW_GAP = 10;
-export const COLLAPSED_TUTOR_RIBBON_HEIGHT = 44;
-export const TUTOR_FLOW_MIN_COLUMN_HEIGHT = 520;
-
-export interface TutorFlowItem {
-  id: string;
-  collapsed?: boolean;
-  size: BoardSize;
-}
-
-export interface TutorFlowLayout {
-  positions: Record<string, { x: number; y: number }>;
-  width: number;
-  height: number;
-}
-
 export function clampTutorCardSize(size: BoardSize): BoardSize {
   return {
-    width: Math.max(280, Math.min(720, size.width)),
+    width: Math.max(270, Math.min(720, size.width)),
     height: Math.max(180, Math.min(520, size.height)),
   };
 }
 
-export function tutorFlowMaxColumnHeight(boardHeight: number, padding = 72): number {
-  return Math.max(TUTOR_FLOW_MIN_COLUMN_HEIGHT, boardHeight - padding);
+function roundToNearestCell(value: number): number {
+  return Math.round(value / GRID_CELL_SIZE) * GRID_CELL_SIZE;
 }
 
-export function tutorFlowItemHeight(item: TutorFlowItem): number {
-  return item.collapsed ? COLLAPSED_TUTOR_RIBBON_HEIGHT : item.size.height;
+const STUDENT_CARD_ASPECT = 0.75;
+const STUDENT_CARD_MIN_WIDTH = 270;
+const STUDENT_CARD_MAX_WIDTH = 720;
+const STUDENT_CARD_MAX_HEIGHT = 540;
+const STICKY_NOTE_MIN_SIZE = 90;
+const STICKY_NOTE_MAX_SIZE = 360;
+
+export function studentCardDefaultSize(): BoardSize {
+  return { width: 540, height: 360 };
 }
 
-export function layoutTutorFlow({
-  origin,
-  items,
-  maxColumnHeight,
-}: {
-  origin: { x: number; y: number };
-  items: TutorFlowItem[];
-  maxColumnHeight: number;
-}): TutorFlowLayout {
-  const positions: Record<string, { x: number; y: number }> = {};
-  let x = origin.x;
-  let y = origin.y;
-  let columnWidth = 0;
-  let flowWidth = 0;
-  let flowHeight = 0;
+export function stickyNoteDefaultSize(): BoardSize {
+  return { width: 180, height: 180 };
+}
 
-  for (const item of items) {
-    const itemHeight = tutorFlowItemHeight(item);
-    if (
-      y > origin.y
-      && y + itemHeight > origin.y + maxColumnHeight
-    ) {
-      x += columnWidth + TUTOR_FLOW_COLUMN_GAP;
-      y = origin.y;
-      columnWidth = 0;
+export function gridKeyboardResizeStep(event: { altKey: boolean; shiftKey: boolean }): number {
+  if (event.altKey) return GRID_CELL_SIZE / 2;
+  if (event.shiftKey) return GRID_CELL_SIZE * 2;
+  return GRID_CELL_SIZE;
+}
+
+export function clampStudentCardSize(size: BoardSize): BoardSize {
+  const aspectWidth = Math.max(size.width, size.height / STUDENT_CARD_ASPECT);
+  let width = Math.max(
+    STUDENT_CARD_MIN_WIDTH,
+    Math.min(STUDENT_CARD_MAX_WIDTH, aspectWidth),
+  );
+  width = roundToNearestCell(width);
+
+  let height = roundToNearestCell(width * STUDENT_CARD_ASPECT);
+  height = Math.max(GRID_CELL_SIZE * 2, Math.min(STUDENT_CARD_MAX_HEIGHT, height));
+
+  return { width, height };
+}
+
+export function clampStickyNoteSize(size: BoardSize): BoardSize {
+  const side = roundToNearestCell(Math.max(size.width, size.height));
+  const clamped = Math.max(STICKY_NOTE_MIN_SIZE, Math.min(STICKY_NOTE_MAX_SIZE, side));
+  return { width: clamped, height: clamped };
+}
+
+export function worldToCell(x: number, y: number): { col: number; row: number } {
+  return {
+    col: Math.floor(x / GRID_CELL_SIZE),
+    row: Math.floor(y / GRID_CELL_SIZE),
+  };
+}
+
+export function cellToWorld(col: number, row: number): { x: number; y: number } {
+  return {
+    x: col * GRID_CELL_SIZE,
+    y: row * GRID_CELL_SIZE,
+  };
+}
+
+export function snapPositionToGrid(position: { x: number; y: number }): { x: number; y: number } {
+  const { col, row } = worldToCell(position.x, position.y);
+  return cellToWorld(col, row);
+}
+
+export function snapPositionToNearestGrid(position: { x: number; y: number }): { x: number; y: number } {
+  const col = Math.round(position.x / GRID_CELL_SIZE);
+  const row = Math.round(position.y / GRID_CELL_SIZE);
+  return cellToWorld(Math.max(0, col), Math.max(0, row));
+}
+
+export function spanForSize(size: BoardSize): { cols: number; rows: number } {
+  const cols = Math.ceil(size.width / GRID_CELL_SIZE);
+  const rows = Math.ceil(size.height / GRID_CELL_SIZE);
+  return {
+    cols: Math.min(GRID_MAX_SPAN, Math.max(GRID_MIN_SPAN, cols)),
+    rows: Math.min(GRID_MAX_SPAN, Math.max(GRID_MIN_SPAN, rows)),
+  };
+}
+
+export function clampToCellSpan(size: BoardSize): BoardSize {
+  const clamped = clampTutorCardSize({
+    width: roundToNearestCell(size.width),
+    height: roundToNearestCell(size.height),
+  });
+  return {
+    width: Math.max(GRID_CELL_SIZE * 3, roundToNearestCell(clamped.width)),
+    height: Math.max(GRID_CELL_SIZE * 2, roundToNearestCell(clamped.height)),
+  };
+}
+
+function cellKey(col: number, row: number): string {
+  return `${col},${row}`;
+}
+
+function occupantRect(
+  position: { x: number; y: number },
+  size: BoardSize,
+): BoardRect {
+  return {
+    x: position.x,
+    y: position.y,
+    width: size.width,
+    height: size.height,
+  };
+}
+
+/** Mark every grid cell the pixel rect intersects — not just from floored origin + span. */
+function cellsForRect(rect: BoardRect): Set<string> {
+  const cells = new Set<string>();
+  if (rect.width <= 0 || rect.height <= 0) return cells;
+
+  const colMin = Math.floor(rect.x / GRID_CELL_SIZE);
+  const colMax = Math.floor((rect.x + rect.width - 1) / GRID_CELL_SIZE);
+  const rowMin = Math.floor(rect.y / GRID_CELL_SIZE);
+  const rowMax = Math.floor((rect.y + rect.height - 1) / GRID_CELL_SIZE);
+
+  for (let col = colMin; col <= colMax; col += 1) {
+    for (let row = rowMin; row <= rowMax; row += 1) {
+      cells.add(cellKey(col, row));
     }
+  }
+  return cells;
+}
 
-    positions[item.id] = { x, y };
-    columnWidth = Math.max(columnWidth, item.size.width);
-    flowWidth = Math.max(flowWidth, x + item.size.width - origin.x);
-    flowHeight = Math.max(flowHeight, y + itemHeight - origin.y);
-    y += itemHeight + TUTOR_FLOW_ROW_GAP;
+function markRectOnGrid(occupied: Set<string>, rect: BoardRect): void {
+  for (const cell of cellsForRect(rect)) {
+    occupied.add(cell);
+  }
+}
+
+function rectIsFree(rect: BoardRect, occupied: Set<string>): boolean {
+  for (const cell of cellsForRect(rect)) {
+    if (occupied.has(cell)) return false;
+  }
+  return true;
+}
+
+function rectsOverlap(a: BoardRect, b: BoardRect): boolean {
+  return (
+    a.x < b.x + b.width
+    && a.x + a.width > b.x
+    && a.y < b.y + b.height
+    && a.y + a.height > b.y
+  );
+}
+
+export function rectCollidesWithOccupied(rect: BoardRect, occupied: Set<string>): boolean {
+  for (const cell of cellsForRect(rect)) {
+    if (occupied.has(cell)) return true;
+  }
+  return false;
+}
+
+function markOccupantOnGrid(
+  occupied: Set<string>,
+  occupant: GridOccupant,
+  defaultSize: BoardSize,
+): void {
+  const size = occupant.size ?? defaultSize;
+  markRectOnGrid(occupied, occupantRect(occupant.position, size));
+}
+
+export function occupiedCells(
+  objects: GridOccupant[],
+  studentCards: GridOccupant[],
+  stickyNotes: GridOccupant[],
+  excludeId?: string,
+): Set<string> {
+  const occupied = new Set<string>();
+  for (const occupant of objects) {
+    if (excludeId && occupant.id === excludeId) continue;
+    const size = occupant.size ?? (occupant.kind
+      ? tutorCardSizeForKind(occupant.kind)
+      : tutorCardSizeForKind("text"));
+    markRectOnGrid(occupied, occupantRect(occupant.position, size));
+  }
+  for (const occupant of studentCards) {
+    if (excludeId && occupant.id === excludeId) continue;
+    markOccupantOnGrid(occupied, occupant, studentCardDefaultSize());
+  }
+  for (const occupant of stickyNotes) {
+    if (excludeId && occupant.id === excludeId) continue;
+    markOccupantOnGrid(occupied, occupant, stickyNoteDefaultSize());
+  }
+  return occupied;
+}
+
+export function addRectToOccupied(
+  occupied: Set<string>,
+  position: { x: number; y: number },
+  size: BoardSize,
+): void {
+  markRectOnGrid(occupied, occupantRect(position, size));
+}
+
+function buildOccupiedFromPlan(
+  occupants: GridOccupantSnapshot[],
+  plan: Map<string, { x: number; y: number }>,
+  excludeId?: string,
+): Set<string> {
+  const occupied = new Set<string>();
+  for (const occupant of occupants) {
+    if (excludeId && occupant.id === excludeId) continue;
+    const position = plan.get(occupant.id) ?? occupant.position;
+    markRectOnGrid(occupied, occupantRect(position, occupant.size));
+  }
+  return occupied;
+}
+
+function findOverlappingOccupants(
+  occupants: GridOccupantSnapshot[],
+  position: { x: number; y: number },
+  size: BoardSize,
+  excludeId: string,
+  plan: Map<string, { x: number; y: number }> = new Map(),
+): GridOccupantSnapshot[] {
+  const targetRect = occupantRect(position, size);
+  return occupants.filter((occupant) => {
+    if (occupant.id === excludeId) return false;
+    const resolved = plan.get(occupant.id) ?? occupant.position;
+    return rectsOverlap(targetRect, occupantRect(resolved, occupant.size));
+  });
+}
+
+export function findNearestOpenSpan({
+  span,
+  size,
+  occupied,
+  origin,
+  maxSteps = PUSH_SEARCH_STEPS,
+}: {
+  span?: { cols: number; rows: number };
+  size?: BoardSize;
+  occupied: Set<string>;
+  origin: { x: number; y: number };
+  maxSteps?: number;
+}): { x: number; y: number } | null {
+  const resolvedSize = size ?? {
+    width: (span?.cols ?? 1) * GRID_CELL_SIZE,
+    height: (span?.rows ?? 1) * GRID_CELL_SIZE,
+  };
+  const { col: originCol, row: originRow } = worldToCell(origin.x, origin.y);
+
+  for (let radius = 0; radius <= maxSteps; radius += 1) {
+    for (let row = originRow - radius; row <= originRow + radius; row += 1) {
+      for (let col = originCol - radius; col <= originCol + radius; col += 1) {
+        if (col < 0 || row < 0) continue;
+        const position = cellToWorld(col, row);
+        if (rectIsFree(occupantRect(position, resolvedSize), occupied)) {
+          return position;
+        }
+      }
+    }
   }
 
-  return { positions, width: flowWidth, height: flowHeight };
+  return null;
+}
+
+export function resolveGridMovePlan(
+  occupants: GridOccupantSnapshot[],
+  moverId: string,
+  landing: { x: number; y: number },
+): Map<string, { x: number; y: number }> | null {
+  const mover = occupants.find((occupant) => occupant.id === moverId);
+  if (!mover) return null;
+
+  const plan = new Map<string, { x: number; y: number }>();
+  plan.set(moverId, landing);
+
+  const queue = findOverlappingOccupants(occupants, landing, mover.size, moverId)
+    .map((occupant) => occupant.id);
+  const queued = new Set<string>(queue);
+
+  while (queue.length > 0) {
+    const id = queue.shift();
+    if (!id || plan.has(id)) continue;
+
+    const occupant = occupants.find((entry) => entry.id === id);
+    if (!occupant) continue;
+
+    const blocked = buildOccupiedFromPlan(occupants, plan, id);
+    const nextPosition = findNearestOpenSpan({
+      size: occupant.size,
+      occupied: blocked,
+      origin: occupant.position,
+    });
+    if (!nextPosition) return null;
+
+    plan.set(id, nextPosition);
+
+    const newlyBlocked = findOverlappingOccupants(
+      occupants,
+      nextPosition,
+      occupant.size,
+      id,
+      plan,
+    );
+    for (const blockedOccupant of newlyBlocked) {
+      if (blockedOccupant.id === moverId || plan.has(blockedOccupant.id)) continue;
+      if (queued.has(blockedOccupant.id)) continue;
+      queue.push(blockedOccupant.id);
+      queued.add(blockedOccupant.id);
+    }
+  }
+
+  return plan;
+}
+
+export function resolveGridResizePlan(
+  occupants: GridOccupantSnapshot[],
+  resizerId: string,
+  newSize: BoardSize,
+): Map<string, { x: number; y: number }> | null {
+  const resizer = occupants.find((occupant) => occupant.id === resizerId);
+  if (!resizer) return null;
+
+  const resizedOccupants = occupants.map((occupant) =>
+    occupant.id === resizerId ? { ...occupant, size: newSize } : occupant,
+  );
+
+  return resolveGridMovePlan(resizedOccupants, resizerId, resizer.position);
+}
+
+export function previewGridMove({
+  occupants,
+  moverId,
+  size,
+  position,
+}: {
+  occupants: GridOccupantSnapshot[];
+  moverId: string;
+  size: BoardSize;
+  position: { x: number; y: number };
+}): GridMovePreview {
+  const landing = snapPositionToNearestGrid(position);
+  const plan = resolveGridMovePlan(
+    occupants.map((occupant) =>
+      occupant.id === moverId ? { ...occupant, size } : occupant,
+    ),
+    moverId,
+    landing,
+  );
+
+  return {
+    landing,
+    willPush: plan ? [...plan.keys()].some((id) => id !== moverId) : false,
+    canPlace: plan !== null,
+  };
+}
+
+export function visibleWorldRect(viewport: ViewportLike, boardSize: BoardSize): BoardRect {
+  return {
+    x: -viewport.pan.x / viewport.zoom,
+    y: -viewport.pan.y / viewport.zoom,
+    width: boardSize.width / viewport.zoom,
+    height: boardSize.height / viewport.zoom,
+  };
+}
+
+export function visibleCellRange(viewport: ViewportLike, boardSize: BoardSize): {
+  colMin: number;
+  colMax: number;
+  rowMin: number;
+  rowMax: number;
+} {
+  const world = visibleWorldRect(viewport, boardSize);
+  return {
+    colMin: Math.floor(world.x / GRID_CELL_SIZE),
+    colMax: Math.floor((world.x + world.width) / GRID_CELL_SIZE),
+    rowMin: Math.floor(world.y / GRID_CELL_SIZE),
+    rowMax: Math.floor((world.y + world.height) / GRID_CELL_SIZE),
+  };
+}
+
+export function findOpenGridCell({
+  span,
+  size,
+  occupied,
+  viewport,
+  boardSize,
+}: {
+  span: { cols: number; rows: number };
+  size?: BoardSize;
+  occupied: Set<string>;
+  viewport: ViewportLike;
+  boardSize: BoardSize;
+}): { x: number; y: number } {
+  const resolvedSize = size ?? {
+    width: span.cols * GRID_CELL_SIZE,
+    height: span.rows * GRID_CELL_SIZE,
+  };
+  const range = visibleCellRange(viewport, boardSize);
+
+  for (let expansion = 0; expansion <= FALLBACK_EXPANSION_STEPS; expansion += 1) {
+    const colMin = range.colMin - expansion;
+    const colMax = range.colMax + expansion;
+    const rowMin = range.rowMin - expansion;
+    const rowMax = range.rowMax + expansion;
+    const allowNegative = range.colMin < 0 || range.rowMin < 0;
+    const scanColMin = allowNegative ? colMin : Math.max(0, colMin);
+    const scanRowMin = allowNegative ? rowMin : Math.max(0, rowMin);
+
+    for (let row = scanRowMin; row <= rowMax; row += 1) {
+      for (let col = scanColMin; col <= colMax; col += 1) {
+        const position = cellToWorld(col, row);
+        if (rectIsFree(occupantRect(position, resolvedSize), occupied)) {
+          return position;
+        }
+      }
+    }
+  }
+
+  let maxRow = 0;
+  for (const key of occupied) {
+    const row = Number(key.split(",")[1]);
+    if (Number.isFinite(row) && row + 1 > maxRow) {
+      maxRow = row + 1;
+    }
+  }
+  return cellToWorld(0, maxRow);
 }
 
 export function deriveTutorBoardTitle(
@@ -135,60 +517,4 @@ export function truncateTutorBoardTitle(title: string, maxLength = TUTOR_HEADER_
     display: `${trimmed.slice(0, maxLength - 1).trimEnd()}…`,
     truncated: true,
   };
-}
-
-export function findOpenBoardPosition({
-  size,
-  occupied,
-  viewport,
-  margin = 36,
-}: {
-  size: BoardSize;
-  occupied: BoardRect[];
-  viewport: BoardRect;
-  margin?: number;
-}): { x: number; y: number } {
-  const stepX = size.width + 28;
-  const stepY = size.height + 28;
-  const maxX = Math.max(
-    viewport.x + margin,
-    viewport.x + viewport.width - size.width - margin,
-  );
-  const maxY = Math.max(
-    viewport.y + margin,
-    viewport.y + viewport.height - size.height - margin,
-  );
-
-  for (let y = viewport.y + margin; y <= maxY; y += stepY) {
-    for (let x = viewport.x + margin; x <= maxX; x += stepX) {
-      const candidate = { x, y, width: size.width, height: size.height };
-      if (isOpen(candidate, occupied)) {
-        return { x, y };
-      }
-    }
-  }
-
-  const expandedMaxX = maxX + stepX * FALLBACK_EXPANSION_STEPS;
-  const expandedMaxY = maxY + stepY * FALLBACK_EXPANSION_STEPS;
-  for (let y = viewport.y + margin; y <= expandedMaxY; y += stepY) {
-    for (let x = viewport.x + margin; x <= expandedMaxX; x += stepX) {
-      const candidate = { x, y, width: size.width, height: size.height };
-      if (isOpen(candidate, occupied)) {
-        return { x, y };
-      }
-    }
-  }
-
-  const occupiedRight = occupied.reduce(
-    (right, rect) => Math.max(right, rect.x + rect.width),
-    viewport.x + margin,
-  );
-  return {
-    x: occupiedRight + PLACEMENT_GAP,
-    y: viewport.y + margin,
-  };
-}
-
-function isOpen(candidate: BoardRect, occupied: BoardRect[]): boolean {
-  return !occupied.some((rect) => rectsOverlap(candidate, rect));
 }

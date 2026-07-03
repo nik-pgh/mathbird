@@ -1,11 +1,21 @@
 import type { AiBoardItem } from "../../lib/whiteboard";
 import {
-  clampTutorCardSize,
-  findOpenBoardPosition,
-  layoutTutorFlow,
+  addRectToOccupied,
+  clampStickyNoteSize,
+  clampStudentCardSize,
+  clampToCellSpan,
+  COLLAPSED_TUTOR_RIBBON_HEIGHT,
+  findOpenGridCell,
+  occupiedCells,
+  previewGridMove,
+  resolveGridMovePlan,
+  resolveGridResizePlan,
+  snapPositionToNearestGrid,
+  spanForSize,
+  stickyNoteDefaultSize,
+  studentCardDefaultSize,
   tutorCardSizeForKind,
-  tutorFlowMaxColumnHeight,
-  type BoardRect,
+  type GridOccupantSnapshot,
 } from "../../lib/boardPlacement";
 import type {
   BoardObject,
@@ -21,8 +31,8 @@ import type {
 } from "./workspaceTypes";
 
 const DEFAULT_HANDWRITING: HandwritingPanelState = {
-  position: { x: 56, y: 76 },
-  size: { width: 520, height: 390 },
+  position: { x: 0, y: 0 },
+  size: studentCardDefaultSize(),
   isCapturing: false,
 };
 
@@ -31,9 +41,7 @@ const DEFAULT_VIEWPORT: ViewportState = {
   zoom: 1,
 };
 
-const DEFAULT_TUTOR_POSITION: Point = { x: 36, y: 36 };
-
-const DEFAULT_STICKY_NOTE_SIZE: Size = { width: 220, height: 160 };
+const DEFAULT_BOARD_SIZE: Size = { width: 900, height: 640 };
 
 const DEFAULT_INK: InkState = {
   tool: "pen",
@@ -64,68 +72,48 @@ export function workspaceReducer(
     case "ai_upsert":
       return {
         ...state,
-        objects: reflowTutorObjects(
-          upsertBoardObjects(state, action.items),
-          action.boardSize,
-        ),
+        objects: upsertBoardObjects(state, action.items, action.boardSize),
       };
     case "move_object": {
-      const existing = state.objects.find((object) => object.id === action.id);
-      if (!existing || pointsEqual(existing.position, action.position)) return state;
-      return {
-        ...state,
-        objects: state.objects.map((object) =>
-          object.id === action.id ? { ...object, position: action.position } : object,
-        ),
-      };
+      return applySmartGridMove(state, action.id, action.position);
     }
     case "resize_object": {
-      const size = clampTutorCardSize(action.size);
       const existing = state.objects.find((obj) => obj.id === action.id);
-      const previousSize = existing?.size ?? (existing ? tutorCardSizeForKind(existing.kind) : null);
-      if (!existing || !previousSize || sizesEqual(previousSize, size)) {
-        return state;
-      }
-      return {
-        ...state,
-        objects: state.objects.map((obj) =>
-          obj.id === action.id ? { ...obj, size } : obj,
-        ),
-      };
+      if (!existing) return state;
+
+      const previousSize = existing.size ?? tutorCardSizeForKind(existing.kind);
+      const size = clampToCellSpan(action.size);
+      if (sizesEqual(previousSize, size)) return state;
+
+      return applySmartGridResize(state, action.id, size);
     }
     case "activate_object":
       return {
         ...state,
-        objects: reflowTutorObjects(
-          state.objects.map((obj) =>
-            obj.id === action.id ? { ...obj, collapsed: false } : obj,
-          ),
-          action.boardSize,
+        objects: state.objects.map((obj) =>
+          obj.id === action.id ? { ...obj, collapsed: false } : obj,
         ),
       };
     case "collapse_object":
       return {
         ...state,
-        objects: reflowTutorObjects(
-          state.objects.map((obj) =>
-            obj.id === action.id ? { ...obj, collapsed: true } : obj,
-          ),
-          action.boardSize,
+        objects: state.objects.map((obj) =>
+          obj.id === action.id ? { ...obj, collapsed: true } : obj,
         ),
       };
     case "add_student_card": {
       const nextNumber = nextStudentCardNumber(state.studentCards);
-      const size = DEFAULT_HANDWRITING.size;
-      const position = findOpenBoardPosition({
+      const size = studentCardDefaultSize();
+      const resolvedBoardSize = action.boardSize ?? DEFAULT_BOARD_SIZE;
+      const occupied = occupiedCells(state.objects, state.studentCards, state.stickyNotes);
+      const position = findOpenGridCell({
+        span: spanForSize(size),
         size,
-        occupied: occupiedRects(state),
-        viewport: {
-          x: 0,
-          y: 0,
-          width: action.boardSize.width,
-          height: action.boardSize.height,
-        },
+        occupied,
+        viewport: state.viewport,
+        boardSize: resolvedBoardSize,
       });
+      addRectToOccupied(occupied, position, size);
       return {
         ...state,
         studentCards: [
@@ -136,16 +124,15 @@ export function workspaceReducer(
     }
     case "add_sticky_note": {
       const nextNumber = nextStickyNoteNumber(state.stickyNotes);
-      const size = DEFAULT_STICKY_NOTE_SIZE;
-      const position = findOpenBoardPosition({
+      const size = stickyNoteDefaultSize();
+      const resolvedBoardSize = action.boardSize ?? DEFAULT_BOARD_SIZE;
+      const occupied = occupiedCells(state.objects, state.studentCards, state.stickyNotes);
+      const position = findOpenGridCell({
+        span: spanForSize(size),
         size,
-        occupied: occupiedRects(state),
-        viewport: {
-          x: 0,
-          y: 0,
-          width: action.boardSize.width,
-          height: action.boardSize.height,
-        },
+        occupied,
+        viewport: state.viewport,
+        boardSize: resolvedBoardSize,
       });
       return {
         ...state,
@@ -156,25 +143,14 @@ export function workspaceReducer(
       };
     }
     case "move_sticky_note": {
-      const existing = state.stickyNotes.find((note) => note.id === action.id);
-      if (!existing || pointsEqual(existing.position, action.position)) return state;
-      return {
-        ...state,
-        stickyNotes: state.stickyNotes.map((note) =>
-          note.id === action.id ? { ...note, position: action.position } : note,
-        ),
-      };
+      return applySmartGridMove(state, action.id, action.position);
     }
     case "resize_sticky_note": {
       const size = clampStickyNoteSize(action.size);
       const existing = state.stickyNotes.find((note) => note.id === action.id);
       if (!existing || sizesEqual(existing.size, size)) return state;
-      return {
-        ...state,
-        stickyNotes: state.stickyNotes.map((note) =>
-          note.id === action.id ? { ...note, size } : note,
-        ),
-      };
+
+      return applySmartGridResize(state, action.id, size);
     }
     case "update_sticky_note_text": {
       const existing = state.stickyNotes.find((note) => note.id === action.id);
@@ -245,27 +221,16 @@ export function workspaceReducer(
         privateBoardStrokes: [],
       };
     case "move_student_card": {
-      const existing = state.studentCards.find((card) => card.id === action.id);
-      if (!existing || pointsEqual(existing.position, action.position)) return state;
-      return {
-        ...state,
-        studentCards: state.studentCards.map((card) =>
-          card.id === action.id ? { ...card, position: action.position } : card,
-        ),
-      };
+      return applySmartGridMove(state, action.id, action.position);
     }
     case "resize_student_card": {
-      const size = clampPanelSize(action.size);
+      const size = clampStudentCardSize(action.size);
       const existing = state.studentCards.find((card) => card.id === action.id);
       if (!existing || sizesEqual(existing.size, size)) {
         return state;
       }
-      return {
-        ...state,
-        studentCards: state.studentCards.map((card) =>
-          card.id === action.id ? { ...card, size } : card,
-        ),
-      };
+
+      return applySmartGridResize(state, action.id, size);
     }
     case "rename_student_card":
       return {
@@ -310,21 +275,36 @@ export function workspaceReducer(
   }
 }
 
-function upsertBoardObjects(state: WorkspaceState, items: AiBoardItem[]): BoardObject[] {
+function upsertBoardObjects(
+  state: WorkspaceState,
+  items: AiBoardItem[],
+  boardSize?: Size,
+): BoardObject[] {
   if (items.length === 0) return state.objects;
 
   const incomingIds = new Set(items.map((item) => item.id));
-  const activeId = items[items.length - 1]?.id;
   const existingById = new Map(state.objects.map((obj) => [obj.id, obj]));
-  const activePosition = currentTutorFocusPosition(state.objects);
-  const retained = state.objects
-    .filter((obj) => !incomingIds.has(obj.id));
+  const retained = state.objects.filter((obj) => !incomingIds.has(obj.id));
+  const occupied = occupiedCells(state.objects, state.studentCards, state.stickyNotes);
+  const resolvedBoardSize = boardSize ?? DEFAULT_BOARD_SIZE;
 
   const incoming = items.map((item) => {
     const existing = existingById.get(item.id);
-    const size = existing?.size ?? tutorCardSizeForKind(item.kind);
-    const position = existing?.position ?? activePosition;
-    return createBoardObject(item, position, size, existing?.collapsed ?? item.id !== activeId);
+    if (existing) {
+      return updateBoardObject(existing, item);
+    }
+
+    const size = tutorCardSizeForKind(item.kind);
+    const position = findOpenGridCell({
+      span: spanForSize(size),
+      size,
+      occupied,
+      viewport: state.viewport,
+      boardSize: resolvedBoardSize,
+    });
+    const created = createBoardObject(item, position, size, false);
+    addRectToOccupied(occupied, position, created.size ?? size);
+    return created;
   });
 
   return [...retained, ...incoming];
@@ -368,29 +348,122 @@ function nextStickyNoteNumber(notes: StickyNoteState[]): number {
   return Math.max(0, ...numbers) + 1;
 }
 
-function occupiedRects(state: WorkspaceState): BoardRect[] {
-  const studentRects = state.studentCards.map((card) => ({
-    x: card.position.x,
-    y: card.position.y,
-    width: card.size.width,
-    height: card.size.height,
+function tutorOccupantSize(object: BoardObject): Size {
+  const size = object.size ?? tutorCardSizeForKind(object.kind);
+  if (object.collapsed) {
+    return { width: size.width, height: COLLAPSED_TUTOR_RIBBON_HEIGHT };
+  }
+  return size;
+}
+
+function collectGridOccupants(state: WorkspaceState): GridOccupantSnapshot[] {
+  const tutors = state.objects.map((object) => ({
+    id: object.id,
+    position: object.position,
+    size: tutorOccupantSize(object),
   }));
-  const objectRects = state.objects.map((object) => {
-    const size = object.size ?? tutorCardSizeForKind(object.kind);
-    return {
-      x: object.position.x,
-      y: object.position.y,
-      width: size.width,
-      height: size.height,
-    };
+  const students = state.studentCards.map((card) => ({
+    id: card.id,
+    position: card.position,
+    size: card.size,
+  }));
+  const notes = state.stickyNotes.map((note) => ({
+    id: note.id,
+    position: note.position,
+    size: note.size,
+  }));
+  return [...tutors, ...students, ...notes];
+}
+
+export function buildGridMovePreview(
+  state: WorkspaceState,
+  moverId: string,
+  size: Size,
+  livePosition: Point,
+) {
+  return previewGridMove({
+    occupants: collectGridOccupants(state),
+    moverId,
+    size,
+    position: livePosition,
   });
-  const stickyRects = state.stickyNotes.map((note) => ({
-    x: note.position.x,
-    y: note.position.y,
-    width: note.size.width,
-    height: note.size.height,
-  }));
-  return [...studentRects, ...objectRects, ...stickyRects];
+}
+
+function applySmartGridMove(
+  state: WorkspaceState,
+  moverId: string,
+  livePosition: Point,
+): WorkspaceState {
+  const occupants = collectGridOccupants(state);
+  const mover = occupants.find((occupant) => occupant.id === moverId);
+  if (!mover) return state;
+
+  const landing = snapPositionToNearestGrid(livePosition);
+  if (pointsEqual(mover.position, landing)) return state;
+
+  const plan = resolveGridMovePlan(occupants, moverId, landing);
+  if (!plan) return state;
+
+  return {
+    ...state,
+    objects: state.objects.map((object) => {
+      const next = plan.get(object.id);
+      return next ? { ...object, position: next } : object;
+    }),
+    studentCards: state.studentCards.map((card) => {
+      const next = plan.get(card.id);
+      return next ? { ...card, position: next } : card;
+    }),
+    stickyNotes: state.stickyNotes.map((note) => {
+      const next = plan.get(note.id);
+      return next ? { ...note, position: next } : note;
+    }),
+  };
+}
+
+function applySmartGridResize(
+  state: WorkspaceState,
+  resizerId: string,
+  size: Size,
+): WorkspaceState {
+  const occupants = collectGridOccupants(state);
+  const resizer = occupants.find((occupant) => occupant.id === resizerId);
+  if (!resizer) return state;
+
+  const plan = resolveGridResizePlan(occupants, resizerId, size);
+  if (!plan) return state;
+
+  return {
+    ...state,
+    objects: state.objects.map((object) => {
+      if (object.id === resizerId) return { ...object, size };
+      const next = plan.get(object.id);
+      return next ? { ...object, position: next } : object;
+    }),
+    studentCards: state.studentCards.map((card) => {
+      if (card.id === resizerId) return { ...card, size };
+      const next = plan.get(card.id);
+      return next ? { ...card, position: next } : card;
+    }),
+    stickyNotes: state.stickyNotes.map((note) => {
+      if (note.id === resizerId) return { ...note, size };
+      const next = plan.get(note.id);
+      return next ? { ...note, position: next } : note;
+    }),
+  };
+}
+
+function updateBoardObject(existing: BoardObject, item: AiBoardItem): BoardObject {
+  switch (item.kind) {
+    case "text":
+      return { ...existing, kind: item.kind, item };
+    case "plot":
+      return { ...existing, kind: item.kind, item };
+    case "shape":
+      return { ...existing, kind: item.kind, item };
+    case "diagram":
+      return { ...existing, kind: item.kind, item };
+  }
 }
 
 function createBoardObject(
@@ -399,7 +472,7 @@ function createBoardObject(
   size: Size,
   collapsed = false,
 ): BoardObject {
-  const clampedSize = clampTutorCardSize(size);
+  const clampedSize = clampToCellSpan(size);
   switch (item.kind) {
     case "text":
       return { id: item.id, kind: item.kind, item, position, size: clampedSize, collapsed };
@@ -412,51 +485,11 @@ function createBoardObject(
   }
 }
 
-function currentTutorFocusPosition(objects: BoardObject[]): Point {
-  const active = objects.find((obj) => !obj.collapsed);
-  return active?.position ?? objects.at(-1)?.position ?? DEFAULT_TUTOR_POSITION;
-}
-
-function reflowTutorObjects(objects: BoardObject[], boardSize?: Size): BoardObject[] {
-  if (objects.length === 0) return objects;
-  const origin = objects[0].position;
-  const layout = layoutTutorFlow({
-    origin,
-    items: objects.map((object) => ({
-      id: object.id,
-      collapsed: object.collapsed,
-      size: object.size ?? tutorCardSizeForKind(object.kind),
-    })),
-    maxColumnHeight: tutorFlowMaxColumnHeight(boardSize?.height ?? 640),
-  });
-
-  return objects.map((object) => ({
-    ...object,
-    position: layout.positions[object.id] ?? object.position,
-  }));
-}
-
 function normalizeStudentCardLabel(label: string, cardId: string): string {
   const trimmed = label.trim();
   if (trimmed) return trimmed.slice(0, 64);
   const match = /^student-card-(\d+)$/.exec(cardId);
   return match ? `Student Card ${match[1]}` : "Student Card";
-}
-
-function clampPanelSize(size: Size): Size {
-  const aspectWidth = Math.max(size.width, size.height / 0.75);
-  const width = Math.max(280, Math.min(860, aspectWidth));
-  return {
-    width,
-    height: width * 0.75,
-  };
-}
-
-function clampStickyNoteSize(size: Size): Size {
-  return {
-    width: Math.max(160, Math.min(420, size.width)),
-    height: Math.max(120, Math.min(360, size.height)),
-  };
 }
 
 function pointsEqual(a: Point, b: Point): boolean {
