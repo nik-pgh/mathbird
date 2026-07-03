@@ -40,14 +40,6 @@ export default function SessionTopbar({ session }: Props) {
         </Link>
         <div className="topbar-session-center">{toolbarContent}</div>
         <div className="topbar-session-end">
-          <button
-            type="button"
-            className="btn"
-            onClick={() => void handleSignOut()}
-            disabled={signingOut}
-          >
-            {signingOut ? "Signing out…" : "Sign out"}
-          </button>
           <span
             className={`pill ${
               session.status === "disconnected" ? "danger" : ""
