@@ -1,8 +1,21 @@
 # Evaluation Pipeline README
 
-This document is the agent-facing map for Mathbird retrieval evaluation. Read it
+This document is the agent-facing map for Mathbird evaluation. Read it
 before changing golden cases, embedding comparisons, chunking experiments,
-evaluation scoring, or the frontend eval dashboard.
+tutor-board evals, evaluation scoring, or the frontend eval dashboard.
+
+## Layout
+
+| Layer | Path | Role |
+| --- | --- | --- |
+| Golden data | `backend/evals/golden/` | JSONL case sets |
+| Results | `backend/evals/results/` | Timestamped JSON/Markdown reports |
+| Eval library | `backend/app/evals/` | Importable scoring + report code |
+| CLIs | `backend/scripts/eval_*.py` | Thin entrypoints |
+
+Import eval helpers from `app.evals.*`, not from `app.rag` or `app.agent`.
+Legacy re-export shims remain under `app/rag/evaluation.py` and
+`app/agent/evaluation/` for backwards compatibility.
 
 ## What This Pipeline Evaluates
 
@@ -19,6 +32,9 @@ Current evaluation axes:
 - **Structured lookup comparison**: same indexed collection, compares
   production `retrieve()`, structured Qdrant filters only, and semantic search
   only on page/section/figure/equation/example queries.
+- **Tutor board evaluation**: golden cases for AiBoard extractor usage,
+  emitted card content, card-kind choice, card grouping (append vs create),
+  and tutor board-reference utterances.
 
 The pipeline is retrieval-only. It does not grade final LLM answers. The core
 question is: "Did retrieval return the expected source pages and enough expected
@@ -33,6 +49,9 @@ Backend eval data and CLIs:
 - `backend/evals/golden/goodfellow_ch2_structured.jsonl`
   - 40-case golden set for structured lookup (page, section, figure, equation,
     example, chapter, mixed, and negative routing cases).
+- `backend/evals/golden/tutor_board.jsonl`
+  - Seed golden set for tutor-board behavior across five axes: usage, content,
+    reference, card_kind, and grouping.
 - `backend/evals/results/`
   - Timestamped JSON and Markdown reports produced by eval scripts.
 - `backend/scripts/eval_retrieval.py`
@@ -43,12 +62,28 @@ Backend eval data and CLIs:
 - `backend/scripts/eval_structured.py`
   - Evaluates structured lookup paths against the active Qdrant collection and
     can update the frontend dashboard JSON.
+- `backend/scripts/eval_tutor_board.py`
+  - Evaluates tutor-board extractor output and static board-reference utterances
+    against `evals/golden/tutor_board.jsonl`.
 
-Backend RAG/eval internals:
+Backend eval library (`app/evals/` — import scoring from here):
+
+- `backend/app/evals/rag/evaluation.py`
+  - Golden case loading, retrieval scoring, aggregate metrics, report
+    serialization, Markdown rendering for RAG evals.
+- `backend/app/evals/tutor_board.py`
+  - Tutor-board golden loading, per-axis scoring, JSON/Markdown reports.
+- `backend/app/evals/dashboard/structured_output.py`
+  - Frontend structured-eval JSON filename/path helpers.
+
+Legacy re-export shims (prefer `app.evals.*` in new code):
 
 - `backend/app/rag/evaluation.py`
-  - Golden case loading, retrieval scoring, aggregate metrics, report
-    serialization, Markdown rendering.
+- `backend/app/rag/structured_eval_output.py`
+- `backend/app/agent/evaluation/__init__.py`
+
+Backend RAG runtime (used by evals, not eval code itself):
+
 - `backend/app/rag/indexing.py`
   - Converts normalized parsed blocks into LlamaIndex `TextNode`s. Also owns the
     chunk policy registry used by chunking evals.
@@ -62,6 +97,11 @@ Backend RAG/eval internals:
     `RetrievedRecord`.
 - `backend/app/rag/normalizer.py`
   - Converts LlamaParse output into page-aware textbook blocks.
+
+Runtime agent helper (not eval):
+
+- `backend/app/agent/turn_context/tutor_board.py`
+  - Formats AiBoard cache state into the `[tutor board]` tutor injection block.
 
 Frontend dashboard:
 
@@ -230,6 +270,112 @@ Per-case structured metrics in report JSON:
 - `structured_hit_at_1`: structured-only path Hit@1
 - `structured_latency_ms` / `semantic_latency_ms`
 
+### Tutor Board Evaluation
+
+Tutor board eval measures five axes against `evals/golden/tutor_board.jsonl`:
+
+| Axis | What it checks | How it is scored |
+| --- | --- | --- |
+| `usage` | Whether the board extractor should emit cards at all | `expected_extractor.emit`, `min_items`, `max_items` |
+| `content` | Whether emitted payloads carry the right math/visual detail | `expected_extractor.items[]` substring checks |
+| `card_kind` | Whether the right card type is chosen | `kinds`, `forbidden_kinds`, per-kind field checks |
+| `grouping` | Whether the same explanation line appends vs a new line creates | `grouping_action` = `append` or `create`, plus `reuse_id` / `forbidden_ids` |
+| `reference` | Whether tutor speech points students at tutor cards | Static utterance pattern checks |
+
+CLI:
+
+```bash
+cd backend
+uv run python -m scripts.eval_tutor_board \
+  --golden evals/golden/tutor_board.jsonl
+```
+
+Extractor-axis cases call the configured board extractor
+(`BOARD_EXTRACTOR=openai`, `BOARD_EXTRACTOR_MODEL`, `OPENAI_API_KEY`).
+Reference-axis cases are scored from golden `tutor_utterance` rows without
+calling the tutor LLM. Live end-to-end tutor scoring can be added later on
+top of this harness.
+
+Grouping-axis golden row:
+
+```json
+{
+  "id": "tb-group-001",
+  "axis": "grouping",
+  "description": "Same derivation line should append to the existing equation card",
+  "extractor": {
+    "sentence": "Subtract 5 from both sides to get 2x = 5.",
+    "last_sentence": "Let's set up 2x + 5 = 10.",
+    "current_items": [
+      {"kind": "text", "id": "eq1", "markdown": "$2x + 5 = 10$"}
+    ]
+  },
+  "expected_extractor": {
+    "emit": true,
+    "min_items": 1,
+    "max_items": 1,
+    "grouping_action": "append",
+    "reuse_id": "eq1"
+  }
+}
+```
+
+Use `grouping_action: "create"` with `forbidden_ids` when the tutor pivots to a
+new problem, function, or visual and should mint a fresh card instead of
+updating the existing one.
+
+Extractor-axis golden row:
+
+```json
+{
+  "id": "tb-use-001",
+  "axis": "usage",
+  "description": "Equation setup should create a tutor card",
+  "extractor": {
+    "sentence": "Let's set up 2x + 5 = 10.",
+    "last_sentence": null,
+    "current_items": []
+  },
+  "expected_extractor": {
+    "emit": true,
+    "min_items": 1,
+    "kinds": ["text"]
+  }
+}
+```
+
+Reference-axis golden row:
+
+```json
+{
+  "id": "tb-ref-001",
+  "axis": "reference",
+  "description": "Tutor should point student to an existing equation card",
+  "tutor_board": [
+    {"kind": "text", "id": "eq1", "markdown": "$2x + 5 = 10$"}
+  ],
+  "tutor_utterance": "Look at the equation on the board — what operation would undo the plus 5?",
+  "expected_reference": {
+    "references_board": true,
+    "utterance_contains": ["board", "equation"],
+    "utterance_not_contains": ["cannot draw", "can't draw"]
+  }
+}
+```
+
+Report output:
+
+- JSON/Markdown under `backend/evals/results/tutor_board_eval_*.json|md`
+- Dashboard JSON at `frontend/src/data/tutorBoardEval.generated.json`
+- `/evals` tab **Tutor Board** — axis pass-rate bars, case matrix, and failure list
+
+Regenerate the dashboard artifact after eval changes:
+
+```bash
+cd backend
+uv run python -m scripts.eval_tutor_board
+```
+
 ## Built-In Chunk Policies
 
 Chunk policies live in `backend/app/rag/indexing.py`.
@@ -315,7 +461,7 @@ JSON but are not all hard-scoring dimensions today.
 
 ## Metrics
 
-Per target, `backend/app/rag/evaluation.py` reports:
+Per target, `backend/app/evals/rag/evaluation.py` reports:
 
 - `hit_at_1`
 - `hit_at_3`

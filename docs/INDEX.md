@@ -189,8 +189,19 @@ so partial progress is observable. A v1 → v2 migration runs transparently on l
 | `rag/multi_ingest.py` | Multi-collection ingest helpers for evals. |
 | `rag/embeddings.py` | Embedding model registry for eval comparisons. |
 | `rag/reference_ids.py` | Stable reference id helpers for chunks. |
-| `rag/evaluation.py` | Golden-set retrieval evaluation: loads JSONL cases, scores retrieved chunks, aggregates metrics, and renders reports. |
+| `rag/evaluation.py` | Deprecated shim → `app/evals/rag/evaluation.py`. |
+| `rag/structured_eval_output.py` | Deprecated shim → `app/evals/dashboard/structured_output.py`. |
 | `rag/__init__.py` | Re-exports the public RAG seam. |
+
+### `backend/app/evals/` — golden-set evaluation library
+
+| Path | What it is |
+| --- | --- |
+| `app/evals/rag/evaluation.py` | RAG golden-set eval: loads JSONL cases, scores retrieved chunks, aggregates metrics, renders reports. |
+| `app/evals/tutor_board.py` | Tutor-board golden-set eval across usage/content/card_kind/grouping/reference axes. |
+| `app/evals/dashboard/structured_output.py` | Structured-eval frontend JSON path helpers. |
+
+Golden data lives in `backend/evals/golden/`; CLIs in `backend/scripts/eval_*.py`.
 
 ## `frontend/` — Vite + React + TypeScript
 
