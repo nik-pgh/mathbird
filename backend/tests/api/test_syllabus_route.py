@@ -21,6 +21,7 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("STORAGE_BACKEND", "local")
     monkeypatch.setenv("STORAGE_LOCAL_DIR", str(tmp_path))
     monkeypatch.setenv("RAG_PROVIDER", "null")
+    monkeypatch.setenv("LEGACY_DOC_ACCESS", "deny")
     get_settings.cache_clear()
     storage_mod.get_storage.cache_clear()
     retriever_mod._singleton = None
