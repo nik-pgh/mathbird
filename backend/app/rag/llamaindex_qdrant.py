@@ -43,8 +43,9 @@ VALID_BLOCK_TYPES: frozenset[str] = frozenset(
         "unknown",
     }
 )
-# Scroll returns points in arbitrary order; fetch more than top_k and rank
-# heuristically before trimming (see ``_rank_structured_records``).
+# Scroll overscans top_k, then ranks heuristically before trimming (see
+# ``_rank_structured_records``). Results are requested in printed-page order
+# from Qdrant so broad filters (e.g. chapter) sample from the chapter start.
 _STRUCTURED_SCROLL_OVERSCAN = 32
 _STRUCTURED_SCROLL_MAX = 256
 
@@ -137,6 +138,13 @@ def _block_type_from_metadata(value: Any) -> BlockType:
 
 def _structured_scroll_limit(top_k: int) -> int:
     return min(max(top_k * 8, _STRUCTURED_SCROLL_OVERSCAN), _STRUCTURED_SCROLL_MAX)
+
+
+def _structured_scroll_order_by() -> Any:
+    """Order scroll results by printed page so broad filters sample from the start."""
+    from qdrant_client.http import models
+
+    return models.OrderBy(key="printed_page_number", direction=models.Direction.ASC)
 
 
 def _effective_page(record: RetrievedRecord) -> int:
@@ -468,6 +476,7 @@ class QdrantTextbookStore:
             collection_name=self.collection_name,
             scroll_filter=models.Filter(must=must),
             limit=scroll_limit,
+            order_by=_structured_scroll_order_by(),
             with_payload=True,
             with_vectors=False,
         )

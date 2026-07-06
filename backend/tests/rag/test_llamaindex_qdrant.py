@@ -9,6 +9,7 @@ from app.rag.llamaindex_qdrant import (
     LlamaIndexQdrantRetriever,
     QdrantTextbookStore,
     _structured_scroll_limit,
+    _structured_scroll_order_by,
 )
 from app.rag.parsing import (
     ParsedBlock,
@@ -670,6 +671,26 @@ async def test_structured_lookup_scroll_limit_overscans_top_k() -> None:
     )
 
     assert store.qdrant_client.scroll_calls[0]["limit"] == _structured_scroll_limit(4)
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_scroll_orders_by_printed_page_number() -> None:
+    from qdrant_client.http import models
+
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=[]),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    await store.structured_lookup(
+        RetrievalRequest(query="chapter 2", top_k=5, chapter_number=2)
+    )
+
+    order_by = store.qdrant_client.scroll_calls[0]["order_by"]
+    assert order_by.key == "printed_page_number"
+    assert order_by.direction == models.Direction.ASC
+    assert order_by == _structured_scroll_order_by()
 
 
 @pytest.mark.asyncio
