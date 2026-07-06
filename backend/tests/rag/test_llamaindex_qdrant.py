@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 from llama_index.core.vector_stores.utils import node_to_metadata_dict
 
-from app.rag.indexing import parsed_document_to_nodes
+from app.rag.indexing import parsed_document_to_chunked_nodes, parsed_document_to_nodes
 from app.rag.llamaindex_qdrant import (
     LlamaIndexQdrantRetriever,
     QdrantTextbookStore,
@@ -651,9 +651,7 @@ def _points_from_page_blocks(
     )
     nodes = parsed_document_to_nodes(document)
     return [
-        SimpleNamespace(
-            payload=node_to_metadata_dict(node, remove_text=False, flat_metadata=False)
-        )
+        SimpleNamespace(payload=node_to_metadata_dict(node, remove_text=False, flat_metadata=False))
         for node in nodes
     ]
 
@@ -666,9 +664,7 @@ async def test_structured_lookup_scroll_limit_overscans_top_k() -> None:
         index=FakeIndex(),
     )
 
-    await store.structured_lookup(
-        RetrievalRequest(query="page 37", top_k=4, page_number=37)
-    )
+    await store.structured_lookup(RetrievalRequest(query="page 37", top_k=4, page_number=37))
 
     assert store.qdrant_client.scroll_calls[0]["limit"] == _structured_scroll_limit(4)
 
@@ -683,9 +679,7 @@ async def test_structured_lookup_scroll_orders_by_printed_page_number() -> None:
         index=FakeIndex(),
     )
 
-    await store.structured_lookup(
-        RetrievalRequest(query="chapter 2", top_k=5, chapter_number=2)
-    )
+    await store.structured_lookup(RetrievalRequest(query="chapter 2", top_k=5, chapter_number=2))
 
     order_by = store.qdrant_client.scroll_calls[0]["order_by"]
     assert order_by.key == "printed_page_number"
@@ -835,3 +829,203 @@ async def test_semantic_search_applies_textbook_doc_id_filter() -> None:
     assert filters[0].key == "textbook_doc_id"
     assert filters[0].value == "doc-1"
     assert records[0].doc_id == "doc-1"
+
+
+def _points_from_chunked_document(
+    document: ParsedDocument,
+    *,
+    policy_name: str = "math_object_window_page_anchor",
+) -> list[SimpleNamespace]:
+    nodes = parsed_document_to_chunked_nodes(document, policy_name=policy_name)
+    return [
+        SimpleNamespace(payload=node_to_metadata_dict(node, remove_text=False, flat_metadata=False))
+        for node in nodes
+    ]
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_prefers_page_anchor_over_equation_window() -> None:
+    document = ParsedDocument(
+        doc_id="textbook-doc",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=1,
+                printed_page_number=31,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="textbook-doc:p1:b0",
+                        page_number=1,
+                        printed_page_number=31,
+                        block_type="heading",
+                        text="Chapter 2 Linear Algebra",
+                        chapter_number=2,
+                    ),
+                    ParsedBlock(
+                        block_id="textbook-doc:p1:b1",
+                        page_number=1,
+                        printed_page_number=31,
+                        block_type="paragraph",
+                        text="A scalar is a single number.",
+                        chapter_number=2,
+                    ),
+                ],
+            ),
+            ParsedPage(
+                page_number=2,
+                printed_page_number=32,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="textbook-doc:p2:b0",
+                        page_number=2,
+                        printed_page_number=32,
+                        block_type="equation",
+                        text="x = A^{-1} b",
+                        latex="x = A^{-1} b",
+                        equation_number="2.25",
+                        chapter_number=2,
+                    ),
+                ],
+            ),
+        ],
+    )
+    points = _points_from_chunked_document(document)
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=list(reversed(points))),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        RetrievalRequest(query="page 31", top_k=3, page_number=31)
+    )
+
+    assert records[0].chunk_kind == "page_anchor"
+    assert "scalar" in records[0].text
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_prefers_prose_centered_equation_window_on_page_query() -> None:
+    document = ParsedDocument(
+        doc_id="textbook-doc",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=7,
+                printed_page_number=37,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="textbook-doc:p7:b0",
+                        page_number=7,
+                        printed_page_number=37,
+                        block_type="equation",
+                        text="x = A^{-1} b",
+                        latex="x = A^{-1} b",
+                        equation_number="2.11",
+                        section_number="2.3",
+                        section_title="2.3 Identity and Inverse",
+                        chapter_number=2,
+                    ),
+                    ParsedBlock(
+                        block_id="textbook-doc:p7:b1",
+                        page_number=7,
+                        printed_page_number=37,
+                        block_type="paragraph",
+                        text="Explicit inverses are mainly a theoretical tool.",
+                        section_number="2.3",
+                        section_title="2.3 Identity and Inverse",
+                        chapter_number=2,
+                    ),
+                    ParsedBlock(
+                        block_id="textbook-doc:p7:b2",
+                        page_number=7,
+                        printed_page_number=37,
+                        block_type="equation",
+                        text="x = A^{-1} b",
+                        latex="x = A^{-1} b",
+                        equation_number="2.25",
+                        section_number="2.3",
+                        section_title="2.3 Identity and Inverse",
+                        chapter_number=2,
+                    ),
+                ],
+            )
+        ],
+    )
+    points = _points_from_chunked_document(document)
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=list(reversed(points))),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        RetrievalRequest(query="page 37", top_k=3, page_number=37)
+    )
+
+    assert "theoretical tool" in records[0].text
+    assert records[0].source_block_types[0] == "paragraph"
+
+
+@pytest.mark.asyncio
+async def test_structured_lookup_prefers_section_heading_over_equation_window() -> None:
+    document = ParsedDocument(
+        doc_id="textbook-doc",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=12,
+                printed_page_number=42,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="textbook-doc:p12:b0",
+                        page_number=12,
+                        printed_page_number=42,
+                        block_type="heading",
+                        text="2.7 Eigendecomposition",
+                        section_number="2.7",
+                        section_title="2.7 Eigendecomposition",
+                        chapter_number=2,
+                    ),
+                    ParsedBlock(
+                        block_id="textbook-doc:p12:b1",
+                        page_number=12,
+                        printed_page_number=42,
+                        block_type="paragraph",
+                        text="An eigenvector is a nonzero vector v with eigenvalue lambda.",
+                        section_number="2.7",
+                        section_title="2.7 Eigendecomposition",
+                        chapter_number=2,
+                    ),
+                    ParsedBlock(
+                        block_id="textbook-doc:p12:b2",
+                        page_number=12,
+                        printed_page_number=42,
+                        block_type="equation",
+                        text="Av = lambda v",
+                        latex="Av = lambda v",
+                        equation_number="2.39",
+                        section_number="2.7",
+                        section_title="2.7 Eigendecomposition",
+                        chapter_number=2,
+                    ),
+                ],
+            )
+        ],
+    )
+    points = _points_from_chunked_document(document)
+    store = QdrantTextbookStore(
+        qdrant_client=FakeQdrantClient(points=list(reversed(points))),
+        collection_name="textbook_chunks",
+        index=FakeIndex(),
+    )
+
+    records = await store.structured_lookup(
+        RetrievalRequest(query="section 2.7", top_k=3, section_number="2.7")
+    )
+
+    assert "eigenvector" in records[0].text.lower()

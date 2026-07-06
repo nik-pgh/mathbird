@@ -74,6 +74,16 @@ _BLOCK_RANK_SECTION: dict[str, int] = {
     "graph": 8,
     "equation": 9,
 }
+_PROSE_BLOCK_TYPES = frozenset({"paragraph", "heading", "instruction"})
+# Lower rank = preferred when ranking structured page/chapter candidates.
+_CHUNK_KIND_RANK: dict[str, int] = {
+    "page_anchor": 0,
+    "page_section_window": 1,
+    "block_neighbor": 2,
+    "block": 3,
+}
+_DEFAULT_CHUNK_KIND_RANK = 4
+_MATH_OBJECT_WINDOW_KIND_RANK = 5
 
 QDRANT_PAYLOAD_INDEXES: tuple[tuple[str, str], ...] = (
     ("page_number", "integer"),
@@ -167,17 +177,55 @@ def _block_type_rank(block_type: BlockType, ranking: dict[str, int]) -> int:
     return ranking.get(block_type, 50)
 
 
+def _chunk_kind_rank(chunk_kind: str) -> int:
+    if not chunk_kind:
+        return _DEFAULT_CHUNK_KIND_RANK
+    if chunk_kind in _CHUNK_KIND_RANK:
+        return _CHUNK_KIND_RANK[chunk_kind]
+    if chunk_kind.endswith("_window"):
+        return _MATH_OBJECT_WINDOW_KIND_RANK
+    return _DEFAULT_CHUNK_KIND_RANK
+
+
+def _prose_centered_rank(source_block_types: tuple[str, ...]) -> int:
+    if not source_block_types:
+        return 1
+    if source_block_types[0] in _PROSE_BLOCK_TYPES:
+        return 0
+    prose_count = sum(1 for block_type in source_block_types if block_type in _PROSE_BLOCK_TYPES)
+    if prose_count > len(source_block_types) // 2:
+        return 0
+    return 1
+
+
+def _section_heading_rank(record: RetrievedRecord, section_number: str) -> int:
+    if record.block_type == "heading" and record.section_number == section_number:
+        return 0
+    return 1
+
+
 def _structured_sort_key(record: RetrievedRecord, request: RetrievalRequest) -> tuple[int, ...]:
     page = _effective_page(record)
     block_idx = _block_index(record)
+    chunk_kind_rank = _chunk_kind_rank(record.chunk_kind)
+    prose_rank = _prose_centered_rank(record.source_block_types)
 
     if request.page_number is not None:
-        return (_block_type_rank(record.block_type, _BLOCK_RANK_PAGE), page, block_idx)
+        return (
+            chunk_kind_rank,
+            prose_rank,
+            _block_type_rank(record.block_type, _BLOCK_RANK_PAGE),
+            block_idx,
+        )
     if request.chapter_number is not None:
-        return (page, block_idx)
+        heading_rank = 0 if record.block_type == "heading" else 1
+        return (chunk_kind_rank, heading_rank, page, block_idx)
     if request.section_number:
         return (
             page,
+            _section_heading_rank(record, request.section_number),
+            chunk_kind_rank,
+            prose_rank,
             _block_type_rank(record.block_type, _BLOCK_RANK_SECTION),
             block_idx,
         )
@@ -221,6 +269,8 @@ def _record_from_metadata(
         section_title=str(metadata.get("section_title", "")),
         chapter_number=int(metadata.get("chapter_number", 0) or 0),
         visual_refs=tuple(metadata.get("visual_refs", []) or []),
+        chunk_kind=str(metadata.get("chunk_kind", "") or ""),
+        source_block_types=tuple(metadata.get("source_block_types", []) or []),
     )
 
 

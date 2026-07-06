@@ -160,9 +160,12 @@ class RetrievedRecord:
     chapter_number: int = 0
     printed_page_number: int = 0
     visual_refs: tuple[str, ...] = ()
+    chunk_kind: str = ""
+    source_block_types: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "visual_refs", tuple(self.visual_refs))
+        object.__setattr__(self, "source_block_types", tuple(self.source_block_types))
 
     @property
     def source(self) -> str:
