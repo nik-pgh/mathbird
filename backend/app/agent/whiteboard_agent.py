@@ -67,6 +67,8 @@ class WhiteboardAgent(Agent):
         self._sentence_queue: asyncio.Queue[str] = asyncio.Queue(maxsize=queue_size)
         self._queue_maxsize = queue_size
         self._last_prefetched_node_id: str | None = None
+        self._last_prefetched_label: str | None = None
+        self._last_prefetched_body: str | None = None
         self._buffer: str = ""
         self._last_sentence: str | None = None
         self._worker: asyncio.Task | None = None
@@ -108,13 +110,20 @@ class WhiteboardAgent(Agent):
             return
 
         node_id = pointer.problem_id or pointer.concept_id
-        if (
+        label = engine.node_label(pointer)
+
+        reuse_cached = (
             settings.rag_prefetch_mode == "focus_change"
             and node_id == self._last_prefetched_node_id
-        ):
+            and self._last_prefetched_body is not None
+        )
+        if reuse_cached:
+            self._inject_textbook_excerpt_message(
+                turn_ctx,
+                label=self._last_prefetched_label or label,
+                body=self._last_prefetched_body,
+            )
             return
-
-        label = engine.node_label(pointer)
 
         try:
             chunks = await get_retriever().retrieve(
@@ -130,13 +139,25 @@ class WhiteboardAgent(Agent):
             return
 
         self._last_prefetched_node_id = node_id
+        self._last_prefetched_label = label
+        self._last_prefetched_body = "\n\n".join(
+            f"[{chunk.source}]\n{chunk.text}" for chunk in chunks
+        )
+        self._inject_textbook_excerpt_message(
+            turn_ctx, label=label, body=self._last_prefetched_body
+        )
 
-        body = "\n\n".join(f"[{chunk.source}]\n{chunk.text}" for chunk in chunks)
+    def _inject_textbook_excerpt_message(
+        self, turn_ctx: ChatContext, *, label: str, body: str
+    ) -> None:
         turn_ctx.add_message(
             role="system",
             content=(
                 "[textbook excerpt]\n"
-                f"Use this material from the uploaded PDF when teaching {label}:\n\n"
+                "Coarse preview from the current syllabus focus — NOT a substitute "
+                "for lookup. Call search_documents with a specific query (section, "
+                "definition, example, page) before explaining or teaching PDF content.\n\n"
+                f"Focus preview for {label}:\n\n"
                 f"{body}"
             ),
         )

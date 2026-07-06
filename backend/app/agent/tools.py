@@ -60,7 +60,12 @@ def _active_doc_id(ctx: RunContext) -> str | None:
 async def search_documents(ctx: RunContext, query: str) -> str:
     """Search the student's uploaded PDF (assignment / textbook) and return excerpts.
 
-    Call this BEFORE answering ANY question that could plausibly be about
+    Call this BEFORE explaining, defining, or teaching ANY textbook concept —
+    even when a [textbook excerpt] preview is already in context. The preview
+    is a coarse focus-title lookup; you still need a targeted query for the
+    specific definition, example, section, or problem you are about to discuss.
+
+    Also call before answering ANY question that could plausibly be about
     the uploaded PDF — a problem, exercise, example, page, section,
     instruction, suggestion, formatting rule, or any concrete content the
     student might be referring to. When in doubt, call it. Do not say "I
