@@ -38,4 +38,32 @@ assert.equal(
   "block_neighbor_1",
 );
 
+function extractCollectionVariant(collectionName, chunkPolicy) {
+  if (!chunkPolicy) {
+    return null;
+  }
+  const prefix = `mathbird_chunk_${chunkPolicy}_`;
+  if (!collectionName.startsWith(prefix)) {
+    return null;
+  }
+  const remainder = collectionName.slice(prefix.length);
+  const match = remainder.match(/_v(\d+)$/);
+  return match ? `v${match[1]}` : null;
+}
+
+assert.equal(
+  extractCollectionVariant(
+    "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001",
+    "math_object_window_page_anchor",
+  ),
+  null,
+);
+assert.equal(
+  extractCollectionVariant(
+    "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001_v2",
+    "math_object_window_page_anchor",
+  ),
+  "v2",
+);
+
 console.log("test-eval-catalog: ok");

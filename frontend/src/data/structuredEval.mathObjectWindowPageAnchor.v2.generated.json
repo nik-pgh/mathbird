@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "comparison_axis": "structured_lookup",
-  "created_at": "20260706T074929Z",
+  "created_at": "20260706T075036Z",
   "golden_path": "evals/golden/goodfellow_ch2_structured.jsonl",
   "top_k": 5,
   "targets": [
@@ -14,15 +14,15 @@
       },
       "provider": "google",
       "model": "gemini-embedding-001",
-      "collection_name": "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001",
+      "collection_name": "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001_v2",
       "case_count": 40,
       "metrics": {
-        "hit_at_1": 0.65,
-        "hit_at_3": 0.85,
-        "hit_at_5": 0.9,
-        "mrr": 0.7541666666666667,
-        "avg_content_match": 0.7458333333333333,
-        "avg_latency_ms": 332.6202563010156
+        "hit_at_1": 0.7,
+        "hit_at_3": 0.875,
+        "hit_at_5": 0.925,
+        "mrr": 0.7916666666666666,
+        "avg_content_match": 0.7791666666666667,
+        "avg_latency_ms": 221.1239259559079
       },
       "cases": [
         {
@@ -40,17 +40,17 @@
             "limited precision"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 2321.2899999925867,
+          "structured_latency_ms": 2150.8056669845246,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "page 37",
@@ -84,8 +84,8 @@
             "eigendecomposition"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
@@ -94,7 +94,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 244.40345901530236,
+          "structured_latency_ms": 148.72195798670873,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "page 44",
@@ -127,17 +127,17 @@
             "theoretical tool"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 183.51995799457654,
+          "structured_latency_ms": 147.13425002992153,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "page seven",
@@ -171,16 +171,16 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 243.61879203934222,
+          "structured_latency_ms": 192.52891698852181,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.7",
@@ -219,8 +219,8 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
           ],
@@ -228,7 +228,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 224.48354202788323,
+          "structured_latency_ms": 151.02891699643806,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.1",
@@ -267,13 +267,16 @@
             "transpose"
           ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 259.564624982886,
+          "structured_latency_ms": 148.99241703096777,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "figure 2.1",
@@ -307,13 +310,17 @@
             "identity matrix"
           ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 224.8743330128491,
+          "structured_latency_ms": 155.598875018768,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "fig 2.2",
@@ -340,25 +347,22 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7398844,
+          "best_score": 1.0,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "C_{i,j}",
             "sum"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5"
           ],
-          "retrieval_path": "structured_fallback_semantic",
+          "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
-          "structured_hit_at_1": false,
-          "structured_latency_ms": 178.5770829883404,
-          "semantic_latency_ms": 733.753832988441,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 149.89508298458531,
+          "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.5",
           "expects_structured_route": true,
@@ -384,24 +388,22 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7263375,
+          "best_score": 1.0,
           "content_match_ratio": 0.5,
           "matched_terms": [
             "eigenvector"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39"
           ],
-          "retrieval_path": "structured_fallback_semantic",
+          "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
-          "structured_hit_at_1": false,
-          "structured_latency_ms": 165.80083302687854,
-          "semantic_latency_ms": 607.3532909504138,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 152.12483302457258,
+          "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.39",
           "expects_structured_route": true,
@@ -439,7 +441,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 167.65737504465505,
+          "structured_latency_ms": 151.46366698900238,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "example 2.12",
@@ -477,14 +479,14 @@
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 373.28612501733005,
+          "structured_latency_ms": 294.24875002587214,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "chapter 2",
@@ -517,8 +519,8 @@
             "eigenvector"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
@@ -527,7 +529,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 174.11787499440834,
+          "structured_latency_ms": 152.380290965084,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "help me with page 44 on symmetric eigendecomposition",
@@ -561,17 +563,17 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.42",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.42"
           ],
           "retrieval_path": "structured_fallback_semantic",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 168.3452499564737,
-          "semantic_latency_ms": 669.4790000328794,
+          "structured_latency_ms": 154.6696670120582,
+          "semantic_latency_ms": 607.5949589721859,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.8 singular value decomposition",
           "expects_structured_route": true,
@@ -607,13 +609,16 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 165.2087919646874,
+          "structured_latency_ms": 150.62008396489546,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "figure 2.3",
@@ -659,8 +664,8 @@
           "routing_correct": true,
           "structured_route": false,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 0.002125045284628868,
-          "semantic_latency_ms": 609.1855830163695,
+          "structured_latency_ms": 0.0021249870769679546,
+          "semantic_latency_ms": 572.7664580335841,
           "doc_id": "goodfellow-ch2",
           "query": "what is broadcasting when adding a vector to a matrix",
           "expects_structured_route": false,
@@ -690,18 +695,18 @@
           "content_match_ratio": 0.0,
           "matched_terms": [],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, section 2.12",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.63",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.62",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, equation 2.54",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.65",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.74"
           ],
           "retrieval_path": "semantic",
           "routing_correct": true,
           "structured_route": false,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 0.0005420297384262085,
-          "semantic_latency_ms": 618.4385410160758,
+          "structured_latency_ms": 0.000959029421210289,
+          "semantic_latency_ms": 564.1809169901535,
           "doc_id": "goodfellow-ch2",
           "query": "help with the second problem",
           "expects_structured_route": false,
@@ -738,7 +743,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 165.54683301365003,
+          "structured_latency_ms": 148.25637498870492,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "page 31",
@@ -773,8 +778,8 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
           ],
@@ -782,7 +787,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 167.61570901144296,
+          "structured_latency_ms": 149.25979200052097,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "page 32",
@@ -825,7 +830,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 170.5457500065677,
+          "structured_latency_ms": 163.22895797202364,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "page 34",
@@ -859,17 +864,17 @@
             "norm"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.29",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 167.15566703351215,
+          "structured_latency_ms": 149.66158295283094,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "pg. 39",
@@ -902,17 +907,17 @@
             "L^1"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.32"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 187.53724999260157,
+          "structured_latency_ms": 150.58333397610113,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "p. 40",
@@ -946,17 +951,17 @@
             "eigenvalue"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.38",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 167.20208298647776,
+          "structured_latency_ms": 192.7437909762375,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "page 42",
@@ -989,17 +994,17 @@
             "max norm"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.32"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 174.5696670259349,
+          "structured_latency_ms": 150.40470799431205,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "page forty",
@@ -1034,17 +1039,17 @@
             "rows"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 197.33245903626084,
+          "structured_latency_ms": 152.86395797738805,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.2",
@@ -1085,15 +1090,15 @@
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.21"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 253.76849999884143,
+          "structured_latency_ms": 153.06958399014547,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.3",
@@ -1129,16 +1134,16 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 176.23716598609462,
+          "structured_latency_ms": 151.0064160102047,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.4",
@@ -1176,9 +1181,9 @@
             "L^2"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
           ],
@@ -1186,7 +1191,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 168.38287498103455,
+          "structured_latency_ms": 150.04862495698035,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.5",
@@ -1231,7 +1236,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 182.47529200743884,
+          "structured_latency_ms": 183.11033298959956,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.6",
@@ -1267,17 +1272,17 @@
             "Moore-Penrose"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.45",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.45",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.46"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 167.50766697805375,
+          "structured_latency_ms": 150.52849997300655,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.9",
@@ -1317,7 +1322,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 170.1187909930013,
+          "structured_latency_ms": 148.31091597443447,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.11",
@@ -1345,23 +1350,24 @@
           "reciprocal_rank": 1.0,
           "best_rank": 1,
           "best_score": 1.0,
-          "content_match_ratio": 0.6666666666666666,
+          "content_match_ratio": 1.0,
           "matched_terms": [
+            "Ax",
             "b",
             "solution"
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 168.1219579768367,
+          "structured_latency_ms": 150.1792089547962,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.11",
@@ -1391,24 +1397,21 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7275274,
+          "best_score": 1.0,
           "content_match_ratio": 0.5,
           "matched_terms": [
             "b"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25"
           ],
-          "retrieval_path": "structured_fallback_semantic",
+          "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
-          "structured_hit_at_1": false,
-          "structured_latency_ms": 171.83716699946672,
-          "semantic_latency_ms": 646.5821670135483,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 160.59920901898295,
+          "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.25",
           "expects_structured_route": true,
@@ -1429,22 +1432,28 @@
         {
           "case_id": "goodfellow-ch2-s033",
           "query_type": "structured_equation",
-          "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.0,
-          "matched_terms": [],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "L^p",
+            "sum"
+          ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
-          "structured_hit_at_1": false,
-          "structured_latency_ms": 164.83274998608977,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 148.8209170056507,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.30",
@@ -1471,7 +1480,7 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7231956,
+          "best_score": 1.0,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "Q",
@@ -1479,18 +1488,15 @@
             "symmetric"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3"
           ],
-          "retrieval_path": "structured_fallback_semantic",
+          "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
-          "structured_hit_at_1": false,
-          "structured_latency_ms": 167.1455000177957,
-          "semantic_latency_ms": 560.3143330081366,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 148.24129198677838,
+          "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.41",
           "expects_structured_route": true,
@@ -1512,29 +1518,26 @@
         {
           "case_id": "goodfellow-ch2-s035",
           "query_type": "structured_equation",
-          "hit_at_1": false,
+          "hit_at_1": true,
           "hit_at_3": true,
           "hit_at_5": true,
-          "reciprocal_rank": 0.5,
-          "best_rank": 2,
-          "best_score": 0.7281155,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
           "content_match_ratio": 0.5,
           "matched_terms": [
             "transpose"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
           ],
-          "retrieval_path": "structured_fallback_semantic",
+          "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
-          "structured_hit_at_1": false,
-          "structured_latency_ms": 168.52158401161432,
-          "semantic_latency_ms": 559.6951660118066,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 197.42079096613452,
+          "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.3",
           "expects_structured_route": true,
@@ -1560,25 +1563,23 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.714123,
+          "best_score": 1.0,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "linear combination",
             "columns"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.77",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27"
           ],
-          "retrieval_path": "structured_fallback_semantic",
+          "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
-          "structured_hit_at_1": false,
-          "structured_latency_ms": 167.6445830380544,
-          "semantic_latency_ms": 592.4755000160076,
+          "structured_hit_at_1": true,
+          "structured_latency_ms": 151.38187498087063,
+          "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.27",
           "expects_structured_route": true,
@@ -1614,8 +1615,8 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
           ],
@@ -1623,7 +1624,7 @@
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": true,
-          "structured_latency_ms": 172.70595801528543,
+          "structured_latency_ms": 152.48350001638755,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "what is on page 38 about linear dependence",
@@ -1657,17 +1658,17 @@
             "Tr"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.48",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.49",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.50",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.51",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.52"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 216.96020802482963,
+          "structured_latency_ms": 148.50658300565556,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "section 2.10 trace operator",
@@ -1701,14 +1702,14 @@
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
           ],
           "retrieval_path": "structured",
           "routing_correct": true,
           "structured_route": true,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 346.38187498785555,
+          "structured_latency_ms": 327.9019580222666,
           "semantic_latency_ms": null,
           "doc_id": "goodfellow-ch2",
           "query": "chapter two",
@@ -1751,8 +1752,8 @@
           "routing_correct": true,
           "structured_route": false,
           "structured_hit_at_1": false,
-          "structured_latency_ms": 0.001249951310455799,
-          "semantic_latency_ms": 610.2062499849126,
+          "structured_latency_ms": 0.001334003172814846,
+          "semantic_latency_ms": 576.9062920007855,
           "doc_id": "goodfellow-ch2",
           "query": "what is positive semidefinite matrix",
           "expects_structured_route": false,
@@ -1781,15 +1782,15 @@
       },
       "provider": "google",
       "model": "gemini-embedding-001",
-      "collection_name": "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001",
+      "collection_name": "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001_v2",
       "case_count": 40,
       "metrics": {
-        "hit_at_1": 0.45,
-        "hit_at_3": 0.625,
-        "hit_at_5": 0.675,
-        "mrr": 0.5416666666666667,
-        "avg_content_match": 0.5708333333333334,
-        "avg_latency_ms": 233.87248127983185
+        "hit_at_1": 0.625,
+        "hit_at_3": 0.8,
+        "hit_at_5": 0.85,
+        "mrr": 0.7166666666666667,
+        "avg_content_match": 0.7166666666666667,
+        "avg_latency_ms": 201.97075001779012
       },
       "cases": [
         {
@@ -1807,11 +1808,11 @@
             "limited precision"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page 37",
@@ -1846,8 +1847,8 @@
             "eigendecomposition"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
@@ -1884,11 +1885,11 @@
             "theoretical tool"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page seven",
@@ -1923,9 +1924,9 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
           ],
           "doc_id": "goodfellow-ch2",
@@ -1966,8 +1967,8 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
           ],
@@ -2009,6 +2010,9 @@
             "transpose"
           ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
           ],
           "doc_id": "goodfellow-ch2",
@@ -2044,6 +2048,10 @@
             "identity matrix"
           ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2"
           ],
           "doc_id": "goodfellow-ch2",
@@ -2067,15 +2075,21 @@
         {
           "case_id": "goodfellow-ch2-s008",
           "query_type": "structured_equation",
-          "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.0,
-          "matched_terms": [],
-          "returned_sources": [],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "C_{i,j}",
+            "sum"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5"
+          ],
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.5",
           "expected": {
@@ -2097,15 +2111,21 @@
         {
           "case_id": "goodfellow-ch2-s009",
           "query_type": "structured_equation",
-          "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.0,
-          "matched_terms": [],
-          "returned_sources": [],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "eigenvector"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39"
+          ],
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.39",
           "expected": {
@@ -2177,7 +2197,7 @@
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
           ],
           "doc_id": "goodfellow-ch2",
@@ -2212,8 +2232,8 @@
             "eigenvector"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
@@ -2284,6 +2304,9 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3"
           ],
           "doc_id": "goodfellow-ch2",
@@ -2415,8 +2438,8 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
           ],
@@ -2491,10 +2514,10 @@
             "norm"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.29",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
           ],
           "doc_id": "goodfellow-ch2",
@@ -2529,11 +2552,11 @@
             "L^1"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.32"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "p. 40",
@@ -2568,11 +2591,11 @@
             "eigenvalue"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.38",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page 42",
@@ -2606,11 +2629,11 @@
             "max norm"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.32"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page forty",
@@ -2646,10 +2669,10 @@
             "rows"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
           ],
           "doc_id": "goodfellow-ch2",
@@ -2692,9 +2715,9 @@
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.3"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.21"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.3",
@@ -2731,10 +2754,10 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.4",
@@ -2773,9 +2796,9 @@
             "L^2"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
           ],
@@ -2854,11 +2877,11 @@
             "Moore-Penrose"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.45",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.45",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.46"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.9",
@@ -2922,16 +2945,17 @@
           "reciprocal_rank": 1.0,
           "best_rank": 1,
           "best_score": 1.0,
-          "content_match_ratio": 0.6666666666666666,
+          "content_match_ratio": 1.0,
           "matched_terms": [
+            "Ax",
             "b",
             "solution"
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
           ],
           "doc_id": "goodfellow-ch2",
@@ -2958,15 +2982,20 @@
         {
           "case_id": "goodfellow-ch2-s032",
           "query_type": "structured_equation",
-          "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.0,
-          "matched_terms": [],
-          "returned_sources": [],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "b"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25"
+          ],
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.25",
           "expected": {
@@ -2988,15 +3017,21 @@
         {
           "case_id": "goodfellow-ch2-s033",
           "query_type": "structured_equation",
-          "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.0,
-          "matched_terms": [],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "L^p",
+            "sum"
+          ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30"
           ],
           "doc_id": "goodfellow-ch2",
@@ -3020,15 +3055,22 @@
         {
           "case_id": "goodfellow-ch2-s034",
           "query_type": "structured_equation",
-          "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.0,
-          "matched_terms": [],
-          "returned_sources": [],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "Q",
+            "Lambda",
+            "symmetric"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3"
+          ],
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.41",
           "expected": {
@@ -3051,15 +3093,20 @@
         {
           "case_id": "goodfellow-ch2-s035",
           "query_type": "structured_equation",
-          "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.0,
-          "matched_terms": [],
-          "returned_sources": [],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 0.5,
+          "matched_terms": [
+            "transpose"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
+          ],
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.3",
           "expected": {
@@ -3081,15 +3128,22 @@
         {
           "case_id": "goodfellow-ch2-s036",
           "query_type": "structured_equation",
-          "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.0,
-          "matched_terms": [],
-          "returned_sources": [],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 1.0,
+          "content_match_ratio": 1.0,
+          "matched_terms": [
+            "linear combination",
+            "columns"
+          ],
+          "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27"
+          ],
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.27",
           "expected": {
@@ -3126,8 +3180,8 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
           ],
@@ -3164,11 +3218,11 @@
             "Tr"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.48",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.49",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.50",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.51",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.52"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.10 trace operator",
@@ -3203,7 +3257,7 @@
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
           ],
           "doc_id": "goodfellow-ch2",
@@ -3264,15 +3318,15 @@
       },
       "provider": "google",
       "model": "gemini-embedding-001",
-      "collection_name": "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001",
+      "collection_name": "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001_v2",
       "case_count": 40,
       "metrics": {
-        "hit_at_1": 0.55,
-        "hit_at_3": 0.625,
-        "hit_at_5": 0.75,
-        "mrr": 0.6108333333333332,
-        "avg_content_match": 0.6708333333333333,
-        "avg_latency_ms": 648.1971144050476
+        "hit_at_1": 0.45,
+        "hit_at_3": 0.55,
+        "hit_at_5": 0.7,
+        "mrr": 0.5241666666666667,
+        "avg_content_match": 0.6125,
+        "avg_latency_ms": 788.2733688224107
       },
       "cases": [
         {
@@ -3288,10 +3342,10 @@
           "matched_terms": [],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.57",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.35",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page 37",
@@ -3323,11 +3377,11 @@
           "content_match_ratio": 0.0,
           "matched_terms": [],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.44",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, section 4.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.48"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page 44",
@@ -3359,11 +3413,11 @@
           "content_match_ratio": 0.0,
           "matched_terms": [],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.57",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 50, equation 2.70"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page seven",
@@ -3385,23 +3439,20 @@
         {
           "case_id": "goodfellow-ch2-s004",
           "query_type": "structured_section",
-          "hit_at_1": true,
-          "hit_at_3": true,
-          "hit_at_5": true,
-          "reciprocal_rank": 1.0,
-          "best_rank": 1,
-          "best_score": 0.7041248,
-          "content_match_ratio": 1.0,
-          "matched_terms": [
-            "eigenvector",
-            "eigenvalue"
-          ],
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.7"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.7",
@@ -3433,18 +3484,19 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.72392166,
-          "content_match_ratio": 0.6666666666666666,
+          "best_score": 0.73417133,
+          "content_match_ratio": 1.0,
           "matched_terms": [
             "scalar",
-            "vector"
+            "vector",
+            "tensor"
           ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.1",
@@ -3477,17 +3529,17 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.70983875,
+          "best_score": 0.71360785,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "Figure 2.1",
             "transpose"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, equation 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
           ],
           "doc_id": "goodfellow-ch2",
@@ -3516,7 +3568,7 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.72280025,
+          "best_score": 0.7239177,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "Figure 2.2",
@@ -3524,8 +3576,8 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2"
           ],
@@ -3555,18 +3607,18 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7398844,
+          "best_score": 0.7621765,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "C_{i,j}",
             "sum"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.5",
@@ -3594,17 +3646,17 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7263375,
+          "best_score": 0.7479117,
           "content_match_ratio": 0.5,
           "matched_terms": [
             "eigenvector"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.38",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.39",
@@ -3639,10 +3691,10 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, example 2.12",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, section 2.12",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.12",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, equation 2.54",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 50, equation 2.71"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "example 2.12",
@@ -3684,7 +3736,7 @@
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "chapter 2",
@@ -3721,8 +3773,8 @@
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "help me with page 44 on symmetric eigendecomposition",
@@ -3757,10 +3809,10 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.7"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.42",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.42"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.8 singular value decomposition",
@@ -3790,7 +3842,7 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7202975,
+          "best_score": 0.7210675,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "Figure 2.3",
@@ -3798,10 +3850,10 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "figure 2.3",
@@ -3874,11 +3926,11 @@
           "content_match_ratio": 0.0,
           "matched_terms": [],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, section 2.12",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.63",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.62",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 48, equation 2.54",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.65",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.74"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "help with the second problem",
@@ -3911,10 +3963,10 @@
             "linear algebra"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 31, Chapter 2"
           ],
           "doc_id": "goodfellow-ch2",
@@ -3950,10 +4002,10 @@
             "subscript"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.32",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.32",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 31, Chapter 2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1"
           ],
           "doc_id": "goodfellow-ch2",
@@ -3980,8 +4032,8 @@
           "hit_at_1": false,
           "hit_at_3": false,
           "hit_at_5": true,
-          "reciprocal_rank": 0.25,
-          "best_rank": 4,
+          "reciprocal_rank": 0.2,
+          "best_rank": 5,
           "best_score": 0.64868784,
           "content_match_ratio": 0.5,
           "matched_terms": [
@@ -3990,9 +4042,9 @@
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.34",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.34",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.32",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page 34",
@@ -4015,23 +4067,22 @@
         {
           "case_id": "goodfellow-ch2-s020",
           "query_type": "structured_page",
-          "hit_at_1": true,
-          "hit_at_3": true,
+          "hit_at_1": false,
+          "hit_at_3": false,
           "hit_at_5": true,
-          "reciprocal_rank": 1.0,
-          "best_rank": 1,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
           "best_score": 0.65964437,
-          "content_match_ratio": 1.0,
+          "content_match_ratio": 0.5,
           "matched_terms": [
-            "L^p",
             "norm"
           ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, equation 2.39",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "pg. 39",
@@ -4065,9 +4116,9 @@
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, equation 2.40",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 41, equation 2.37"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "p. 40",
@@ -4090,11 +4141,11 @@
         {
           "case_id": "goodfellow-ch2-s022",
           "query_type": "structured_page",
-          "hit_at_1": true,
+          "hit_at_1": false,
           "hit_at_3": true,
           "hit_at_5": true,
-          "reciprocal_rank": 1.0,
-          "best_rank": 1,
+          "reciprocal_rank": 0.5,
+          "best_rank": 2,
           "best_score": 0.64598703,
           "content_match_ratio": 1.0,
           "matched_terms": [
@@ -4102,11 +4153,11 @@
             "eigenvalue"
           ],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.42",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 42, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.82",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.52",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.42",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page 42",
@@ -4132,19 +4183,20 @@
           "hit_at_1": false,
           "hit_at_3": false,
           "hit_at_5": true,
-          "reciprocal_rank": 0.2,
-          "best_rank": 5,
-          "best_score": 0.6251042,
-          "content_match_ratio": 0.5,
+          "reciprocal_rank": 0.25,
+          "best_rank": 4,
+          "best_score": 0.62739885,
+          "content_match_ratio": 1.0,
           "matched_terms": [
+            "max norm",
             "Frobenius"
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.6",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.73",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.33"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.65",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 50, equation 2.70",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.32",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "page forty",
@@ -4179,8 +4231,8 @@
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, equation 2.2",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.2",
@@ -4210,21 +4262,18 @@
           "query_type": "structured_section",
           "hit_at_1": false,
           "hit_at_3": false,
-          "hit_at_5": true,
-          "reciprocal_rank": 0.25,
-          "best_rank": 4,
-          "best_score": 0.6957606,
-          "content_match_ratio": 1.0,
-          "matched_terms": [
-            "identity matrix",
-            "inverse"
-          ],
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.3",
@@ -4249,23 +4298,23 @@
         {
           "case_id": "goodfellow-ch2-s026",
           "query_type": "structured_section",
-          "hit_at_1": true,
+          "hit_at_1": false,
           "hit_at_3": true,
           "hit_at_5": true,
-          "reciprocal_rank": 1.0,
-          "best_rank": 1,
-          "best_score": 0.68819296,
+          "reciprocal_rank": 0.3333333333333333,
+          "best_rank": 3,
+          "best_score": 0.68681896,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "span",
             "linearly independent"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.4",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.28",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.4",
@@ -4292,22 +4341,22 @@
         {
           "case_id": "goodfellow-ch2-s027",
           "query_type": "structured_section",
-          "hit_at_1": true,
-          "hit_at_3": true,
+          "hit_at_1": false,
+          "hit_at_3": false,
           "hit_at_5": true,
-          "reciprocal_rank": 1.0,
-          "best_rank": 1,
-          "best_score": 0.6981939,
+          "reciprocal_rank": 0.2,
+          "best_rank": 5,
+          "best_score": 0.69524944,
           "content_match_ratio": 0.5,
           "matched_terms": [
             "norm"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, section 2.5"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 40, equation 2.31"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.5",
@@ -4341,11 +4390,11 @@
           "content_match_ratio": 0.0,
           "matched_terms": [],
           "returned_sources": [
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.6",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.26",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.6",
@@ -4371,22 +4420,19 @@
           "case_id": "goodfellow-ch2-s029",
           "query_type": "structured_section",
           "hit_at_1": false,
-          "hit_at_3": true,
-          "hit_at_5": true,
-          "reciprocal_rank": 0.3333333333333333,
-          "best_rank": 3,
-          "best_score": 0.6988231,
-          "content_match_ratio": 1.0,
-          "matched_terms": [
-            "pseudoinverse",
-            "Moore-Penrose"
-          ],
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "reciprocal_rank": 0.0,
+          "best_rank": null,
+          "best_score": null,
+          "content_match_ratio": 0.0,
+          "matched_terms": [],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, section 2.9"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.29",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.9",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.59",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.59",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.59"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.9",
@@ -4419,10 +4465,10 @@
           "matched_terms": [],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, section 4.3"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.11",
@@ -4446,22 +4492,23 @@
           "case_id": "goodfellow-ch2-s031",
           "query_type": "structured_equation",
           "hit_at_1": false,
-          "hit_at_3": false,
-          "hit_at_5": false,
-          "reciprocal_rank": 0.0,
-          "best_rank": null,
-          "best_score": null,
-          "content_match_ratio": 0.6666666666666666,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "reciprocal_rank": 0.3333333333333333,
+          "best_rank": 3,
+          "best_score": 0.7356873,
+          "content_match_ratio": 1.0,
           "matched_terms": [
+            "Ax",
             "b",
             "solution"
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 35, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.11",
@@ -4492,17 +4539,17 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7275274,
+          "best_score": 0.74241257,
           "content_match_ratio": 0.5,
           "matched_terms": [
             "b"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.75"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.25",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, equation 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.25",
@@ -4530,18 +4577,18 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.73611176,
+          "best_score": 0.75208414,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "L^p",
             "sum"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.30",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, equation 2.30",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.5",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 2.12"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, equation 2.29"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.30",
@@ -4569,7 +4616,7 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.7231956,
+          "best_score": 0.73737633,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "Q",
@@ -4577,11 +4624,11 @@
             "symmetric"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, section 2.7",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 44, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 49, section 4.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.9"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.81",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.41",
@@ -4605,22 +4652,22 @@
         {
           "case_id": "goodfellow-ch2-s035",
           "query_type": "structured_equation",
-          "hit_at_1": false,
+          "hit_at_1": true,
           "hit_at_3": true,
           "hit_at_5": true,
-          "reciprocal_rank": 0.5,
-          "best_rank": 2,
-          "best_score": 0.7281155,
+          "reciprocal_rank": 1.0,
+          "best_rank": 1,
+          "best_score": 0.75013494,
           "content_match_ratio": 0.5,
           "matched_terms": [
             "transpose"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.3",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 39, section 2.4"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 43, figure 2.3",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 45, equation 2.43"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "equation 2.3",
@@ -4648,18 +4695,18 @@
           "hit_at_5": true,
           "reciprocal_rank": 1.0,
           "best_rank": 1,
-          "best_score": 0.714123,
+          "best_score": 0.7305536,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "linear combination",
             "columns"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.77",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.28",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 51, equation 2.77"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "eq 2.27",
@@ -4697,9 +4744,9 @@
           ],
           "returned_sources": [
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, section 2.4",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, equation 2.11",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 37, equation 2.27",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 38, section 2.4"
           ],
           "doc_id": "goodfellow-ch2",
@@ -4728,18 +4775,18 @@
           "hit_at_5": true,
           "reciprocal_rank": 0.5,
           "best_rank": 2,
-          "best_score": 0.75442886,
+          "best_score": 0.75531584,
           "content_match_ratio": 1.0,
           "matched_terms": [
             "trace",
             "Tr"
           ],
           "returned_sources": [
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, section 2.10"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 46, equation 2.48",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.50",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.52",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.52",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 47, equation 2.49"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "section 2.10 trace operator",
@@ -4776,8 +4823,8 @@
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 31, Chapter 2",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 32, section 2.1",
             "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 34, section 2.1",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, section 2.2",
-            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, section 2.1"
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 36, figure 2.2",
+            "deep_learning_ian_goodfellow_chapter_2.pdf, chapter 2, page 33, figure 2.1"
           ],
           "doc_id": "goodfellow-ch2",
           "query": "chapter two",

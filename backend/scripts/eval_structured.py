@@ -6,8 +6,8 @@ Run from backend/::
         --golden evals/golden/goodfellow_ch2_structured.jsonl \\
         --top-k 5
 
-Writes ``structuredEval.{policy}.generated.json`` under ``--frontend-data-dir``
-(one file per chunk policy, derived from the active Qdrant collection name).
+Writes ``structuredEval.{policy}[.{variant}].generated.json`` under
+``--frontend-data-dir`` (one file per Qdrant collection snapshot).
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ def resolve_frontend_output_path(
             f"Cannot derive chunk policy from collection {collection_name!r}. "
             "Expected a mathbird_chunk_<policy>_<provider>_<model> collection name."
         )
-    return structured_eval_frontend_path(frontend_data_dir, chunk_policy)
+    return structured_eval_frontend_path(frontend_data_dir, chunk_policy, collection_name=collection_name)
 
 
 async def _amain(args: argparse.Namespace) -> int:
@@ -122,8 +122,8 @@ def main() -> None:
         "--frontend-data-dir",
         default="../frontend/src/data",
         help=(
-            "Directory for dashboard JSON. Writes structuredEval.{policy}.generated.json "
-            "derived from the active Qdrant collection chunk policy."
+            "Directory for dashboard JSON. Writes structuredEval.{policy}[.{variant}].generated.json "
+            "derived from the active Qdrant collection name."
         ),
     )
     parser.add_argument(

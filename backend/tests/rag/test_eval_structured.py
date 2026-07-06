@@ -14,6 +14,7 @@ from app.rag.evaluation import (
 from app.rag.retriever import RetrievedChunk
 from app.rag.structured_eval_output import (
     extract_chunk_policy_from_collection,
+    extract_collection_variant_slug,
     structured_eval_frontend_filename,
     structured_eval_frontend_path,
 )
@@ -30,8 +31,27 @@ def test_structured_eval_frontend_filename_for_policies() -> None:
         == "structuredEval.mathObjectWindowPageAnchor.generated.json"
     )
     assert (
+        structured_eval_frontend_filename(
+            "math_object_window_page_anchor",
+            variant_slug="v2",
+        )
+        == "structuredEval.mathObjectWindowPageAnchor.v2.generated.json"
+    )
+    assert (
         structured_eval_frontend_filename("block_neighbor_1")
         == "structuredEval.blockNeighbor.generated.json"
+    )
+
+
+def test_extract_collection_variant_slug() -> None:
+    policy = "math_object_window_page_anchor"
+    base = "mathbird_chunk_math_object_window_page_anchor_google_gemini_embedding_001"
+    v2 = f"{base}_v2"
+    assert extract_collection_variant_slug(base, policy) is None
+    assert extract_collection_variant_slug(v2, policy) == "v2"
+    assert (
+        structured_eval_frontend_path(Path("frontend"), policy, collection_name=v2).name
+        == "structuredEval.mathObjectWindowPageAnchor.v2.generated.json"
     )
 
 
@@ -59,7 +79,11 @@ async def test_eval_structured_cli_writes_dashboard_payload(
     output_dir = tmp_path / "results"
     frontend_data_dir = tmp_path / "frontend"
     collection_name = "mathbird_chunk_math_object_window_cohere_embed_v4_0"
-    expected_frontend = structured_eval_frontend_path(frontend_data_dir, "math_object_window")
+    expected_frontend = structured_eval_frontend_path(
+        frontend_data_dir,
+        "math_object_window",
+        collection_name=collection_name,
+    )
     _write_jsonl(
         golden_path,
         [

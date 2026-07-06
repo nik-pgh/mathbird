@@ -131,6 +131,31 @@ export function extractChunkPolicy(collectionName: string): string | null {
   return null;
 }
 
+export function extractCollectionVariant(
+  collectionName: string,
+  chunkPolicy: string | null,
+): string | null {
+  if (!chunkPolicy) {
+    return null;
+  }
+  const prefix = `mathbird_chunk_${chunkPolicy}_`;
+  if (!collectionName.startsWith(prefix)) {
+    return null;
+  }
+  const remainder = collectionName.slice(prefix.length);
+  const match = remainder.match(/_v(\d+)$/);
+  return match ? `v${match[1]}` : null;
+}
+
+export function chunkPolicyDisplayLabel(
+  chunkPolicy: string | null,
+  collectionName: string,
+): string {
+  const base = chunkPolicyLabel(chunkPolicy);
+  const variant = extractCollectionVariant(collectionName, chunkPolicy);
+  return variant ? `${base} (${variant})` : base;
+}
+
 export function chunkPolicyLabel(policy: string | null): string {
   if (!policy) {
     return "Unknown chunk policy";
@@ -159,7 +184,7 @@ function buildStructuredLabels(
   StructuredEvalTarget,
   "comparisonLabel" | "pickerPrimary" | "pickerSecondary" | "pickerTitle"
 > {
-  const policyLabel = chunkPolicyLabel(facets.chunkPolicy);
+  const policyLabel = chunkPolicyDisplayLabel(facets.chunkPolicy, target.collectionName);
   const pathLabel = retrievalPathLabel(facets.retrievalPath);
   const comparisonLabel = [policyLabel, facets.embedding, pathLabel].join(" · ");
   return {
@@ -260,7 +285,10 @@ export function buildStructuredPolicyGroups(
       reportCreatedAt: source.report.createdAt,
       goldenPath: source.report.goldenPath,
       chunkPolicy: production.facets.chunkPolicy,
-      policyLabel: production.pickerPrimary,
+      policyLabel: chunkPolicyDisplayLabel(
+        production.facets.chunkPolicy,
+        production.target.collectionName,
+      ),
       embedding: production.facets.embedding,
       collectionName: production.target.collectionName,
       pickerTitle: production.pickerTitle,

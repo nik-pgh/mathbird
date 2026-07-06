@@ -118,7 +118,7 @@ export default function StructuredLookupReport({ policyGroups, sources }: Props)
         <article className="eval-summary-card">
           <span>Chunk policies</span>
           <strong>{policyGroups.length}</strong>
-          <p>One JSON report file per chunk policy</p>
+          <p>One JSON report file per indexed collection snapshot</p>
         </article>
       </section>
 
