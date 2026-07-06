@@ -4,8 +4,10 @@ Run from backend/::
 
     uv run python -m scripts.eval_structured \\
         --golden evals/golden/goodfellow_ch2_structured.jsonl \\
-        --top-k 5 \\
-        --frontend-output ../frontend/src/data/structuredEval.generated.json
+        --top-k 5
+
+Writes ``structuredEval.{policy}.generated.json`` under ``--frontend-data-dir``
+(one file per chunk policy, derived from the active Qdrant collection name).
 """
 
 from __future__ import annotations
@@ -25,6 +27,26 @@ from app.rag.evaluation import (
     structured_case_to_golden,
     structured_report_to_dict,
 )
+from app.rag.structured_eval_output import (
+    extract_chunk_policy_from_collection,
+    structured_eval_frontend_path,
+)
+
+
+def resolve_frontend_output_path(
+    *,
+    collection_name: str,
+    frontend_data_dir: Path | None,
+) -> Path | None:
+    if frontend_data_dir is None:
+        return None
+    chunk_policy = extract_chunk_policy_from_collection(collection_name)
+    if not chunk_policy:
+        raise ValueError(
+            f"Cannot derive chunk policy from collection {collection_name!r}. "
+            "Expected a mathbird_chunk_<policy>_<provider>_<model> collection name."
+        )
+    return structured_eval_frontend_path(frontend_data_dir, chunk_policy)
 
 
 async def _amain(args: argparse.Namespace) -> int:
@@ -76,8 +98,11 @@ async def _amain(args: argparse.Namespace) -> int:
     )
     print(f"Wrote {json_path}")
     print(f"Wrote {md_path}")
-    if args.frontend_output:
-        frontend_path = Path(args.frontend_output)
+    frontend_path = resolve_frontend_output_path(
+        collection_name=settings.resolved_qdrant_collection,
+        frontend_data_dir=Path(args.frontend_data_dir) if args.frontend_data_dir else None,
+    )
+    if frontend_path is not None:
         frontend_path.parent.mkdir(parents=True, exist_ok=True)
         frontend_path.write_text(json.dumps(payload, indent=2) + "\n")
         print(f"Wrote {frontend_path}")
@@ -94,13 +119,21 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--output-dir", default="evals/results")
     parser.add_argument(
-        "--frontend-output",
+        "--frontend-data-dir",
+        default="../frontend/src/data",
         help=(
-            "Optional path for the dashboard JSON, e.g. "
-            "../frontend/src/data/structuredEval.generated.json."
+            "Directory for dashboard JSON. Writes structuredEval.{policy}.generated.json "
+            "derived from the active Qdrant collection chunk policy."
         ),
     )
+    parser.add_argument(
+        "--no-frontend-output",
+        action="store_true",
+        help="Skip writing dashboard JSON under --frontend-data-dir.",
+    )
     args = parser.parse_args()
+    if args.no_frontend_output:
+        args.frontend_data_dir = None
     raise SystemExit(asyncio.run(_amain(args)))
 
 

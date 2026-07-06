@@ -203,7 +203,7 @@ so partial progress is observable. A v1 → v2 migration runs transparently on l
 | `frontend/.env.example` | Template for above. LiveKit URL comes from `POST /api/token`, not a frontend env var. |
 | `frontend/src/data/embeddingEval.generated.json` | Generated embedding comparison report consumed by the eval dashboard. Update via `scripts.eval_retrieval --frontend-output`. |
 | `frontend/src/data/chunkingEval.generated.json` | Generated chunking comparison report consumed by the eval dashboard. Update via `scripts.eval_chunking --frontend-output`. |
-| `frontend/src/data/structuredEval.generated.json` | Generated structured lookup comparison report consumed by the eval dashboard. Update via `scripts.eval_structured --frontend-output`. |
+| `frontend/src/data/structuredEval.{policy}.generated.json` | One structured lookup report per chunk policy for the eval dashboard. Written automatically by `scripts.eval_structured` from the active Qdrant collection name. |
 
 ### `frontend/src/`
 

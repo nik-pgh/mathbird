@@ -69,8 +69,10 @@ Frontend dashboard:
   - Generated embedding comparison report consumed by the dashboard.
 - `frontend/src/data/chunkingEval.generated.json`
   - Generated chunking comparison report consumed by the dashboard.
-- `frontend/src/data/structuredEval.generated.json`
-  - Generated structured lookup comparison report consumed by the dashboard.
+- `frontend/src/data/structuredEval.{policy}.generated.json`
+  - One structured lookup report per chunk policy (e.g.
+    `structuredEval.mathObjectWindowPageAnchor.generated.json`). Written
+    automatically by `eval_structured` from the active Qdrant collection name.
 - `frontend/src/data/retrievalEval.ts`
   - Normalizes backend snake_case JSON into dashboard-friendly TypeScript types.
 - `frontend/src/pages/EvalDashboardPage.tsx`
@@ -197,9 +199,12 @@ CLI:
 cd backend
 uv run python -m scripts.eval_structured \
   --golden evals/golden/goodfellow_ch2_structured.jsonl \
-  --top-k 5 \
-  --frontend-output ../frontend/src/data/structuredEval.generated.json
+  --top-k 5
 ```
+
+This writes `structuredEval.{policy}.generated.json` under
+`frontend/src/data/` (policy slug derived from `QDRANT_COLLECTION`). Use
+`--no-frontend-output` to skip the dashboard file.
 
 Golden case format (structured JSONL):
 
@@ -264,6 +269,13 @@ Creates windows centered on math-heavy blocks:
 
 Each node includes same-page, same-section nearby prose around the math object.
 This targets formula, figure, example, and exercise questions.
+
+### `math_object_window_page_anchor`
+
+Same math-object windows as `math_object_window`, plus one compact page-anchor
+node (heading plus opening prose) on pages that have no centered math object.
+Use this when structured page/chapter cite coverage matters alongside semantic
+retrieval quality.
 
 ## Golden Case Format
 
@@ -379,12 +391,12 @@ fixtures. Prefer backend snake_case in generated files.
 
 ## Frontend Dashboard Integration
 
-The dashboard reads two generated report files:
+The dashboard reads generated report files:
 
 ```text
 frontend/src/data/embeddingEval.generated.json
 frontend/src/data/chunkingEval.generated.json
-frontend/src/data/structuredEval.generated.json
+frontend/src/data/structuredEval.*.generated.json   # one file per chunk policy
 ```
 
 To update `/evals`, write each eval axis to its matching generated file:
@@ -397,9 +409,11 @@ uv run python -m scripts.eval_chunking \
   --evaluate-existing \
   --frontend-output ../frontend/src/data/chunkingEval.generated.json
 
-uv run python -m scripts.eval_structured \
-  --frontend-output ../frontend/src/data/structuredEval.generated.json
+uv run python -m scripts.eval_structured
 ```
+
+Structured eval picks the frontend filename from the active Qdrant collection
+chunk policy (e.g. `structuredEval.mathObjectWindowPageAnchor.generated.json`).
 
 The dashboard is intentionally generic:
 
@@ -539,10 +553,9 @@ Golden scoring reports Hit@5, so eval scripts require `--top-k >= 5`.
 ### Dashboard still shows old results
 
 The frontend reads `frontend/src/data/embeddingEval.generated.json`,
-`frontend/src/data/chunkingEval.generated.json`, and
-`frontend/src/data/structuredEval.generated.json`. Re-run the relevant eval
-script with `--frontend-output` or replace the matching generated file
-explicitly.
+`frontend/src/data/chunkingEval.generated.json`, and every
+`frontend/src/data/structuredEval.*.generated.json` file. Re-run the relevant
+eval script or replace the matching generated file explicitly.
 
 ### Tests pass locally only with `PYTHONPATH=.`
 
