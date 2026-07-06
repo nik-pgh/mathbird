@@ -1,5 +1,6 @@
 import type { TutorBoardEvalTarget } from "../../data/tutorBoardEval";
 import {
+  caseActualItems,
   casePassed,
   tutorBoardAxisLabel,
   tutorBoardCaseLabel,
@@ -44,7 +45,11 @@ export default function TutorBoardCaseMatrix({ targets }: Props) {
               {targets.map((target) => (
                 <th key={tutorBoardTargetKey(target)}>{tutorBoardTargetLabel(target)}</th>
               ))}
-              {!multiTarget ? <th>Actual cards</th> : null}
+              {targets.map((target) => (
+                <th key={`${tutorBoardTargetKey(target)}-cards`}>
+                  {multiTarget ? `${tutorBoardTargetLabel(target)} cards` : "Actual cards"}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -80,11 +85,13 @@ export default function TutorBoardCaseMatrix({ targets }: Props) {
                       </td>
                     );
                   })}
-                  {!multiTarget ? (
-                    <td>
-                      <ActualCardsHoverCard items={item.actualItems} />
+                  {targets.map((target) => (
+                    <td key={`${tutorBoardTargetKey(target)}-cards`}>
+                      <ActualCardsHoverCard
+                        items={caseActualItems(target.report, item.caseId)}
+                      />
                     </td>
-                  ) : null}
+                  ))}
                 </tr>
               );
             })}

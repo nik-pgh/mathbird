@@ -105,3 +105,11 @@ export function casePassed(
   const match = report.cases.find((item) => item.caseId === caseId);
   return match ? match.passed : null;
 }
+
+export function caseActualItems(
+  report: TutorBoardEvalReport,
+  caseId: string,
+): Record<string, unknown>[] {
+  const match = report.cases.find((item) => item.caseId === caseId);
+  return match ? match.actualItems : [];
+}
