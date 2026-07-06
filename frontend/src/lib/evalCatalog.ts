@@ -3,7 +3,9 @@ import type {
   RetrievalEvalReport,
   RetrievalEvalReportTab,
 } from "../data/retrievalEval";
+import type { TutorBoardEvalReport } from "../data/tutorBoardEval";
 import { normalizeReport } from "./evalNormalize";
+import { normalizeTutorBoardReport } from "./tutorBoardEvalNormalize";
 
 const CHUNK_POLICIES = [
   "math_object_window_page_anchor",
@@ -36,6 +38,7 @@ const AXIS_TAB_META: Record<string, { id: string; label: string }> = {
 const embeddingEvalModules = import.meta.glob("../data/embeddingEval*.json");
 const chunkingEvalModules = import.meta.glob("../data/chunkingEval*.json");
 const structuredEvalModules = import.meta.glob("../data/structuredEval*.json");
+const tutorBoardEvalModules = import.meta.glob("../data/tutorBoardEval*.json");
 
 export interface EvalReportSource {
   id: string;
@@ -84,6 +87,7 @@ export interface EvalCatalog {
   structuredEvalCatalog: StructuredEvalTarget[];
   structuredEvalPolicyGroups: StructuredEvalPolicyGroup[];
   retrievalEvalReports: RetrievalEvalReportTab[];
+  tutorBoardEvalReport: TutorBoardEvalReport | null;
 }
 
 function sourceIdFromPath(path: string): string {
@@ -406,11 +410,22 @@ function buildAxisTabs(
   return tabs;
 }
 
+function latestTutorBoardReport(
+  modules: Record<string, unknown>,
+): TutorBoardEvalReport | null {
+  const reports = Object.entries(modules)
+    .map(([, raw]) => normalizeTutorBoardReport(raw))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return reports[0] ?? null;
+}
+
 export async function loadEvalCatalog(): Promise<EvalCatalog> {
-  const [embeddingModules, chunkingModules, structuredModules] = await Promise.all([
+  const [embeddingModules, chunkingModules, structuredModules, tutorBoardModules] =
+    await Promise.all([
     loadJsonModules(embeddingEvalModules),
     loadJsonModules(chunkingEvalModules),
     loadJsonModules(structuredEvalModules),
+    loadJsonModules(tutorBoardEvalModules),
   ]);
 
   const structuredEvalSources = buildSources(structuredModules);
@@ -432,5 +447,6 @@ export async function loadEvalCatalog(): Promise<EvalCatalog> {
     structuredEvalCatalog,
     structuredEvalPolicyGroups,
     retrievalEvalReports,
+    tutorBoardEvalReport: latestTutorBoardReport(tutorBoardModules),
   };
 }

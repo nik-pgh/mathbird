@@ -1142,6 +1142,27 @@ main {
   outline-offset: 2px;
 }
 
+.eval-tutor-board-table td:nth-child(3) {
+  min-width: 16rem;
+  max-width: 28rem;
+}
+
+.eval-tutor-board-row-fail {
+  background: rgba(255, 86, 48, 0.04);
+}
+
+.eval-tone-good {
+  color: #1a7f37;
+}
+
+.eval-tone-neutral {
+  color: #9a6700;
+}
+
+.eval-tone-warn {
+  color: #cf222e;
+}
+
 @media (max-width: 920px) {
   .eval-hero,
   .eval-summary-grid,

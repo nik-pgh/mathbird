@@ -4,6 +4,7 @@ import CaseOutcomeMatrix from "../components/evals/CaseOutcomeMatrix";
 import FailureList from "../components/evals/FailureList";
 import ModelComparisonTable from "../components/evals/ModelComparisonTable";
 import StructuredLookupReport from "../components/evals/StructuredLookupReport";
+import TutorBoardEvalReportView from "../components/evals/TutorBoardEvalReportView";
 import SessionTopbar from "../components/session/SessionTopbar";
 import {
   RetrievalEvalReport,
@@ -122,7 +123,10 @@ export default function EvalDashboardPage() {
         if (cancelled) return;
         setCatalog(loaded);
         setLoadError(null);
-        setActiveTabId(loaded.retrievalEvalReports[0]?.id ?? "structured");
+        setActiveTabId(
+          loaded.retrievalEvalReports[0]?.id ??
+            (loaded.tutorBoardEvalReport ? "tutor-board" : "structured"),
+        );
       })
       .catch((err) => {
         if (!cancelled) {
@@ -131,6 +135,7 @@ export default function EvalDashboardPage() {
             structuredEvalCatalog: [],
             structuredEvalPolicyGroups: [],
             retrievalEvalReports: [],
+            tutorBoardEvalReport: null,
           });
           setLoadError(err instanceof Error ? err.message : String(err));
         }
@@ -141,6 +146,7 @@ export default function EvalDashboardPage() {
   }, []);
 
   const retrievalEvalReports = catalog?.retrievalEvalReports ?? [];
+  const tutorBoardEvalReport = catalog?.tutorBoardEvalReport ?? null;
   const activeTab = useMemo(
     () =>
       retrievalEvalReports.find((tab) => tab.id === activeTabId) ??
@@ -180,6 +186,19 @@ export default function EvalDashboardPage() {
       <main className="eval-main">
         <section className="eval-dashboard">
           <div className="eval-tabs" role="tablist" aria-label="Evaluation reports">
+            {tutorBoardEvalReport ? (
+              <button
+                type="button"
+                role="tab"
+                id="eval-tab-tutor-board"
+                aria-selected={activeTabId === "tutor-board"}
+                aria-controls="eval-panel-tutor-board"
+                className="eval-tab-button"
+                onClick={() => setActiveTabId("tutor-board")}
+              >
+                Tutor Board ({tutorBoardEvalReport.cases.length})
+              </button>
+            ) : null}
             {retrievalEvalReports.map((tab) => (
               <button
                 type="button"
@@ -200,7 +219,9 @@ export default function EvalDashboardPage() {
             role="tabpanel"
             aria-labelledby={`eval-tab-${activeTabId}`}
           >
-            {activeTabId === "structured" ? (
+            {activeTabId === "tutor-board" && tutorBoardEvalReport ? (
+              <TutorBoardEvalReportView report={tutorBoardEvalReport} />
+            ) : activeTabId === "structured" ? (
               <StructuredLookupReport
                 policyGroups={catalog.structuredEvalPolicyGroups}
                 sources={catalog.structuredEvalSources}
