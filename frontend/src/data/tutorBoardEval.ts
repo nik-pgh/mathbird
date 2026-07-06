@@ -32,6 +32,9 @@ export interface TutorBoardCaseFailure {
 export interface TutorBoardEvalReport {
   schemaVersion: number;
   comparisonAxis: "tutor_board";
+  targetId: string;
+  label: string;
+  metadata: Record<string, unknown>;
   createdAt: string;
   goldenPath: string;
   extractorModel: string | null;
@@ -39,6 +42,29 @@ export interface TutorBoardEvalReport {
   axisSummaries: TutorBoardAxisSummary[];
   cases: TutorBoardCaseResult[];
   failures: TutorBoardCaseFailure[];
+}
+
+export interface TutorBoardEvalSource {
+  id: string;
+  fileName: string;
+  report: TutorBoardEvalReport;
+}
+
+export interface TutorBoardEvalTarget {
+  catalogId: string;
+  sourceId: string;
+  sourceFileName: string;
+  targetId: string;
+  label: string;
+  reportCreatedAt: string;
+  goldenPath: string;
+  extractorModel: string | null;
+  metadata: Record<string, unknown>;
+  report: TutorBoardEvalReport;
+  comparisonLabel: string;
+  pickerPrimary: string;
+  pickerSecondary: string;
+  pickerTitle: string;
 }
 
 export { normalizeTutorBoardReport } from "../lib/tutorBoardEvalNormalize";

@@ -60,5 +60,10 @@ export interface RetrievalEvalReportTab {
 }
 
 export { normalizeReport } from "../lib/evalNormalize";
-export type { EvalCatalog, EvalReportSource, StructuredEvalTarget } from "../lib/evalCatalog";
+export type {
+  EvalCatalog,
+  EvalReportSource,
+  StructuredEvalTarget,
+} from "../lib/evalCatalog";
+export type { TutorBoardEvalSource, TutorBoardEvalTarget } from "./tutorBoardEval";
 export { loadEvalCatalog } from "../lib/evalCatalog";

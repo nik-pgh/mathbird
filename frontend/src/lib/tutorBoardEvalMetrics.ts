@@ -1,4 +1,8 @@
-import type { TutorBoardAxis, TutorBoardEvalReport } from "../data/tutorBoardEval";
+import type {
+  TutorBoardAxis,
+  TutorBoardEvalReport,
+  TutorBoardEvalTarget,
+} from "../data/tutorBoardEval";
 import { formatPercent, formatReportTime } from "./evalMetrics";
 
 export const TUTOR_BOARD_AXIS_LABELS: Record<TutorBoardAxis, string> = {
@@ -55,4 +59,49 @@ export function passTone(passRate: number): "good" | "neutral" | "warn" {
   if (passRate >= 0.9) return "good";
   if (passRate >= 0.7) return "neutral";
   return "warn";
+}
+
+export function tutorBoardTargetKey(target: TutorBoardEvalTarget): string {
+  return target.catalogId;
+}
+
+export function tutorBoardTargetLabel(target: TutorBoardEvalTarget): string {
+  return target.label || target.targetId;
+}
+
+export function tutorBoardTargetDetail(target: TutorBoardEvalTarget): string {
+  const timeout = target.metadata.board_extractor_timeout_seconds;
+  const model = target.extractorModel ?? target.metadata.board_extractor_model;
+  const parts = [model, timeout !== undefined ? `${timeout}s timeout` : null].filter(Boolean);
+  return parts.join(" · ") || target.sourceFileName;
+}
+
+export function axisPassRate(
+  report: TutorBoardEvalReport,
+  axis: TutorBoardAxis,
+): number {
+  const summary = report.axisSummaries.find((item) => item.axis === axis);
+  return summary?.passRate ?? 0;
+}
+
+export function rankTutorBoardTargets(
+  targets: readonly TutorBoardEvalTarget[],
+): TutorBoardEvalTarget[] {
+  return [...targets].sort((a, b) => {
+    if (b.report.passRate !== a.report.passRate) {
+      return b.report.passRate - a.report.passRate;
+    }
+    if (a.report.failures.length !== b.report.failures.length) {
+      return a.report.failures.length - b.report.failures.length;
+    }
+    return a.comparisonLabel.localeCompare(b.comparisonLabel);
+  });
+}
+
+export function casePassed(
+  report: TutorBoardEvalReport,
+  caseId: string,
+): boolean | null {
+  const match = report.cases.find((item) => item.caseId === caseId);
+  return match ? match.passed : null;
 }

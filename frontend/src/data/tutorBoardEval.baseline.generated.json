@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "comparison_axis": "tutor_board",
-  "created_at": "20260706T172834Z",
+  "created_at": "20260706T180613Z",
   "golden_path": "evals/golden/tutor_board.jsonl",
   "extractor_model": "gpt-4o-mini",
-  "pass_rate": 0.875,
+  "pass_rate": 0.9166666666666666,
   "axis_summaries": [
     {
       "axis": "card_kind",
       "total": 4,
-      "passed": 3,
-      "pass_rate": 0.75
+      "passed": 4,
+      "pass_rate": 1.0
     },
     {
       "axis": "content",
@@ -21,8 +21,8 @@
     {
       "axis": "grouping",
       "total": 6,
-      "passed": 5,
-      "pass_rate": 0.8333333333333334
+      "passed": 4,
+      "pass_rate": 0.6666666666666666
     },
     {
       "axis": "reference",
@@ -33,8 +33,8 @@
     {
       "axis": "usage",
       "total": 5,
-      "passed": 4,
-      "pass_rate": 0.8
+      "passed": 5,
+      "pass_rate": 1.0
     }
   ],
   "cases": [
@@ -42,12 +42,15 @@
       "case_id": "tb-use-001",
       "axis": "usage",
       "description": "Equation setup should create a tutor card",
-      "passed": false,
-      "failures": [
-        "expected tutor board emit but got no items",
-        "item count 0 < min_items 1"
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "text",
+          "id": "eq1",
+          "markdown": "$2x + 5 = 10$"
+        }
       ],
-      "actual_items": [],
       "tutor_utterance": null
     },
     {
@@ -81,7 +84,7 @@
           "expression": "x**2",
           "x_min": -10.0,
           "x_max": 10.0,
-          "label": "Parabola opens upward"
+          "label": "The parabola y = x^2"
         }
       ],
       "tutor_utterance": null
@@ -178,7 +181,7 @@
           "expression": "x**2",
           "x_min": -10.0,
           "x_max": 10.0,
-          "label": "y = x squared"
+          "label": "Plot of y = x squared"
         }
       ],
       "tutor_utterance": null
@@ -219,12 +222,15 @@
       "case_id": "tb-kind-004",
       "axis": "card_kind",
       "description": "Number line request should use shape kind",
-      "passed": false,
-      "failures": [
-        "expected tutor board emit but got no items",
-        "no actual item matched expected.items[0]"
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "shape",
+          "id": "s1",
+          "svg": "<line x1='0' y1='50' x2='100' y2='50' stroke='currentColor'/><text x='0' y='40' fill='currentColor'>0</text><text x='100' y='40' fill='currentColor'>6</text><line x1='0' y1='50' x2='0' y2='60' stroke='currentColor'/><line x1='100' y1='50' x2='100' y2='60' stroke='currentColor'/>"
+        }
       ],
-      "actual_items": [],
       "tutor_utterance": null
     },
     {
@@ -264,13 +270,17 @@
       "case_id": "tb-group-003",
       "axis": "grouping",
       "description": "Pivot from algebra to geometry should create a new shape card",
-      "passed": true,
-      "failures": [],
+      "passed": false,
+      "failures": [
+        "no actual item matched expected.items[0]"
+      ],
       "actual_items": [
         {
-          "kind": "shape",
-          "id": "s1",
-          "svg": "<line x1='0' y1='0' x2='0' y2='4' stroke='currentColor'/>\n<line x1='0' y1='4' x2='3' y2='4' stroke='currentColor'/>\n<line x1='3' y1='4' x2='0' y2='0' stroke='currentColor'/>"
+          "kind": "diagram",
+          "id": "d1",
+          "syntax": "mermaid",
+          "source": "flowchart TD\n  A(0,0) --> B(3,0) --> C(3,4) --> A\n  B -->|3| A\n  C -->|4| A\n  C -->|5| B",
+          "label": "Right triangle with legs 3 and 4"
         }
       ],
       "tutor_utterance": null
@@ -285,7 +295,7 @@
         {
           "kind": "text",
           "id": "eq2",
-          "markdown": "Let's set up a new equation: \\ $3x - 7 = 8$"
+          "markdown": "**New Equation:** \\ $3x - 7 = 8$"
         }
       ],
       "tutor_utterance": null
@@ -303,7 +313,7 @@
           "expression": "sin(x)",
           "x_min": -3.14,
           "x_max": 3.14,
-          "label": null
+          "label": "Plot of $y = sin(x)$ from $-\\pi$ to $\\pi$"
         }
       ],
       "tutor_utterance": null
@@ -371,20 +381,10 @@
   ],
   "failures": [
     {
-      "case_id": "tb-use-001",
-      "axis": "usage",
-      "description": "Equation setup should create a tutor card",
+      "case_id": "tb-group-003",
+      "axis": "grouping",
+      "description": "Pivot from algebra to geometry should create a new shape card",
       "failures": [
-        "expected tutor board emit but got no items",
-        "item count 0 < min_items 1"
-      ]
-    },
-    {
-      "case_id": "tb-kind-004",
-      "axis": "card_kind",
-      "description": "Number line request should use shape kind",
-      "failures": [
-        "expected tutor board emit but got no items",
         "no actual item matched expected.items[0]"
       ]
     },
@@ -400,5 +400,12 @@
         "no actual item matched expected.items[0]"
       ]
     }
-  ]
+  ],
+  "target_id": "baseline",
+  "label": "Baseline (gpt-4o-mini \u00b7 4s timeout)",
+  "metadata": {
+    "board_extractor": "openai",
+    "board_extractor_model": "gpt-4o-mini",
+    "board_extractor_timeout_seconds": 4.0
+  }
 }

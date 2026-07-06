@@ -3,7 +3,10 @@ import type {
   RetrievalEvalReport,
   RetrievalEvalReportTab,
 } from "../data/retrievalEval";
-import type { TutorBoardEvalReport } from "../data/tutorBoardEval";
+import type {
+  TutorBoardEvalSource,
+  TutorBoardEvalTarget,
+} from "../data/tutorBoardEval";
 import { normalizeReport } from "./evalNormalize";
 import { normalizeTutorBoardReport } from "./tutorBoardEvalNormalize";
 
@@ -87,7 +90,8 @@ export interface EvalCatalog {
   structuredEvalCatalog: StructuredEvalTarget[];
   structuredEvalPolicyGroups: StructuredEvalPolicyGroup[];
   retrievalEvalReports: RetrievalEvalReportTab[];
-  tutorBoardEvalReport: TutorBoardEvalReport | null;
+  tutorBoardEvalSources: TutorBoardEvalSource[];
+  tutorBoardEvalTargets: TutorBoardEvalTarget[];
 }
 
 function sourceIdFromPath(path: string): string {
@@ -410,13 +414,78 @@ function buildAxisTabs(
   return tabs;
 }
 
-function latestTutorBoardReport(
-  modules: Record<string, unknown>,
-): TutorBoardEvalReport | null {
-  const reports = Object.entries(modules)
-    .map(([, raw]) => normalizeTutorBoardReport(raw))
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return reports[0] ?? null;
+function buildTutorBoardSources(modules: Record<string, unknown>): TutorBoardEvalSource[] {
+  return Object.entries(modules)
+    .map(([path, raw]) => {
+      const fileName = `${sourceIdFromPath(path)}.json`;
+      const report = normalizeTutorBoardReport(raw, { fileName });
+      return {
+        id: report.targetId,
+        fileName,
+        report,
+      };
+    })
+    .sort((a, b) => b.report.createdAt.localeCompare(a.report.createdAt));
+}
+
+function buildTutorBoardLabels(
+  source: TutorBoardEvalSource,
+): Pick<
+  TutorBoardEvalTarget,
+  "comparisonLabel" | "pickerPrimary" | "pickerSecondary" | "pickerTitle"
+> {
+  const { report } = source;
+  const timeout = report.metadata.board_extractor_timeout_seconds;
+  const timeoutLabel =
+    typeof timeout === "number" ? `${timeout}s timeout` : "timeout n/a";
+  const pickerSecondary = `${report.extractorModel ?? "n/a"} · ${timeoutLabel}`;
+  return {
+    comparisonLabel: `${report.label} · ${pickerSecondary}`,
+    pickerPrimary: report.label,
+    pickerSecondary,
+    pickerTitle: [
+      `Target: ${report.targetId}`,
+      `Source: ${source.fileName}`,
+      `Run: ${report.createdAt}`,
+      `Golden: ${report.goldenPath}`,
+    ].join("\n"),
+  };
+}
+
+export function buildTutorBoardEvalTargets(
+  sources: readonly TutorBoardEvalSource[],
+): TutorBoardEvalTarget[] {
+  return sources
+    .map((source) => {
+      const labels = buildTutorBoardLabels(source);
+      return {
+        catalogId: source.id,
+        sourceId: source.id,
+        sourceFileName: source.fileName,
+        targetId: source.report.targetId,
+        label: source.report.label,
+        reportCreatedAt: source.report.createdAt,
+        goldenPath: source.report.goldenPath,
+        extractorModel: source.report.extractorModel,
+        metadata: source.report.metadata,
+        report: source.report,
+        ...labels,
+      };
+    })
+    .sort((a, b) => a.comparisonLabel.localeCompare(b.comparisonLabel));
+}
+
+export function defaultTutorBoardSelection(
+  targets: readonly TutorBoardEvalTarget[],
+): TutorBoardEvalTarget[] {
+  if (targets.length === 0) {
+    return [];
+  }
+  const baseline = targets.find((item) => item.targetId === "baseline");
+  if (baseline) {
+    return [baseline, ...targets.filter((item) => item.targetId !== "baseline")];
+  }
+  return [...targets];
 }
 
 export async function loadEvalCatalog(): Promise<EvalCatalog> {
@@ -442,11 +511,15 @@ export async function loadEvalCatalog(): Promise<EvalCatalog> {
     structuredEvalPolicyGroups,
   );
 
+  const tutorBoardEvalSources = buildTutorBoardSources(tutorBoardModules);
+  const tutorBoardEvalTargets = buildTutorBoardEvalTargets(tutorBoardEvalSources);
+
   return {
     structuredEvalSources,
     structuredEvalCatalog,
     structuredEvalPolicyGroups,
     retrievalEvalReports,
-    tutorBoardEvalReport: latestTutorBoardReport(tutorBoardModules),
+    tutorBoardEvalSources,
+    tutorBoardEvalTargets,
   };
 }

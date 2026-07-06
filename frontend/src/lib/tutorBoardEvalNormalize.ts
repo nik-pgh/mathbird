@@ -87,12 +87,34 @@ function normalizeFailure(raw: unknown): TutorBoardCaseFailure {
   };
 }
 
-export function normalizeTutorBoardReport(raw: unknown): TutorBoardEvalReport {
+export function normalizeTutorBoardReport(
+  raw: unknown,
+  options?: { fileName?: string },
+): TutorBoardEvalReport {
   const report = asRecord(raw);
   const extractorModel = report.extractor_model ?? report.extractorModel;
+  const fileVariant = options?.fileName
+    ? extractVariantFromFileName(options.fileName)
+    : null;
+  const targetId = asString(
+    pick(report, "target_id", "targetId", fileVariant ?? "default"),
+    fileVariant ?? "default",
+  );
+  const label = asString(
+    pick(report, "label", "label", ""),
+    targetId,
+  );
+  const metadataRaw = report.metadata;
+  const metadata =
+    metadataRaw && typeof metadataRaw === "object" && !Array.isArray(metadataRaw)
+      ? (metadataRaw as Record<string, unknown>)
+      : {};
   return {
     schemaVersion: asNumber(pick(report, "schema_version", "schemaVersion", 1), 1),
     comparisonAxis: "tutor_board",
+    targetId,
+    label: label || targetId,
+    metadata,
     createdAt: asString(pick(report, "created_at", "createdAt", "")),
     goldenPath: asString(pick(report, "golden_path", "goldenPath", "")),
     extractorModel: typeof extractorModel === "string" ? extractorModel : null,
@@ -103,4 +125,9 @@ export function normalizeTutorBoardReport(raw: unknown): TutorBoardEvalReport {
     cases: asArray(report.cases).map(normalizeCase),
     failures: asArray(report.failures).map(normalizeFailure),
   };
+}
+
+function extractVariantFromFileName(fileName: string): string | null {
+  const match = fileName.match(/^tutorBoardEval\.(.+)\.generated\.json$/);
+  return match ? match[1] : null;
 }

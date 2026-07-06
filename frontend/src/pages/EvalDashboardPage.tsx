@@ -4,7 +4,7 @@ import CaseOutcomeMatrix from "../components/evals/CaseOutcomeMatrix";
 import FailureList from "../components/evals/FailureList";
 import ModelComparisonTable from "../components/evals/ModelComparisonTable";
 import StructuredLookupReport from "../components/evals/StructuredLookupReport";
-import TutorBoardEvalReportView from "../components/evals/TutorBoardEvalReportView";
+import TutorBoardComparisonReport from "../components/evals/TutorBoardComparisonReport";
 import SessionTopbar from "../components/session/SessionTopbar";
 import {
   RetrievalEvalReport,
@@ -125,7 +125,7 @@ export default function EvalDashboardPage() {
         setLoadError(null);
         setActiveTabId(
           loaded.retrievalEvalReports[0]?.id ??
-            (loaded.tutorBoardEvalReport ? "tutor-board" : "structured"),
+            (loaded.tutorBoardEvalTargets.length > 0 ? "tutor-board" : "structured"),
         );
       })
       .catch((err) => {
@@ -135,7 +135,8 @@ export default function EvalDashboardPage() {
             structuredEvalCatalog: [],
             structuredEvalPolicyGroups: [],
             retrievalEvalReports: [],
-            tutorBoardEvalReport: null,
+            tutorBoardEvalSources: [],
+            tutorBoardEvalTargets: [],
           });
           setLoadError(err instanceof Error ? err.message : String(err));
         }
@@ -146,7 +147,8 @@ export default function EvalDashboardPage() {
   }, []);
 
   const retrievalEvalReports = catalog?.retrievalEvalReports ?? [];
-  const tutorBoardEvalReport = catalog?.tutorBoardEvalReport ?? null;
+  const tutorBoardEvalTargets = catalog?.tutorBoardEvalTargets ?? [];
+  const tutorBoardEvalSources = catalog?.tutorBoardEvalSources ?? [];
   const activeTab = useMemo(
     () =>
       retrievalEvalReports.find((tab) => tab.id === activeTabId) ??
@@ -186,7 +188,7 @@ export default function EvalDashboardPage() {
       <main className="eval-main">
         <section className="eval-dashboard">
           <div className="eval-tabs" role="tablist" aria-label="Evaluation reports">
-            {tutorBoardEvalReport ? (
+            {tutorBoardEvalTargets.length > 0 ? (
               <button
                 type="button"
                 role="tab"
@@ -196,7 +198,7 @@ export default function EvalDashboardPage() {
                 className="eval-tab-button"
                 onClick={() => setActiveTabId("tutor-board")}
               >
-                Tutor Board ({tutorBoardEvalReport.cases.length})
+                Tutor Board ({tutorBoardEvalTargets.length})
               </button>
             ) : null}
             {retrievalEvalReports.map((tab) => (
@@ -219,8 +221,11 @@ export default function EvalDashboardPage() {
             role="tabpanel"
             aria-labelledby={`eval-tab-${activeTabId}`}
           >
-            {activeTabId === "tutor-board" && tutorBoardEvalReport ? (
-              <TutorBoardEvalReportView report={tutorBoardEvalReport} />
+            {activeTabId === "tutor-board" && tutorBoardEvalTargets.length > 0 ? (
+              <TutorBoardComparisonReport
+                sources={tutorBoardEvalSources}
+                targets={tutorBoardEvalTargets}
+              />
             ) : activeTabId === "structured" ? (
               <StructuredLookupReport
                 policyGroups={catalog.structuredEvalPolicyGroups}
