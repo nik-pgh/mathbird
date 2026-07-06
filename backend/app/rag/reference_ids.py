@@ -25,9 +25,10 @@ FIGURE_ABBREV_RE = re.compile(r"\bfig\.?\s+(\d+(?:\.\d+)?)\b", re.I)
 
 EQUATION_EXPLICIT_RE = re.compile(r"\bequation\s+(\d+\.\d+)\b", re.I)
 EQUATION_ABBREV_RE = re.compile(r"\beq\.?\s+(\d+\.\d+)\b", re.I)
+EQUATION_TAG_RE = re.compile(r"\\tag\*?\s*\{(\d+\.\d+)\}")
 EQUATION_PAREN_RE = re.compile(r"\((\d+\.\d+)\)")
 
-SECTION_HEADING_RE = re.compile(r"^\s*(\d+\.\d+)\b")
+SECTION_HEADING_RE = re.compile(r"^(?:#+\s*)?(\d+\.\d+)\b")
 SECTION_QUERY_RE = re.compile(r"\bsection\s+(\d+\.\d+)\b", re.I)
 
 FIGURE_QUERY_RE = re.compile(r"\bfigure\s+(\d+(?:\.\d+)?)\b", re.I)
@@ -43,21 +44,26 @@ def _first_group(match: re.Match[str] | None) -> str:
     return next((group for group in match.groups() if group), "")
 
 
-def parse_section_number(text: str) -> str:
-    """Return a section id such as ``2.7`` from a heading or explicit mention."""
-    stripped = text.strip()
-    if not stripped:
+def extract_section_number(text: str, markdown: str = "") -> str:
+    """Return a section id such as ``2.7`` from heading text or markdown."""
+    haystack = f"{text}\n{markdown}".strip()
+    if not haystack:
         return ""
 
-    heading = SECTION_HEADING_RE.match(stripped)
-    if heading:
-        return heading.group(1)
+    for line in haystack.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        heading = SECTION_HEADING_RE.match(stripped)
+        if heading:
+            return heading.group(1)
 
-    explicit = SECTION_QUERY_RE.search(stripped)
-    if explicit:
-        return explicit.group(1)
+    return _first_group(SECTION_QUERY_RE.search(haystack))
 
-    return ""
+
+def parse_section_number(text: str) -> str:
+    """Return a section id such as ``2.7`` from a heading or explicit mention."""
+    return extract_section_number(text)
 
 
 def extract_exercise_number(
@@ -92,7 +98,12 @@ def extract_figure_number(text: str, markdown: str = "") -> str:
 
 def extract_equation_number(text: str, markdown: str = "") -> str:
     haystack = f"{text}\n{markdown}"
-    for pattern in (EQUATION_EXPLICIT_RE, EQUATION_ABBREV_RE, EQUATION_PAREN_RE):
+    for pattern in (
+        EQUATION_TAG_RE,
+        EQUATION_EXPLICIT_RE,
+        EQUATION_ABBREV_RE,
+        EQUATION_PAREN_RE,
+    ):
         match = pattern.search(haystack)
         if match:
             return match.group(1)

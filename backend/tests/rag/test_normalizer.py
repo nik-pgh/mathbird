@@ -744,6 +744,37 @@ def test_normalize_llamaparse_items_extracts_textbook_reference_metadata() -> No
     assert equation_paragraph.equation_number == "2.5"
 
 
+def test_normalize_llamaparse_items_extracts_equation_number_from_latex_tag() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 7,
+                "printed_page_number": 37,
+                "items": [
+                    {
+                        "type": "text",
+                        "value": "",
+                        "md": (
+                            r"$$ \boldsymbol{x} = \boldsymbol{A}^{-1}\boldsymbol{b}. "
+                            r"\tag{2.25} $$"
+                        ),
+                    },
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(
+        payload,
+        doc_id="goodfellow-ch2",
+        filename="deep_learning_ian_goodfellow_chapter_2.pdf",
+    )
+
+    equation_block = doc.pages[0].blocks[0]
+    assert equation_block.block_type == "equation"
+    assert equation_block.equation_number == "2.25"
+
+
 def test_normalize_llamaparse_items_extracts_section_style_example_number() -> None:
     payload = {
         "pages": [
@@ -778,6 +809,40 @@ def test_normalize_llamaparse_items_extracts_section_style_example_number() -> N
     assert heading.section_number == "2.12"
     assert body.section_number == "2.12"
     assert body.printed_page_number == 48
+
+
+def test_normalize_llamaparse_items_extracts_section_number_from_markdown_heading() -> None:
+    payload = {
+        "pages": [
+            {
+                "page": 15,
+                "printed_page_number": 45,
+                "items": [
+                    {
+                        "type": "heading",
+                        "value": "",
+                        "md": "## 2.8 Singular Value Decomposition",
+                    },
+                    {
+                        "type": "text",
+                        "value": "The singular value decomposition factors a matrix.",
+                        "md": "The singular value decomposition factors a matrix.",
+                    },
+                ],
+            }
+        ]
+    }
+
+    doc = normalize_llamaparse_items(
+        payload,
+        doc_id="goodfellow-ch2",
+        filename="deep_learning_ian_goodfellow_chapter_2.pdf",
+    )
+
+    heading, body = doc.pages[0].blocks
+    assert heading.section_number == "2.8"
+    assert heading.section_title == "2.8 Singular Value Decomposition"
+    assert body.section_number == "2.8"
 
 
 def test_normalize_llamaparse_items_uses_metadata_expand_printed_pages() -> None:

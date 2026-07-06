@@ -16,7 +16,7 @@ from app.rag.reference_ids import (
     extract_example_number,
     extract_exercise_number,
     extract_figure_number,
-    parse_section_number,
+    extract_section_number,
 )
 
 EQUATION_RE = re.compile(r"(\$\$.*?\$\$|\$.*?\$|\\\(|\\\[|\\begin\{equation\})", re.S)
@@ -254,7 +254,7 @@ def normalize_llamaparse_items(payload: Any, *, doc_id: str, filename: str) -> P
                 current_chapter = detected_chapter
 
             reference_ids = _block_reference_ids(text, markdown, block_type=block_type)
-            section_from_text = parse_section_number(f"{text}\n{markdown}")
+            section_from_text = extract_section_number(text, markdown)
             section_number = section_from_text or current_section_number
             if section_from_text:
                 current_section_number = section_from_text
