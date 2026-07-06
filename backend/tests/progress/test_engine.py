@@ -314,6 +314,29 @@ def test_focus_on_introduce_engagement_skips_redirect() -> None:
     assert engine.focus_on_introduce_engagement("skip to a different problem") is None
 
 
+def test_focus_on_advance_engagement_anchors_ready_reply() -> None:
+    engine = _engine()
+    engine.set_focus("ch-1-c-b")
+    engine.set_level("ch-1-c-b", "mastered")
+    anchor = engine.focus_on_advance_engagement("im ready")
+    assert anchor == "ch-2-c-a"
+
+
+def test_focus_on_advance_engagement_skips_when_not_mastered() -> None:
+    engine = _engine()
+    engine.set_focus("ch-1-c-b")
+    engine.set_level("ch-1-c-b", "practicing")
+    assert engine.focus_on_advance_engagement("im ready") is None
+
+
+def test_format_injection_next_when_ready_after_concept_mastery() -> None:
+    engine = _engine()
+    engine.set_focus("ch-1-c-b")
+    engine.set_level("ch-1-c-b", "mastered")
+    injection = engine.format_injection()
+    assert "Next when ready: Concept C" in injection
+
+
 def test_format_injection_shows_anchor_when_no_focus() -> None:
     engine = _engine()
     injection = engine.format_injection()

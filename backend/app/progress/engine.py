@@ -195,6 +195,10 @@ class ProgressEngine:
             return self._label_by_node_id.get(pointer.problem_id, pointer.problem_id)
         return self._concept_title_by_id.get(pointer.concept_id, pointer.concept_id)
 
+    def label_for_node_id(self, node_id: str) -> str:
+        """Human label for a concept or problem id (for grader / logging)."""
+        return self._label_by_node_id.get(node_id, node_id)
+
     def chapter_title(self, pointer: FocusPointer) -> str:
         return self._chapter_title_by_id.get(pointer.chapter_id, pointer.chapter_id)
 
@@ -383,6 +387,28 @@ class ProgressEngine:
             return None
         return nxt.problem_id or nxt.concept_id
 
+    def focus_on_advance_engagement(self, turn_text: str) -> str | None:
+        """Return the advance-target node id when the student engages after mastery.
+
+        Deterministic fallback when the grader omits ``set_focus_node_id`` during
+        an ``advance`` recommendation (timeout, false negative, or hallucinated id).
+        """
+        rec = self.recommend()
+        if rec.intent != "advance" or not rec.focus_node_id:
+            return None
+        focus = self._state.focus
+        if focus is None:
+            return None
+        focus_node_id = focus.problem_id or focus.concept_id
+        if self.effective_level(focus_node_id) != "mastered":
+            return None
+        text = turn_text.strip().lower()
+        if not text:
+            return None
+        if any(marker in text for marker in _INTRODUCE_REDIRECT_MARKERS):
+            return None
+        return rec.focus_node_id
+
     def _apply_node_update(self, update: NodeUpdate) -> bool:
         """Apply one graded update; return True if it changed state."""
         before = self.effective_level(update.node_id)
@@ -405,6 +431,8 @@ class ProgressEngine:
         after = self.effective_level(update.node_id)
         if self.is_problem(update.node_id) and after == "mastered" and before != "mastered":
             self._finalize_problem_mastery(update.node_id)
+        elif self.is_concept(update.node_id) and after == "mastered" and before != "mastered":
+            self._finalize_concept_mastery(update.node_id)
         return (
             after != before
             or bool(update.misconception_additions)
@@ -422,6 +450,12 @@ class ProgressEngine:
         node.updated_at = _now_iso()
         if self._state.focus is None or self._state.focus.problem_id != problem_id:
             self._state.focus = pointer
+        self._state.next_suggestion = self._next_after(pointer)
+        self._state.updated_at = _now_iso()
+
+    def _finalize_concept_mastery(self, concept_id: str) -> None:
+        """Sync ``next_suggestion`` when a concept first reaches mastered."""
+        pointer = self._pointer_for(concept_id)
         self._state.next_suggestion = self._next_after(pointer)
         self._state.updated_at = _now_iso()
 
@@ -721,11 +755,8 @@ class ProgressEngine:
     def format_injection(self) -> str:
         summary = self.summary()
         focus = self._state.focus
-        next_label = (
-            self.node_label(self._state.next_suggestion)
-            if self._state.next_suggestion
-            else "none — end of material"
-        )
+        nxt = self.compute_next_suggestion()
+        next_label = self.node_label(nxt) if nxt else "none — end of material"
         rec = self.recommend()
         action_block = f"\n[next action]\n{rec.directive}" if rec.directive else ""
         if focus is None and rec.focus_node_id:
@@ -788,17 +819,19 @@ class ProgressEngine:
         if entry is not None:
             chapter, concept, problem = entry
             return (
+                f"node_id: {focus_node_id}\n"
                 f"Chapter: {chapter.title}\n"
-                f"Concept: {concept.title}\n"
+                f"Concept: {concept.title} (id: {concept.id})\n"
                 f"Problem: {problem.label} (page {problem.page_number})"
             )
         entry = self._concepts_by_id.get(focus_node_id)
         if entry is not None:
             chapter, concept = entry
             problem_lines = "\n".join(
-                f"  - {p.label} (page {p.page_number})" for p in concept.problems
+                f"  - {p.label} (id: {p.id}, page {p.page_number})" for p in concept.problems
             ) or "  (no concrete problems)"
             return (
+                f"node_id: {focus_node_id}\n"
                 f"Chapter: {chapter.title}\n"
                 f"Concept: {concept.title}\n"
                 f"Problems:\n{problem_lines}"

@@ -89,17 +89,28 @@ async def grade_student_turn(agent: WhiteboardAgent, new_message: ChatMessage) -
     focus_node_id = engine.state.focus.problem_id or engine.state.focus.concept_id \
         if engine.state.focus is not None else None
     rec = engine.recommend()
-    nxt = engine.state.next_suggestion
-    nxt_id = (nxt.problem_id or nxt.concept_id) if nxt else None
-    nxt_label = engine.node_label(nxt) if nxt else None
-    context_id = focus_node_id or nxt_id
+    nxt = engine.compute_next_suggestion()
+    grader_target_id = rec.focus_node_id or (
+        (nxt.problem_id or nxt.concept_id) if nxt else None
+    )
+    grader_target_label = (
+        engine.label_for_node_id(grader_target_id) if grader_target_id else None
+    )
+    context_id = focus_node_id or grader_target_id
     levels = engine.nearby_levels(focus_node_id) if focus_node_id else {}
     if context_id is None:
         syllabus_context = ""
-    elif focus_node_id:
-        syllabus_context = engine.focus_context(context_id)
     else:
-        syllabus_context = engine.suggestion_context(context_id)
+        syllabus_context = engine.focus_context(context_id)
+        if (
+            grader_target_id
+            and grader_target_id != context_id
+            and rec.intent in {"advance", "introduce"}
+        ):
+            syllabus_context = (
+                f"{syllabus_context}\n\n--- transition target ---\n"
+                f"{engine.focus_context(grader_target_id)}"
+            )
     last_tutor_message = _last_assistant_message(agent)
     board_text = None if agent._board_state.is_blank else agent._board_state.user_text
 
@@ -110,8 +121,8 @@ async def grade_student_turn(agent: WhiteboardAgent, new_message: ChatMessage) -
             focus_node_id=focus_node_id,
             levels=levels,
             syllabus_context=syllabus_context,
-            next_suggestion_node_id=nxt_id,
-            next_suggestion_label=nxt_label,
+            next_suggestion_node_id=grader_target_id,
+            next_suggestion_label=grader_target_label,
             recommend_intent=rec.intent,
             recommend_directive=rec.directive,
             last_tutor_message=last_tutor_message,
@@ -120,8 +131,11 @@ async def grade_student_turn(agent: WhiteboardAgent, new_message: ChatMessage) -
         logger.exception("grader raised; skipping turn grading")
         return
 
-    if not result.set_focus_node_id and focus_node_id is None:
-        anchor = engine.focus_on_introduce_engagement(turn_text)
+    if not result.set_focus_node_id:
+        if focus_node_id is None:
+            anchor = engine.focus_on_introduce_engagement(turn_text)
+        else:
+            anchor = engine.focus_on_advance_engagement(turn_text)
         if anchor:
             result = GradeResult(
                 set_focus_node_id=anchor,

@@ -19,6 +19,11 @@ def _syllabus() -> Syllabus:
                 title="Chapter 1",
                 concepts=[
                     Concept(
+                        id="ch-1-c-expo",
+                        title="Expository A",
+                        block_ids=("b0",),
+                    ),
+                    Concept(
                         id="ch-1-c-a",
                         title="Concept A",
                         problems=[
@@ -71,6 +76,21 @@ def test_apply_grade_result_mastery_advances_next_suggestion() -> None:
         chapter_id="ch-1",
         concept_id="ch-1-c-a",
         problem_id="ch-1-p-2",
+    )
+
+
+def test_apply_grade_result_concept_mastery_advances_next_suggestion() -> None:
+    engine = _engine()
+    engine.apply_grade_result(GradeResult(set_focus_node_id="ch-1-c-expo"))
+    changed = engine.apply_grade_result(
+        GradeResult(updates=[NodeUpdate(node_id="ch-1-c-expo", level="mastered")])
+    )
+    assert changed is True
+    assert engine.effective_level("ch-1-c-expo") == "mastered"
+    assert engine.state.next_suggestion == FocusPointer(
+        chapter_id="ch-1",
+        concept_id="ch-1-c-a",
+        problem_id="",
     )
 
 

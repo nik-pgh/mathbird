@@ -89,13 +89,21 @@ previously recorded error this turn.
 toward the focus node. Do not infer hints from the student turn alone.
 - Target the focus node primarily; only touch other nodes when the student's \
 work this turn clearly pertains to them (e.g. a prerequisite they reused).
-- ``set_focus_node_id``: when ``recommend_intent`` is ``introduce`` and \
-``next_suggestion_node_id`` is present, set it to that id when the student \
-engages with the topic this turn — e.g. agrees to start ("yes", "ok", "let's \
-go"), asks to continue ("current focus"), or answers a tutor question about \
-prior knowledge ("almost nothing", "nothing", "a little about vectors"). Leave \
-null only for empty turns, explicit redirects ("skip", "different problem"), \
-or clear off-topic chatter.
+- ``set_focus_node_id``: copy ``next_suggestion_node_id`` **exactly** when \
+setting focus — never invent or slug-guess ids. Use only ids shown as \
+``node_id:`` in syllabus_context or the ``next_suggestion_node_id`` field.
+- When ``recommend_intent`` is ``introduce`` and ``next_suggestion_node_id`` \
+is present, set it to that id when the student engages with the topic this \
+turn — e.g. agrees to start ("yes", "ok", "let's go"), asks to continue \
+("current focus"), or answers a tutor question about prior knowledge \
+("almost nothing", "nothing", "a little about vectors"). Leave null only \
+for empty turns, explicit redirects ("skip", "different problem"), or clear \
+off-topic chatter.
+- When ``recommend_intent`` is ``advance`` and ``next_suggestion_node_id`` \
+is present, set it to that exact id when the student engages with moving on \
+— e.g. "ready", "let's go", "ok", or substantive work on the next topic \
+(definitions, setup, or answers about the upcoming section). Leave null \
+only for empty turns, explicit redirects, or clear off-topic chatter.
 
 If nothing in this turn supports an update, return {"updates": []}.
 """

@@ -37,7 +37,9 @@ def _syllabus() -> Syllabus:
                                 page_number=1,
                             ),
                         ],
-                    )
+                    ),
+                    Concept(id="ch-1-c-b", title="Concept B", block_ids=("b9",)),
+                    Concept(id="ch-1-c-c", title="Concept C", block_ids=("b10",)),
                 ],
             )
         ],
@@ -189,6 +191,13 @@ def test_openai_grader_prompt_rejects_clarifying_question_misconceptions() -> No
     )
 
 
+def test_openai_grader_prompt_includes_advance_set_focus_rule() -> None:
+    from app.agent.grader.openai import _SYSTEM_PROMPT
+
+    assert '``recommend_intent`` is ``advance``' in _SYSTEM_PROMPT
+    assert "copy ``next_suggestion_node_id`` **exactly**" in _SYSTEM_PROMPT
+
+
 @pytest.mark.asyncio
 async def test_openai_grader_records_misconception() -> None:
 
@@ -279,6 +288,7 @@ def test_nearby_levels_includes_focus_and_concept() -> None:
 def test_focus_context_for_problem() -> None:
     engine = _engine()
     ctx = engine.focus_context("ch-1-p-1")
+    assert "node_id: ch-1-p-1" in ctx
     assert "Chapter 1" in ctx
     assert "Concept A" in ctx
     assert "Problem 1" in ctx
@@ -336,6 +346,106 @@ async def test_grade_turn_sets_focus_from_grader(monkeypatch: pytest.MonkeyPatch
     assert grader.calls[0]["next_suggestion_node_id"] == "ch-1-c-a"
     assert grader.calls[0]["next_suggestion_label"] == "Concept A"
     assert grader.calls[0]["last_tutor_message"] == "Great work. Want to move to Problem 1 next?"
+
+
+@pytest.mark.asyncio
+async def test_grade_turn_passes_advance_target_to_grader(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When focus is mastered, grader receives the live advance target id."""
+    from app.agent.grader.base import NodeUpdate
+    from app.agent.whiteboard.cache import BoardCache
+    from app.agent.whiteboard.state import BoardState
+
+    class _FakeExtractor:
+        async def extract(self, sentence, current_items, last_sentence):  # noqa: ANN001
+            return []
+
+    class _FakeGrader:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        async def grade(self, **kwargs):  # noqa: ANN003
+            self.calls.append(kwargs)
+            return GradeResult(updates=[])
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.history = ChatContext()
+
+    async def _noop_persist(engine):  # noqa: ANN001
+        return None
+
+    monkeypatch.setattr("app.agent.turn_context.grade._persist_progress_via_store", _noop_persist)
+    engine = _engine()
+    engine.set_focus("ch-1-c-b")
+    engine.apply_grade_result(
+        GradeResult(updates=[NodeUpdate(node_id="ch-1-c-b", level="mastered")])
+    )
+    grader = _FakeGrader()
+    agent = WhiteboardAgent(
+        instructions="be a tutor",
+        board_state=BoardState(),
+        board_cache=BoardCache(),
+        extractor=_FakeExtractor(),
+        grader=grader,
+        progress_engine=engine,
+    )
+    agent._fake_session_for_tests = _FakeSession()  # type: ignore[attr-defined]
+
+    from app.agent.turn_context.grade import grade_student_turn
+
+    await grade_student_turn(agent, ChatMessage(role="user", content=["im ready"]))
+
+    assert len(grader.calls) == 1
+    assert grader.calls[0]["recommend_intent"] == "advance"
+    assert grader.calls[0]["next_suggestion_node_id"] == "ch-1-c-c"
+    assert grader.calls[0]["next_suggestion_label"] == "Concept C"
+
+
+@pytest.mark.asyncio
+async def test_grade_turn_advance_fallback_when_grader_returns_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Advance engagement moves focus when grader omits set_focus_node_id."""
+    from app.agent.grader.base import NodeUpdate
+    from app.agent.whiteboard.cache import BoardCache
+    from app.agent.whiteboard.state import BoardState
+
+    class _FakeExtractor:
+        async def extract(self, sentence, current_items, last_sentence):  # noqa: ANN001
+            return []
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.history = ChatContext()
+
+    async def _noop_persist(engine):  # noqa: ANN001
+        return None
+
+    monkeypatch.setattr("app.agent.turn_context.grade._persist_progress_via_store", _noop_persist)
+    engine = _engine()
+    engine.set_focus("ch-1-c-b")
+    engine.apply_grade_result(
+        GradeResult(updates=[NodeUpdate(node_id="ch-1-c-b", level="mastered")])
+    )
+    agent = WhiteboardAgent(
+        instructions="be a tutor",
+        board_state=BoardState(),
+        board_cache=BoardCache(),
+        extractor=_FakeExtractor(),
+        grader=NullGrader(),
+        progress_engine=engine,
+    )
+    agent._fake_session_for_tests = _FakeSession()  # type: ignore[attr-defined]
+
+    from app.agent.turn_context.grade import grade_student_turn
+
+    await grade_student_turn(agent, ChatMessage(role="user", content=["im ready"]))
+
+    assert engine.state.focus is not None
+    assert engine.state.focus.concept_id == "ch-1-c-c"
+    assert engine.effective_level("ch-1-c-c") == "introduced"
 
 
 @pytest.mark.asyncio
