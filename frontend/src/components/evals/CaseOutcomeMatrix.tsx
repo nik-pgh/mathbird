@@ -1,27 +1,61 @@
 import { EvalTarget, RetrievalEvalReport } from "../../data/retrievalEval";
+import {
+  type StructuredRetrievalPath,
+  STRUCTURED_RETRIEVAL_PATHS,
+} from "../../lib/evalCatalog";
 import { caseSummaries, targetKey, targetLabel } from "../../lib/evalMetrics";
 
 interface Props {
   report: RetrievalEvalReport;
   targets: readonly EvalTarget[];
   targetHeader?: (target: EvalTarget) => string;
+  retrievalPath?: StructuredRetrievalPath;
+  onRetrievalPathChange?: (path: StructuredRetrievalPath) => void;
 }
 
 export default function CaseOutcomeMatrix({
   report,
   targets,
   targetHeader,
+  retrievalPath,
+  onRetrievalPathChange,
 }: Props) {
   const cases = caseSummaries(report, targets);
   const headerFor = targetHeader ?? targetLabel;
+  const showPathFilter = onRetrievalPathChange !== undefined;
 
   return (
     <section className="eval-panel eval-case-matrix">
       <div className="eval-section-header">
         <div>
           <h2>Golden case outcomes</h2>
-          <p>Cells show the best matching rank returned for each question.</p>
+          <p>
+            {showPathFilter
+              ? "Cells show the best matching rank for each chunk policy on the selected retrieval path."
+              : "Cells show the best matching rank returned for each question."}
+          </p>
         </div>
+        {showPathFilter && retrievalPath !== undefined ? (
+          <div
+            className="eval-path-filter"
+            role="group"
+            aria-label="Retrieval path filter"
+          >
+            {STRUCTURED_RETRIEVAL_PATHS.map((option) => (
+              <button
+                type="button"
+                key={option.id}
+                className={`eval-path-filter-button${
+                  retrievalPath === option.id ? " selected" : ""
+                }`}
+                aria-pressed={retrievalPath === option.id}
+                onClick={() => onRetrievalPathChange(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="eval-table-wrap">

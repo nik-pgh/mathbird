@@ -6,11 +6,26 @@ import type {
 import { normalizeReport } from "./evalNormalize";
 
 const CHUNK_POLICIES = [
+  "math_object_window_page_anchor",
   "page_section_window_512",
   "block_neighbor_1",
   "math_object_window",
   "block",
 ] as const;
+
+const CHUNK_POLICY_LABELS: Record<string, string> = {
+  block: "Block",
+  block_neighbor_1: "Block + neighbors",
+  page_section_window_512: "Page-section window",
+  math_object_window: "Math object window",
+  math_object_window_page_anchor: "Math object window + page anchors",
+};
+
+const RETRIEVAL_PATH_LABELS: Record<string, string> = {
+  production: "Production retrieve()",
+  structured_only: "Structured lookup only",
+  semantic_only: "Semantic search only",
+};
 
 const AXIS_TAB_META: Record<string, { id: string; label: string }> = {
   embedding_model: { id: "embedding", label: "Embedding Experiments" },
@@ -31,6 +46,7 @@ export interface EvalReportSource {
 export interface StructuredEvalTarget {
   catalogId: string;
   sourceId: string;
+  sourceFileName: string;
   reportCreatedAt: string;
   goldenPath: string;
   target: EvalTarget;
@@ -39,12 +55,34 @@ export interface StructuredEvalTarget {
     retrievalPath: string | null;
     embedding: string;
   };
-  shortLabel: string;
+  /** Full single-line label for tables and screen readers. */
+  comparisonLabel: string;
+  /** Primary line for compact picker chips (chunk policy). */
+  pickerPrimary: string;
+  /** Secondary line for picker chips (embedding + retrieval path). */
+  pickerSecondary: string;
+  /** Tooltip with collection, source file, and run time. */
+  pickerTitle: string;
+}
+
+export interface StructuredEvalPolicyGroup {
+  sourceId: string;
+  sourceFileName: string;
+  reportCreatedAt: string;
+  goldenPath: string;
+  chunkPolicy: string | null;
+  policyLabel: string;
+  embedding: string;
+  collectionName: string;
+  pickerTitle: string;
+  production: StructuredEvalTarget;
+  paths: StructuredEvalTarget[];
 }
 
 export interface EvalCatalog {
   structuredEvalSources: EvalReportSource[];
   structuredEvalCatalog: StructuredEvalTarget[];
+  structuredEvalPolicyGroups: StructuredEvalPolicyGroup[];
   retrievalEvalReports: RetrievalEvalReportTab[];
 }
 
@@ -83,7 +121,9 @@ export function extractChunkPolicy(collectionName: string): string | null {
     return null;
   }
   const rest = collectionName.slice("mathbird_chunk_".length);
-  for (const policy of CHUNK_POLICIES) {
+  // Longest policy name first so math_object_window_page_anchor beats math_object_window.
+  const policies = [...CHUNK_POLICIES].sort((a, b) => b.length - a.length);
+  for (const policy of policies) {
     if (rest.startsWith(`${policy}_`)) {
       return policy;
     }
@@ -91,25 +131,47 @@ export function extractChunkPolicy(collectionName: string): string | null {
   return null;
 }
 
+export function chunkPolicyLabel(policy: string | null): string {
+  if (!policy) {
+    return "Unknown chunk policy";
+  }
+  return CHUNK_POLICY_LABELS[policy] ?? policy;
+}
+
+export function retrievalPathLabel(path: string | null): string {
+  if (!path) {
+    return "Unknown retrieval path";
+  }
+  return RETRIEVAL_PATH_LABELS[path] ?? path;
+}
+
 function retrievalPathFromTarget(target: EvalTarget): string | null {
   const path = target.metadata.path;
   return typeof path === "string" ? path : null;
 }
 
-function buildShortLabel(
+function buildStructuredLabels(
   target: EvalTarget,
   facets: StructuredEvalTarget["facets"],
-): string {
-  const parts: string[] = [];
-  if (facets.chunkPolicy) {
-    parts.push(facets.chunkPolicy);
-  }
-  if (facets.retrievalPath) {
-    parts.push(facets.retrievalPath);
-  } else if (target.label && target.label !== target.model) {
-    parts.push(target.label);
-  }
-  return parts.join(" · ");
+  sourceFileName: string,
+  reportCreatedAt: string,
+): Pick<
+  StructuredEvalTarget,
+  "comparisonLabel" | "pickerPrimary" | "pickerSecondary" | "pickerTitle"
+> {
+  const policyLabel = chunkPolicyLabel(facets.chunkPolicy);
+  const pathLabel = retrievalPathLabel(facets.retrievalPath);
+  const comparisonLabel = [policyLabel, facets.embedding, pathLabel].join(" · ");
+  return {
+    comparisonLabel,
+    pickerPrimary: policyLabel,
+    pickerSecondary: `${facets.embedding} · ${pathLabel}`,
+    pickerTitle: [
+      `Collection: ${target.collectionName}`,
+      `Source: ${sourceFileName}`,
+      `Run: ${reportCreatedAt}`,
+    ].join("\n"),
+  };
 }
 
 export function buildStructuredEvalCatalog(
@@ -126,19 +188,100 @@ export function buildStructuredEvalCatalog(
         retrievalPath,
         embedding: `${target.provider}/${target.model}`,
       };
+      const labels = buildStructuredLabels(
+        target,
+        facets,
+        source.fileName,
+        source.report.createdAt,
+      );
       catalog.push({
         catalogId: `${source.id}::${target.targetId}`,
         sourceId: source.id,
+        sourceFileName: source.fileName,
         reportCreatedAt: source.report.createdAt,
         goldenPath: source.report.goldenPath,
         target,
         facets,
-        shortLabel: buildShortLabel(target, facets),
+        ...labels,
       });
     }
   }
 
-  return catalog.sort((a, b) => a.shortLabel.localeCompare(b.shortLabel));
+  return catalog.sort((a, b) => a.comparisonLabel.localeCompare(b.comparisonLabel));
+}
+
+const PATH_ORDER = ["production", "structured_only", "semantic_only"] as const;
+
+export type StructuredRetrievalPath = (typeof PATH_ORDER)[number];
+
+export const STRUCTURED_RETRIEVAL_PATHS: ReadonlyArray<{
+  id: StructuredRetrievalPath;
+  label: string;
+}> = [
+  { id: "production", label: "Production" },
+  { id: "structured_only", label: "Structured" },
+  { id: "semantic_only", label: "Semantic" },
+];
+
+export function targetsForRetrievalPath(
+  groups: readonly StructuredEvalPolicyGroup[],
+  path: StructuredRetrievalPath,
+): StructuredEvalTarget[] {
+  return groups.map((group) => {
+    if (path === "production") {
+      return group.production;
+    }
+    return (
+      group.paths.find((entry) => entry.facets.retrievalPath === path) ?? group.production
+    );
+  });
+}
+
+export function buildStructuredPolicyGroups(
+  sources: readonly EvalReportSource[],
+  catalog: readonly StructuredEvalTarget[],
+): StructuredEvalPolicyGroup[] {
+  const groups: StructuredEvalPolicyGroup[] = [];
+
+  for (const source of sources) {
+    const entries = catalog.filter((item) => item.sourceId === source.id);
+    const production =
+      entries.find((item) => item.facets.retrievalPath === "production") ?? entries[0];
+    if (!production) {
+      continue;
+    }
+    const paths = PATH_ORDER.flatMap((path) => {
+      const match = entries.find((item) => item.facets.retrievalPath === path);
+      return match ? [match] : [];
+    });
+    groups.push({
+      sourceId: source.id,
+      sourceFileName: source.fileName,
+      reportCreatedAt: source.report.createdAt,
+      goldenPath: source.report.goldenPath,
+      chunkPolicy: production.facets.chunkPolicy,
+      policyLabel: production.pickerPrimary,
+      embedding: production.facets.embedding,
+      collectionName: production.target.collectionName,
+      pickerTitle: production.pickerTitle,
+      production,
+      paths,
+    });
+  }
+
+  return groups.sort((a, b) => a.policyLabel.localeCompare(b.policyLabel));
+}
+
+export function defaultStructuredPolicySelection(
+  groups: readonly StructuredEvalPolicyGroup[],
+): StructuredEvalPolicyGroup[] {
+  return [...groups];
+}
+
+export function productionTargetsFromGroups(
+  groups: readonly StructuredEvalPolicyGroup[],
+): StructuredEvalTarget[] {
+  return groups.map((group) => group.production);
 }
 
 export function defaultStructuredSelection(
@@ -159,7 +302,7 @@ export function defaultStructuredSelection(
     }
   }
   return [...byCollection.values()].sort((a, b) =>
-    a.shortLabel.localeCompare(b.shortLabel),
+    a.comparisonLabel.localeCompare(b.comparisonLabel),
   );
 }
 
@@ -186,7 +329,7 @@ export function buildStructuredComparisonReport(
     targets: selected.map((item) => ({
       ...item.target,
       targetId: item.catalogId,
-      label: item.shortLabel,
+      label: item.pickerPrimary,
     })),
     failures: [],
   };
@@ -196,8 +339,8 @@ function buildAxisTabs(
   embeddingModules: Record<string, unknown>,
   chunkingModules: Record<string, unknown>,
   structuredModules: Record<string, unknown>,
-  structuredEvalCatalog: StructuredEvalTarget[],
   structuredEvalSources: EvalReportSource[],
+  structuredEvalPolicyGroups: StructuredEvalPolicyGroup[],
 ): RetrievalEvalReportTab[] {
   const tabs: RetrievalEvalReportTab[] = [];
 
@@ -221,7 +364,7 @@ function buildAxisTabs(
 
   const structuredReport =
     buildStructuredComparisonReport(
-      defaultStructuredSelection(structuredEvalCatalog),
+      productionTargetsFromGroups(defaultStructuredPolicySelection(structuredEvalPolicyGroups)),
       structuredEvalSources,
     ) ?? latestReport(structuredModules);
   if (structuredReport) {
@@ -244,17 +387,22 @@ export async function loadEvalCatalog(): Promise<EvalCatalog> {
 
   const structuredEvalSources = buildSources(structuredModules);
   const structuredEvalCatalog = buildStructuredEvalCatalog(structuredEvalSources);
+  const structuredEvalPolicyGroups = buildStructuredPolicyGroups(
+    structuredEvalSources,
+    structuredEvalCatalog,
+  );
   const retrievalEvalReports = buildAxisTabs(
     embeddingModules,
     chunkingModules,
     structuredModules,
-    structuredEvalCatalog,
     structuredEvalSources,
+    structuredEvalPolicyGroups,
   );
 
   return {
     structuredEvalSources,
     structuredEvalCatalog,
+    structuredEvalPolicyGroups,
     retrievalEvalReports,
   };
 }

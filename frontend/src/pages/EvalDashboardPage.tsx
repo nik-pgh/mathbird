@@ -129,6 +129,7 @@ export default function EvalDashboardPage() {
           setCatalog({
             structuredEvalSources: [],
             structuredEvalCatalog: [],
+            structuredEvalPolicyGroups: [],
             retrievalEvalReports: [],
           });
           setLoadError(err instanceof Error ? err.message : String(err));
@@ -201,7 +202,7 @@ export default function EvalDashboardPage() {
           >
             {activeTabId === "structured" ? (
               <StructuredLookupReport
-                catalog={catalog.structuredEvalCatalog}
+                policyGroups={catalog.structuredEvalPolicyGroups}
                 sources={catalog.structuredEvalSources}
               />
             ) : activeTab ? (

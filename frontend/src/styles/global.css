@@ -754,6 +754,44 @@ main {
   font-size: 12px;
 }
 
+.eval-path-filter {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #d8dee4;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.eval-path-filter-button {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #57606a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.eval-path-filter-button:hover {
+  color: #24292f;
+  background: #f6f8fa;
+}
+
+.eval-path-filter-button.selected {
+  background: #dbeafe;
+  color: #0550ae;
+}
+
+.eval-path-filter-button:focus-visible {
+  outline: 2px solid #0969da;
+  outline-offset: 1px;
+}
+
 .eval-count-badge {
   min-width: 28px;
   padding: 2px 8px;
@@ -993,17 +1031,100 @@ main {
   letter-spacing: 0.04em;
 }
 
-.eval-config-pill {
-  min-height: 30px;
-  padding: 0 10px;
+.eval-config-picker-hint {
+  color: #6e7781;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.eval-path-breakdown {
+  margin-top: 28px;
+  display: grid;
+  gap: 16px;
+}
+
+.eval-path-breakdown-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.eval-path-breakdown-header p {
+  margin: 6px 0 0;
+  color: #57606a;
+  font-size: 14px;
+}
+
+.eval-path-breakdown-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.eval-path-breakdown-card {
   border: 1px solid #d8dee4;
-  border-radius: 999px;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.eval-path-breakdown-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.eval-path-breakdown-meta {
+  margin: 4px 0 12px;
+  color: #57606a;
+  font-size: 12px;
+}
+
+.eval-path-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.eval-path-breakdown-table th,
+.eval-path-breakdown-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #eaeef2;
+  text-align: left;
+}
+
+.eval-path-breakdown-table th[scope="col"] {
+  color: #57606a;
+  font-weight: 600;
+}
+
+.eval-config-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 30px;
+  padding: 8px 12px;
+  border: 1px solid #d8dee4;
+  border-radius: 10px;
   background: #ffffff;
   color: #24292f;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  text-align: left;
+  max-width: min(100%, 360px);
+}
+
+.eval-config-pill-primary {
+  line-height: 1.25;
+}
+
+.eval-config-pill-secondary {
+  color: #57606a;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .eval-config-pill:hover {

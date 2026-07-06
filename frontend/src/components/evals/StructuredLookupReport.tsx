@@ -3,11 +3,13 @@ import { useMemo, useState } from "react";
 import CaseOutcomeMatrix from "./CaseOutcomeMatrix";
 import FailureList from "./FailureList";
 import ModelComparisonTable from "./ModelComparisonTable";
-import StructuredConfigPicker from "./StructuredConfigPicker";
+import StructuredPathBreakdown from "./StructuredPathBreakdown";
 import {
-  StructuredEvalTarget,
+  type StructuredEvalPolicyGroup,
+  type StructuredRetrievalPath,
   buildStructuredComparisonReport,
-  defaultStructuredSelection,
+  productionTargetsFromGroups,
+  targetsForRetrievalPath,
   type EvalReportSource,
 } from "../../lib/evalCatalog";
 import {
@@ -20,34 +22,30 @@ import {
   targetLabel,
 } from "../../lib/evalMetrics";
 
-function toggleSelected(
-  selected: StructuredEvalTarget[],
-  catalogId: string,
-  catalog: readonly StructuredEvalTarget[],
-): StructuredEvalTarget[] {
-  const item = catalog.find((entry) => entry.catalogId === catalogId);
-  if (!item) {
-    return [...selected];
-  }
-  const exists = selected.some((entry) => entry.catalogId === catalogId);
-  if (exists) {
-    const next = selected.filter((entry) => entry.catalogId !== catalogId);
-    return next.length > 0 ? next : selected;
-  }
-  return [...selected, item].sort((a, b) => a.shortLabel.localeCompare(b.shortLabel));
-}
-
 interface Props {
-  catalog: readonly StructuredEvalTarget[];
+  policyGroups: readonly StructuredEvalPolicyGroup[];
   sources: readonly EvalReportSource[];
 }
 
-export default function StructuredLookupReport({ catalog, sources }: Props) {
-  const [selected, setSelected] = useState(() => defaultStructuredSelection(catalog));
+export default function StructuredLookupReport({ policyGroups, sources }: Props) {
+  const [matrixPath, setMatrixPath] = useState<StructuredRetrievalPath>("production");
 
   const report = useMemo(
-    () => buildStructuredComparisonReport(selected, sources),
-    [selected, sources],
+    () =>
+      buildStructuredComparisonReport(
+        productionTargetsFromGroups(policyGroups),
+        sources,
+      ),
+    [policyGroups, sources],
+  );
+
+  const matrixReport = useMemo(
+    () =>
+      buildStructuredComparisonReport(
+        targetsForRetrievalPath(policyGroups, matrixPath),
+        sources,
+      ),
+    [policyGroups, sources, matrixPath],
   );
 
   if (!report || report.targets.length === 0) {
@@ -81,17 +79,10 @@ export default function StructuredLookupReport({ catalog, sources }: Props) {
           <p className="eval-hero-subtitle">
             <span>Goodfellow chapter 2 structured golden set.</span>
             <span>
-              Top K {report.topK}. {selected.length} configuration
-              {selected.length === 1 ? "" : "s"} selected.
+              Top K {report.topK}. {report.targets.length} chunk{" "}
+              {report.targets.length === 1 ? "policy" : "policies"} on production retrieve().
             </span>
           </p>
-          <StructuredConfigPicker
-            catalog={catalog}
-            selectedIds={selected.map((item) => item.catalogId)}
-            onToggle={(catalogId) =>
-              setSelected((current) => toggleSelected(current, catalogId, catalog))
-            }
-          />
         </div>
         <dl className="eval-report-meta" aria-label="Report metadata">
           <div>
@@ -99,8 +90,8 @@ export default function StructuredLookupReport({ catalog, sources }: Props) {
             <dd>{formatReportTime(report.createdAt)}</dd>
           </div>
           <div>
-            <dt>Sources</dt>
-            <dd>{sources.length} JSON file(s)</dd>
+            <dt>Golden set</dt>
+            <dd>{report.goldenPath}</dd>
           </div>
         </dl>
       </header>
@@ -125,21 +116,25 @@ export default function StructuredLookupReport({ catalog, sources }: Props) {
           <p>{goldenSetSummary(report.comparisonAxis)}</p>
         </article>
         <article className="eval-summary-card">
-          <span>Available configs</span>
-          <strong>{catalog.length}</strong>
-          <p>Toggle chunk policy and retrieval path above</p>
+          <span>Chunk policies</span>
+          <strong>{policyGroups.length}</strong>
+          <p>One JSON report file per chunk policy</p>
         </article>
       </section>
 
       <ModelComparisonTable
         targets={report.targets}
-        targetColumnLabel="Configuration"
+        targetColumnLabel="Chunk policy (production)"
       />
-      <CaseOutcomeMatrix
-        report={report}
-        targets={rankedTargets}
-        targetHeader={(target) => target.label}
-      />
+      <StructuredPathBreakdown groups={policyGroups} />
+      {matrixReport ? (
+        <CaseOutcomeMatrix
+          report={matrixReport}
+          targets={rankTargets(matrixReport.targets)}
+          retrievalPath={matrixPath}
+          onRetrievalPathChange={setMatrixPath}
+        />
+      ) : null}
       <FailureList failures={report.failures} />
     </section>
   );
