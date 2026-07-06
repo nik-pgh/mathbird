@@ -118,14 +118,47 @@ def _primary_block(blocks: list[ParsedBlock]) -> ParsedBlock:
     return blocks[0]
 
 
+def _reference_id_from_blocks(
+    blocks: list[ParsedBlock],
+    field: str,
+    *,
+    prefer: ParsedBlock | None = None,
+) -> str:
+    """Pick a textbook reference id from a chunk window.
+
+  Prefer the anchor/center block, then the first math-object block, then any
+  remaining block in the window. This keeps neighbor windows centered on an
+  equation from inheriting an empty or unrelated neighbor's metadata.
+    """
+    candidates: list[ParsedBlock] = []
+    if prefer is not None:
+        candidates.append(prefer)
+    primary = _primary_block(blocks)
+    if prefer is None or prefer.block_id != primary.block_id:
+        candidates.append(primary)
+    seen = {block.block_id for block in candidates}
+    for block in blocks:
+        if block.block_id in seen:
+            continue
+        candidates.append(block)
+        seen.add(block.block_id)
+    for block in candidates:
+        value = getattr(block, field)
+        if value:
+            return value
+    return ""
+
+
 def _metadata(
     *,
     document: ParsedDocument,
     policy: ChunkPolicy,
     blocks: list[ParsedBlock],
     chunk_kind: str,
+    anchor_block: ParsedBlock | None = None,
 ) -> dict[str, object]:
     primary = _primary_block(blocks)
+    ref_prefer = anchor_block or primary
     source_block_types = [block.block_type for block in blocks]
     return {
         "doc_id": document.doc_id,
@@ -138,10 +171,16 @@ def _metadata(
         "chapter_number": primary.chapter_number,
         "block_type": primary.block_type,
         "source_block_types": source_block_types,
-        "exercise_number": primary.exercise_number,
-        "example_number": primary.example_number,
-        "figure_number": primary.figure_number,
-        "equation_number": primary.equation_number,
+        "exercise_number": _reference_id_from_blocks(
+            blocks, "exercise_number", prefer=ref_prefer
+        ),
+        "example_number": _reference_id_from_blocks(
+            blocks, "example_number", prefer=ref_prefer
+        ),
+        "figure_number": _reference_id_from_blocks(blocks, "figure_number", prefer=ref_prefer),
+        "equation_number": _reference_id_from_blocks(
+            blocks, "equation_number", prefer=ref_prefer
+        ),
         "block_id": primary.block_id,
         "chunk_id": _chunk_id(policy.name, blocks),
         "chunk_policy": policy.name,
@@ -163,6 +202,7 @@ def _node_from_blocks(
     *,
     chunk_kind: str,
     suffix: str = "",
+    anchor_block: ParsedBlock | None = None,
 ) -> TextNode | None:
     from llama_index.core.schema import TextNode
 
@@ -172,7 +212,13 @@ def _node_from_blocks(
     if not content:
         return None
     chunk_id = _chunk_id(policy.name, blocks, suffix=suffix)
-    metadata = _metadata(document=document, policy=policy, blocks=blocks, chunk_kind=chunk_kind)
+    metadata = _metadata(
+        document=document,
+        policy=policy,
+        blocks=blocks,
+        chunk_kind=chunk_kind,
+        anchor_block=anchor_block,
+    )
     metadata["chunk_id"] = chunk_id
     return TextNode(
         id_=str(uuid.uuid5(uuid.NAMESPACE_URL, chunk_id)),
@@ -308,6 +354,7 @@ def _math_object_window_nodes(document: ParsedDocument, policy: ChunkPolicy) -> 
             window,
             chunk_kind=f"{block.block_type}_window",
             suffix=f":center:{block.block_id}",
+            anchor_block=block,
         )
         if node is not None:
             node.metadata["block_id"] = block.block_id

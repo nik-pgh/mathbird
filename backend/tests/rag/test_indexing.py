@@ -197,6 +197,56 @@ def test_math_object_window_policy_centers_equation_chunks_on_surrounding_prose(
     assert all(node.metadata["chunk_kind"] != "page_anchor" for node in nodes)
 
 
+def test_math_object_window_uses_anchor_equation_number_over_neighbor() -> None:
+    doc = ParsedDocument(
+        doc_id="goodfellow-ch2",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=3,
+                printed_page_number=33,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="goodfellow-ch2:p3:b7",
+                        page_number=3,
+                        printed_page_number=33,
+                        block_type="equation",
+                        text=r"$$A = B.$$",
+                        section_number="2.1",
+                    ),
+                    ParsedBlock(
+                        block_id="goodfellow-ch2:p3:b8",
+                        page_number=3,
+                        printed_page_number=33,
+                        block_type="equation",
+                        text=r"$$(\boldsymbol{A}^\top)_{i,j} = A_{j,i}. \quad (2.3)$$",
+                        equation_number="2.3",
+                        section_number="2.1",
+                        neighboring_block_ids=("goodfellow-ch2:p3:b7",),
+                    ),
+                    ParsedBlock(
+                        block_id="goodfellow-ch2:p3:b9",
+                        page_number=3,
+                        printed_page_number=33,
+                        block_type="paragraph",
+                        text="The transpose swaps rows and columns.",
+                        section_number="2.1",
+                        neighboring_block_ids=("goodfellow-ch2:p3:b8",),
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    nodes = parsed_document_to_chunked_nodes(doc, policy_name="math_object_window")
+    centered = next(
+        node for node in nodes if node.metadata["block_id"] == "goodfellow-ch2:p3:b8"
+    )
+
+    assert centered.metadata["equation_number"] == "2.3"
+
+
 def test_math_object_window_skips_page_anchors_on_prose_only_pages() -> None:
     doc = ParsedDocument(
         doc_id="goodfellow-ch2",
