@@ -2,13 +2,13 @@
   "schema_version": 1,
   "comparison_axis": "tutor_board",
   "target_id": "prompt-rich-diagrams",
-  "label": "gpt-4o-mini \u00b7 rich diagram prompt",
+  "label": "gpt-4o-mini \u00b7 plot routing v3",
   "metadata": {
     "board_extractor": "openai",
     "board_extractor_model": "gpt-4o-mini",
     "board_extractor_timeout_seconds": 4.0
   },
-  "created_at": "20260706T221146Z",
+  "created_at": "20260706T225002Z",
   "golden_path": "evals/golden/tutor_board.jsonl",
   "extractor_model": "gpt-4o-mini",
   "pass_rate": 0.9591836734693877,
@@ -28,8 +28,8 @@
     {
       "axis": "grouping",
       "total": 10,
-      "passed": 9,
-      "pass_rate": 0.9
+      "passed": 8,
+      "pass_rate": 0.8
     },
     {
       "axis": "reference",
@@ -40,8 +40,8 @@
     {
       "axis": "usage",
       "total": 12,
-      "passed": 11,
-      "pass_rate": 0.9166666666666666
+      "passed": 12,
+      "pass_rate": 1.0
     }
   ],
   "cases": [
@@ -144,20 +144,13 @@
       "case_id": "tb-use-009",
       "axis": "usage",
       "description": "Explicit geometry sketch request should create a shape card",
-      "passed": false,
-      "failures": [
-        "unexpected kinds ['shape', 'text']; allowed=['shape']"
-      ],
+      "passed": true,
+      "failures": [],
       "actual_items": [
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<line x1='0' y1='0' x2='0' y2='4' stroke='currentColor'/> <line x1='0' y1='0' x2='3' y2='0' stroke='currentColor'/> <line x1='0' y1='4' x2='3' y2='0' stroke='currentColor'/> <text x='1.5' y='-0.5' font-size='12'>3</text> <text x='-0.5' y='2' font-size='12'>4</text> <text x='1.5' y='2' font-size='12'>5</text> "
-        },
-        {
-          "kind": "text",
-          "id": "def1",
-          "markdown": "**Right Triangle** \u2014 A triangle with one angle equal to 90 degrees."
+          "svg": "<line x1='0' y1='0' x2='0' y2='4' stroke='currentColor'/>\n<line x1='0' y1='4' x2='3' y2='4' stroke='currentColor'/>\n<line x1='0' y1='0' x2='3' y2='4' stroke='currentColor'/>"
         }
       ],
       "tutor_utterance": null
@@ -175,7 +168,7 @@
           "expression": "sin(x)",
           "x_min": -3.14,
           "x_max": 3.14,
-          "label": "Sine: $y = \text{sin}(x)$"
+          "label": "Sine: $y = \\sin(x)$"
         }
       ],
       "tutor_utterance": null
@@ -199,7 +192,7 @@
         {
           "kind": "text",
           "id": "def1",
-          "markdown": "**Pythagorean Theorem** \u2014 $a^2 + b^2 = c^2$."
+          "markdown": "**Pythagorean Theorem** \u2014 states that $a^2 + b^2 = c^2$."
         }
       ],
       "tutor_utterance": null
@@ -279,7 +272,7 @@
           "expression": "sin(x)",
           "x_min": -3.14,
           "x_max": 3.14,
-          "label": "Sine: $y = \text{sin}(x)$"
+          "label": "Sine: $y = \\sin(x)$"
         }
       ],
       "tutor_utterance": null
@@ -326,7 +319,7 @@
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<line x1='0' y1='0' x2='0' y2='4' stroke='currentColor'/>\n<line x1='0' y1='4' x2='3' y2='4' stroke='currentColor'/>\n<line x1='0' y1='0' x2='3' y2='4' stroke='currentColor'/>"
+          "svg": "<line x1='0' y1='0' x2='0' y2='4' stroke='currentColor'/>\n<line x1='0' y1='0' x2='3' y2='0' stroke='currentColor'/>\n<line x1='3' y1='0' x2='0' y2='4' stroke='currentColor'/>\n<text x='1.5' y='0.5' fill='currentColor'>3</text>\n<text x='-0.5' y='2' fill='currentColor'>4</text>\n<text x='1.5' y='-0.5' fill='currentColor'>A</text>\n<text x='-0.5' y='4.5' fill='currentColor'>B</text>\n<text x='3.5' y='-0.5' fill='currentColor'>C</text>"
         }
       ],
       "tutor_utterance": null
@@ -406,7 +399,7 @@
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<line x1='0' y1='50' x2='100' y2='50' stroke='currentColor'/>"
+          "svg": "<line x1='0' y1='50' x2='100' y2='50' stroke='currentColor'/><text x='0' y='40' font-size='12'>0</text><text x='100' y='40' font-size='12'>6</text><line x1='0' y1='50' x2='0' y2='60' stroke='currentColor'/><line x1='100' y1='50' x2='100' y2='60' stroke='currentColor'/>"
         }
       ],
       "tutor_utterance": null
@@ -421,7 +414,7 @@
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<rect x='0' y='20' width='300' height='50' fill='lightgray'/>\n<rect x='0' y='20' width='225' height='50' fill='blue'/>"
+          "svg": "<rect x='0' y='0' width='300' height='50' fill='white' stroke='black'/>\n<rect x='0' y='0' width='225' height='50' fill='lightblue'/>"
         }
       ],
       "tutor_utterance": null
@@ -451,12 +444,7 @@
         {
           "kind": "text",
           "id": "def1",
-          "markdown": "**Surface** \u2014 described by the equation $z = x \\cdot y$."
-        },
-        {
-          "kind": "text",
-          "id": "eq1",
-          "markdown": "$z = x \\cdot y$"
+          "markdown": "**Surface** \u2014 defined by the equation $z = x \\cdot y$."
         }
       ],
       "tutor_utterance": null
@@ -472,7 +460,7 @@
           "kind": "diagram",
           "id": "d1",
           "syntax": "mermaid",
-          "source": "flowchart TD\n  S[start] --> D[compute delta]\n  D --> C{check sign}\n  C -- yes --> U[update]\n  C -- no --> E[stop]\n  U --> E",
+          "source": "flowchart TD\n  S[start] --> D[compute delta]\n  D --> C{check sign}\n  C -- yes --> U[update]\n  C -- no --> E[stop]",
           "label": "Gradient descent steps"
         }
       ],
@@ -517,12 +505,20 @@
       "description": "Pivot from algebra to geometry should create a new shape card",
       "passed": false,
       "failures": [
-        "expected tutor board emit but got no items",
-        "item count 0 < min_items 1",
-        "grouping create expected at least one new item id",
-        "no actual item matched expected.items[0]"
+        "item count 2 > max_items 1"
       ],
-      "actual_items": [],
+      "actual_items": [
+        {
+          "kind": "shape",
+          "id": "s1",
+          "svg": "<polygon points='0,0 3,0 0,4' stroke='currentColor' fill='none'/><line x1='3' y1='0' x2='0' y2='4' stroke='currentColor'/>"
+        },
+        {
+          "kind": "text",
+          "id": "def1",
+          "markdown": "**Right Triangle** \u2014 has two legs that are perpendicular."
+        }
+      ],
       "tutor_utterance": null
     },
     {
@@ -562,15 +558,15 @@
       "case_id": "tb-group-006",
       "axis": "grouping",
       "description": "Continuing a definition on the same concept should append text",
-      "passed": true,
-      "failures": [],
-      "actual_items": [
-        {
-          "kind": "text",
-          "id": "def1",
-          "markdown": "**Function** \u2014 maps inputs to outputs.\\\nIn other words, each input maps to exactly one output."
-        }
+      "passed": false,
+      "failures": [
+        "expected tutor board emit but got no items",
+        "item count 0 < min_items 1",
+        "expected reused id 'def1'",
+        "grouping append expected reused id 'def1'",
+        "no actual item matched expected.items[0]"
       ],
+      "actual_items": [],
       "tutor_utterance": null
     },
     {
@@ -585,7 +581,7 @@
           "id": "d1",
           "syntax": "mermaid",
           "source": "flowchart TD\n  n42[42] --> n2[2]\n  n42 --> n21[21]\n  n21 --> n3[3]\n  n21 --> n7[7]",
-          "label": "Factor tree for 42"
+          "label": "Factor tree for 42: $2 \\cdot 3 \\cdot 7$"
         }
       ],
       "tutor_utterance": null
@@ -617,7 +613,7 @@
           "id": "d2",
           "syntax": "mermaid",
           "source": "flowchart TD\n  S[start] --> U[update]\n  U --> E[stop]",
-          "label": "Gradient descent steps"
+          "label": "Gradient descent steps: start \u2192 update \u2192 stop"
         }
       ],
       "tutor_utterance": null
@@ -733,21 +729,22 @@
   ],
   "failures": [
     {
-      "case_id": "tb-use-009",
-      "axis": "usage",
-      "description": "Explicit geometry sketch request should create a shape card",
-      "failures": [
-        "unexpected kinds ['shape', 'text']; allowed=['shape']"
-      ]
-    },
-    {
       "case_id": "tb-group-003",
       "axis": "grouping",
       "description": "Pivot from algebra to geometry should create a new shape card",
       "failures": [
+        "item count 2 > max_items 1"
+      ]
+    },
+    {
+      "case_id": "tb-group-006",
+      "axis": "grouping",
+      "description": "Continuing a definition on the same concept should append text",
+      "failures": [
         "expected tutor board emit but got no items",
         "item count 0 < min_items 1",
-        "grouping create expected at least one new item id",
+        "expected reused id 'def1'",
+        "grouping append expected reused id 'def1'",
         "no actual item matched expected.items[0]"
       ]
     }

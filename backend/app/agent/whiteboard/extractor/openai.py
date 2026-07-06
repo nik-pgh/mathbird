@@ -69,15 +69,26 @@ worked examples, comparisons, and explicit draw/show requests.
     → {"kind": "text", "id": "def1",
        "markdown": "**Function** — maps each input to exactly one output."}
 
-- plot: a single-variable function being defined or discussed visually. ANY
-  time the agent says a function in y = f(x) form (or "the parabola y = …",
-  "f of x equals …", "the curve y = …"), emit a PLOT item with the Python
-  expression for f(x). Plot is the DEFAULT for function definitions — even
-  if the sentence sounds definitional rather than visual. Do NOT emit a
-  text item for a function definition; that's a misclassification. Always
-  set a descriptive `label` (the spoken function name or form, LaTeX ok) so
-  the curve is not a bare unlabeled line, and set `x_min`/`x_max` when the
-  tutor mentions a window.
+- plot: a single-variable function the student should SEE GRAPHED. Emit a
+  plot whenever the tutor's words point at a function as a visual/curve —
+  not just an equation to read. Trigger on any of: "plot/graph y = …",
+  "the parabola/curve y = …", "show me y = …", "y = … opens upward / is
+  increasing", a named shape ("parabola", "sine wave", "line"), or a
+  bounded window ("from -π to π"). In all of these, emit a PLOT item with
+  the Python expression for f(x) — NOT a text item showing the equation,
+  and NOT a hand-drawn SVG. Plot is the DEFAULT for function mentions;
+  reserving text for functions is a misclassification.
+
+  IMPORTANT — never hand-draw a function curve yourself, and never reduce a
+  function to a text equation. When the tutor's words describe a curve or
+  graph of y = f(x), there are only two correct responses: emit a `plot`
+  with the Python `expression` (the renderer graphs it), or emit nothing.
+  Do NOT produce a `shape` item with an SVG <path> approximating the curve
+  (that loses the equation and freezes the figure), and do NOT produce a
+  `text` item with "$y = f(x)$" (the student needs the graph, not the
+  formula re-typeset). The whole point of the board is the visual.
+  Always set a descriptive `label` (the spoken function name or form,
+  LaTeX ok) and set `x_min`/`x_max` when the tutor mentions a window.
     Example sentence: "let me show you, y = x squared"
     → {"kind": "plot", "id": "p1", "expression": "x**2",
        "label": "Parabola: $y = x^2$"}
@@ -93,8 +104,10 @@ worked examples, comparisons, and explicit draw/show requests.
     derivation (e.g., "2x + 5 = 10" being solved).
   - The function is multi-variable (z = x*y) or not easily plottable in
     one variable.
-  - The agent mentions a function name in passing without defining it
-    (e.g., "do you remember the quadratic formula?").
+  - The agent mentions a function NAME in passing without any curve/graph
+    intent (e.g., "do you remember the quadratic formula?"). Note: "show
+    me y = x squared" or "the parabola y = …" IS curve intent — route to
+    plot, not text.
 
 - diagram: a structured visual relationship that Mermaid can express well:
   factor trees, flowcharts, step diagrams, boxes/arrows, relationship diagrams,
@@ -122,9 +135,13 @@ worked examples, comparisons, and explicit draw/show requests.
   described becomes a branching edge. Do the same: turn each enumerated
   step or branch into its own node.
 
-- shape: a freeform SVG sketch for geometry, number lines, fraction bars,
-  area models, and visuals that need precise 2-D placement. Use simple SVG
-  primitives only and omit the outer <svg> wrapper.
+- shape: a freeform SVG sketch for visuals the parametric plot renderer
+  CANNOT handle: geometry figures (triles, circles, angles), number lines
+  with tick marks/labels, fraction/area models, bar models, and anything
+  needing precise 2-D placement of multiple labeled elements. Use simple SVG
+  primitives only and omit the outer <svg> wrapper. shape is the escape
+  hatch for non-function figures — do NOT use it to draw a function curve;
+  that is always a `plot` (see the routing rule above).
     Example sentence: "draw a number line from 0 to 6"
     → {"kind": "shape", "id": "s1",
        "svg": "<line x1='0' y1='50' x2='100' y2='50' stroke='currentColor'/>"}

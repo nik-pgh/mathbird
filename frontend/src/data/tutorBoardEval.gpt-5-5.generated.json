@@ -8,10 +8,10 @@
     "board_extractor_model": "gpt-5.5",
     "board_extractor_timeout_seconds": 15.0
   },
-  "created_at": "20260706T223352Z",
+  "created_at": "20260706T225209Z",
   "golden_path": "evals/golden/tutor_board.jsonl",
   "extractor_model": "gpt-5.5",
-  "pass_rate": 0.8163265306122449,
+  "pass_rate": 0.8367346938775511,
   "axis_summaries": [
     {
       "axis": "card_kind",
@@ -22,8 +22,8 @@
     {
       "axis": "content",
       "total": 9,
-      "passed": 7,
-      "pass_rate": 0.7777777777777778
+      "passed": 8,
+      "pass_rate": 0.8888888888888888
     },
     {
       "axis": "grouping",
@@ -91,7 +91,7 @@
         {
           "kind": "text",
           "id": "p1",
-          "markdown": "$y=x^2$ \u2014 opens upward."
+          "markdown": "$y = x^2$ opens upward"
         }
       ],
       "tutor_utterance": null
@@ -107,7 +107,7 @@
           "kind": "diagram",
           "id": "d1",
           "syntax": "mermaid",
-          "source": "flowchart TD\n  n42[42] --> n2[2]\n  n42 --> n21[21]\n  n21[21] --> n3[3]\n  n21 --> n7[7]",
+          "source": "flowchart TD\n  n42[42] --> n2[2]\n  n42 --> n21[21]\n  n21 --> n3[3]\n  n21 --> n7[7]",
           "label": "Factor tree for 42: $2 \\cdot 3 \\cdot 7$"
         }
       ],
@@ -158,7 +158,7 @@
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<line x1='30' y1='120' x2='150' y2='120' stroke='currentColor' stroke-width='2'/><line x1='30' y1='120' x2='30' y2='30' stroke='currentColor' stroke-width='2'/><line x1='30' y1='30' x2='150' y2='120' stroke='currentColor' stroke-width='2'/><polyline points='30,105 45,105 45,120' fill='none' stroke='currentColor' stroke-width='1.5'/><text x='85' y='140' text-anchor='middle' fill='currentColor' font-size='14'>4</text><text x='15' y='78' text-anchor='middle' fill='currentColor' font-size='14'>3</text>"
+          "svg": "<line x1='20' y1='120' x2='140' y2='120' stroke='currentColor' stroke-width='2'/><line x1='20' y1='120' x2='20' y2='30' stroke='currentColor' stroke-width='2'/><line x1='20' y1='30' x2='140' y2='120' stroke='currentColor' stroke-width='2'/><path d='M20 105 L35 105 L35 120' fill='none' stroke='currentColor' stroke-width='1.5'/><text x='75' y='138' font-size='14' fill='currentColor' text-anchor='middle'>4</text><text x='8' y='78' font-size='14' fill='currentColor' text-anchor='middle'>3</text>"
         }
       ],
       "tutor_utterance": null
@@ -169,13 +169,14 @@
       "description": "Bounded function plot request should create a plot card",
       "passed": false,
       "failures": [
-        "unexpected kinds ['shape']; allowed=['plot']"
+        "unexpected kinds ['text']; allowed=['plot']",
+        "forbidden kind emitted: text"
       ],
       "actual_items": [
         {
-          "kind": "shape",
+          "kind": "text",
           "id": "p1",
-          "svg": "<path d='M 0 50 C 16 0, 34 0, 50 50 C 66 100, 84 100, 100 50' fill='none' stroke='currentColor' stroke-width='2'/><line x1='0' y1='50' x2='100' y2='50' stroke='currentColor' stroke-width='1' opacity='0.5'/><text x='0' y='70' font-size='10' fill='currentColor'>-\u03c0</text><text x='47' y='70' font-size='10' fill='currentColor'>0</text><text x='90' y='70' font-size='10' fill='currentColor'>\u03c0</text>"
+          "markdown": "$y=\\sin(x)$ for $-\\pi \\le x \\le \\pi$"
         }
       ],
       "tutor_utterance": null
@@ -199,7 +200,7 @@
         {
           "kind": "text",
           "id": "eq1",
-          "markdown": "**Pythagorean theorem:** $a^2 + b^2 = c^2$"
+          "markdown": "**Pythagorean theorem**: $a^2 + b^2 = c^2$"
         }
       ],
       "tutor_utterance": null
@@ -276,9 +277,9 @@
       ],
       "actual_items": [
         {
-          "kind": "shape",
+          "kind": "text",
           "id": "p1",
-          "svg": "<path d=\"M 20 100 C 50 20, 90 20, 120 100 C 150 180, 190 180, 220 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><line x1=\"20\" y1=\"100\" x2=\"220\" y2=\"100\" stroke=\"currentColor\" stroke-width=\"1\"/><text x=\"20\" y=\"120\" font-size=\"12\">-\u03c0</text><text x=\"205\" y=\"120\" font-size=\"12\">\u03c0</text>"
+          "markdown": "$y=\\sin(x),\\quad -\\pi \\le x \\le \\pi$"
         }
       ],
       "tutor_utterance": null
@@ -319,15 +320,13 @@
       "case_id": "tb-content-008",
       "axis": "content",
       "description": "Triangle sketch should include leg lengths in the SVG",
-      "passed": false,
-      "failures": [
-        "no actual item matched expected.items[0]"
-      ],
+      "passed": true,
+      "failures": [],
       "actual_items": [
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<polygon points='30,130 105,130 30,30' fill='none' stroke='currentColor' stroke-width='2'/><path d='M30 115 L45 115 L45 130' fill='none' stroke='currentColor' stroke-width='1.5'/><text x='62' y='148' font-size='14' text-anchor='middle' fill='currentColor'>3</text><text x='16' y='84' font-size='14' text-anchor='middle' fill='currentColor'>4</text>"
+          "svg": "<polygon points='20,120 140,120 20,30' fill='none' stroke='currentColor' stroke-width='2'/><line x1='20' y1='120' x2='140' y2='120' stroke='currentColor' stroke-width='2'/><line x1='20' y1='120' x2='20' y2='30' stroke='currentColor' stroke-width='2'/><line x1='20' y1='30' x2='140' y2='120' stroke='currentColor' stroke-width='2'/><path d='M20 105 L35 105 L35 120' fill='none' stroke='currentColor' stroke-width='1.5'/><text x='75' y='140' text-anchor='middle' fill='currentColor' font-size='14'>4</text><text x='8' y='78' text-anchor='middle' fill='currentColor' font-size='14'>3</text>"
         }
       ],
       "tutor_utterance": null
@@ -353,14 +352,15 @@
       "description": "Function mention should be a plot, not text",
       "passed": false,
       "failures": [
-        "unexpected kinds ['shape']; allowed=['plot']",
+        "unexpected kinds ['text']; allowed=['plot']",
+        "forbidden kind emitted: text",
         "no actual item matched expected.items[0]"
       ],
       "actual_items": [
         {
-          "kind": "shape",
+          "kind": "text",
           "id": "p1",
-          "svg": "<path d=\"M 10 90 Q 50 10 90 90\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><text x=\"55\" y=\"25\" font-size=\"10\" fill=\"currentColor\">y = x\u00b2</text>"
+          "markdown": "$y = x^2$"
         }
       ],
       "tutor_utterance": null
@@ -407,7 +407,7 @@
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<line x1='10' y1='50' x2='310' y2='50' stroke='currentColor' stroke-width='2'/><polygon points='310,50 300,45 300,55' fill='currentColor'/><g stroke='currentColor' stroke-width='2'><line x1='10' y1='42' x2='10' y2='58'/><line x1='60' y1='42' x2='60' y2='58'/><line x1='110' y1='42' x2='110' y2='58'/><line x1='160' y1='42' x2='160' y2='58'/><line x1='210' y1='42' x2='210' y2='58'/><line x1='260' y1='42' x2='260' y2='58'/><line x1='310' y1='42' x2='310' y2='58'/></g><g fill='currentColor' font-size='14' text-anchor='middle'><text x='10' y='78'>0</text><text x='60' y='78'>1</text><text x='110' y='78'>2</text><text x='160' y='78'>3</text><text x='210' y='78'>4</text><text x='260' y='78'>5</text><text x='310' y='78'>6</text></g>"
+          "svg": "<line x1='10' y1='50' x2='190' y2='50' stroke='currentColor' stroke-width='2'/><polygon points='190,50 182,46 182,54' fill='currentColor'/><g stroke='currentColor' stroke-width='1.5' text-anchor='middle' font-size='12' fill='currentColor'><line x1='10' y1='44' x2='10' y2='56'/><text x='10' y='72'>0</text><line x1='40' y1='44' x2='40' y2='56'/><text x='40' y='72'>1</text><line x1='70' y1='44' x2='70' y2='56'/><text x='70' y='72'>2</text><line x1='100' y1='44' x2='100' y2='56'/><text x='100' y='72'>3</text><line x1='130' y1='44' x2='130' y2='56'/><text x='130' y='72'>4</text><line x1='160' y1='44' x2='160' y2='56'/><text x='160' y='72'>5</text><line x1='190' y1='44' x2='190' y2='56'/><text x='190' y='72'>6</text></g>"
         }
       ],
       "tutor_utterance": null
@@ -422,7 +422,7 @@
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<rect x='10' y='25' width='160' height='40' fill='none' stroke='currentColor' stroke-width='2'/><rect x='10' y='25' width='40' height='40' fill='currentColor' opacity='0.25'/><rect x='50' y='25' width='40' height='40' fill='currentColor' opacity='0.25'/><rect x='90' y='25' width='40' height='40' fill='currentColor' opacity='0.25'/><line x1='50' y1='25' x2='50' y2='65' stroke='currentColor' stroke-width='2'/><line x1='90' y1='25' x2='90' y2='65' stroke='currentColor' stroke-width='2'/><line x1='130' y1='25' x2='130' y2='65' stroke='currentColor' stroke-width='2'/><text x='90' y='90' text-anchor='middle' fill='currentColor' font-size='16'>3/4 shaded</text>"
+          "svg": "<rect x='10' y='25' width='160' height='40' fill='none' stroke='currentColor' stroke-width='2'/><rect x='10' y='25' width='40' height='40' fill='currentColor' opacity='0.25' stroke='none'/><rect x='50' y='25' width='40' height='40' fill='currentColor' opacity='0.25' stroke='none'/><rect x='90' y='25' width='40' height='40' fill='currentColor' opacity='0.25' stroke='none'/><line x1='50' y1='25' x2='50' y2='65' stroke='currentColor' stroke-width='2'/><line x1='90' y1='25' x2='90' y2='65' stroke='currentColor' stroke-width='2'/><line x1='130' y1='25' x2='130' y2='65' stroke='currentColor' stroke-width='2'/><text x='90' y='88' text-anchor='middle' font-size='16' fill='currentColor'>3/4 shaded</text>"
         }
       ],
       "tutor_utterance": null
@@ -499,9 +499,9 @@
       ],
       "actual_items": [
         {
-          "kind": "shape",
+          "kind": "text",
           "id": "p1",
-          "svg": "<line x1='0' y1='50' x2='100' y2='50' stroke='currentColor'/>"
+          "markdown": "$2x = 10$ \\\\ $x = 5$"
         }
       ],
       "tutor_utterance": null
@@ -516,7 +516,7 @@
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<line x1='20' y1='120' x2='120' y2='120' stroke='currentColor' stroke-width='2'/><line x1='20' y1='120' x2='20' y2='30' stroke='currentColor' stroke-width='2'/><line x1='20' y1='30' x2='120' y2='120' stroke='currentColor' stroke-width='2'/><path d='M20 105 L35 105 L35 120' fill='none' stroke='currentColor' stroke-width='1.5'/><text x='65' y='138' font-size='14' fill='currentColor' text-anchor='middle'>4</text><text x='10' y='78' font-size='14' fill='currentColor' text-anchor='middle'>3</text>"
+          "svg": "<polygon points='20,120 20,30 140,120' fill='none' stroke='currentColor' stroke-width='2'/><line x1='20' y1='120' x2='20' y2='30' stroke='currentColor' stroke-width='2'/><line x1='20' y1='120' x2='140' y2='120' stroke='currentColor' stroke-width='2'/><path d='M20 105 L35 105 L35 120' fill='none' stroke='currentColor' stroke-width='1.5'/><text x='75' y='140' font-size='14' text-anchor='middle' fill='currentColor'>4</text><text x='8' y='78' font-size='14' text-anchor='middle' fill='currentColor'>3</text>"
         }
       ],
       "tutor_utterance": null
@@ -748,7 +748,8 @@
       "axis": "usage",
       "description": "Bounded function plot request should create a plot card",
       "failures": [
-        "unexpected kinds ['shape']; allowed=['plot']"
+        "unexpected kinds ['text']; allowed=['plot']",
+        "forbidden kind emitted: text"
       ]
     },
     {
@@ -760,19 +761,12 @@
       ]
     },
     {
-      "case_id": "tb-content-008",
-      "axis": "content",
-      "description": "Triangle sketch should include leg lengths in the SVG",
-      "failures": [
-        "no actual item matched expected.items[0]"
-      ]
-    },
-    {
       "case_id": "tb-kind-001",
       "axis": "card_kind",
       "description": "Function mention should be a plot, not text",
       "failures": [
-        "unexpected kinds ['shape']; allowed=['plot']",
+        "unexpected kinds ['text']; allowed=['plot']",
+        "forbidden kind emitted: text",
         "no actual item matched expected.items[0]"
       ]
     },
