@@ -176,7 +176,7 @@ class Settings(BaseSettings):
     # sentences and publishes board items per sentence. Off by default.
     board_extractor: BoardExtractorName = "null"
     board_extractor_model: str = "gpt-4o-mini"
-    board_extractor_timeout_seconds: float = 2.0
+    board_extractor_timeout_seconds: float = 4.0
     board_extractor_queue_size: int = 20
 
     # Student-model grader — a second LLM that assesses each student turn and
