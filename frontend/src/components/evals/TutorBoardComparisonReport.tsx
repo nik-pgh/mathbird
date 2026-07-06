@@ -22,56 +22,32 @@ interface Props {
 }
 
 export default function TutorBoardComparisonReport({ sources, targets }: Props) {
-  // All runs are shown by default; the user narrows the detail panels (case
-  // matrix + failure list) via the picker. The comparison table stays the
-  // all-runs overview.
+  // The comparison table shows every loaded run; the detail panels (case
+  // matrix + failure list) show one run at a time, selected via folder tabs.
+  // Defaults to baseline when present, otherwise the ranked leader.
   const sorted = useMemo(
     () => defaultTutorBoardSelection(targets),
     [targets],
   );
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
-    () => new Set(sorted.map(tutorBoardTargetKey)),
-  );
-
-  // The detail selection is the user's choice intersected with currently
-  // loaded runs (so removed JSON files don't leave stale keys). `toggleKey`
-  // guarantees the set never goes fully empty.
-  const sortedKeys = useMemo(
-    () => new Set(sorted.map(tutorBoardTargetKey)),
-    [sorted],
-  );
-  const effectiveKeys = useMemo(() => {
-    const next = new Set<string>();
-    for (const key of selectedKeys) {
-      if (sortedKeys.has(key)) next.add(key);
-    }
-    return next.size > 0 ? next : sortedKeys;
-  }, [selectedKeys, sortedKeys]);
-
-  const selected = useMemo(
-    () => sorted.filter((target) => effectiveKeys.has(tutorBoardTargetKey(target))),
-    [sorted, effectiveKeys],
-  );
   const ranked = rankTutorBoardTargets(sorted);
   const leader = ranked[0];
-  const latestSource = sources[0];
+  const defaultKey = useMemo(() => {
+    const baseline = sorted.find((item) => item.targetId === "baseline");
+    return tutorBoardTargetKey(baseline ?? leader ?? sorted[0]);
+  }, [sorted, leader]);
 
-  const toggleKey = (key: string) => {
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      // Never let the detail selection go fully empty — that would blank the
-      // case matrix and failure list. Keep at least one run selected.
-      if (next.size === 0) {
-        return new Set(sortedKeys);
-      }
-      return next;
-    });
-  };
+  const [activeKey, setActiveKey] = useState<string>(defaultKey);
+  // If the active run is no longer loaded (e.g. its JSON was removed) or the
+  // default changed, fall back to the current default.
+  const effectiveKey = sorted.some((t) => tutorBoardTargetKey(t) === activeKey)
+    ? activeKey
+    : defaultKey;
+  const active = useMemo(
+    () =>
+      sorted.find((t) => tutorBoardTargetKey(t) === effectiveKey) ?? leader,
+    [sorted, effectiveKey, leader],
+  );
+  const latestSource = sources[0];
 
   if (!leader || sorted.length === 0) {
     return (
@@ -160,14 +136,14 @@ export default function TutorBoardComparisonReport({ sources, targets }: Props) 
       <TutorBoardComparisonTable targets={sorted} />
       <TutorBoardTargetPicker
         targets={sorted}
-        selectedKeys={effectiveKeys}
-        onToggle={toggleKey}
+        activeKey={effectiveKey}
+        onSelect={setActiveKey}
       />
-      {selected.length === 1 ? (
-        <TutorBoardAxisSummaryPanel summaries={selected[0].report.axisSummaries} />
+      {active ? (
+        <TutorBoardAxisSummaryPanel summaries={active.report.axisSummaries} />
       ) : null}
-      <TutorBoardCaseMatrix targets={selected} />
-      <TutorBoardFailureList targets={selected} />
+      <TutorBoardCaseMatrix targets={active ? [active] : []} />
+      <TutorBoardFailureList targets={active ? [active] : []} />
     </section>
   );
 }

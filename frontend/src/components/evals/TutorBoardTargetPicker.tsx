@@ -6,42 +6,41 @@ import {
 
 interface Props {
   targets: readonly TutorBoardEvalTarget[];
-  selectedKeys: ReadonlySet<string>;
-  onToggle: (key: string) => void;
+  activeKey: string;
+  onSelect: (key: string) => void;
 }
 
 /**
- * Multi-select toggle chips that filter which tutor-board runs appear in the
- * detail panels (case matrix + failure list). Renders only when more than one
- * run is loaded — with a single run there is nothing to filter.
+ * Single-select folder-tab switcher for the tutor-board detail panels (case
+ * matrix + failure list). One run is active at a time; the comparison table
+ * above remains the all-runs overview. Renders only when more than one run
+ * is loaded — with a single run there is nothing to switch.
  *
- * Reuses the retrieval-path chip styles so no new CSS is needed.
+ * Uses the eval tab styles (`.eval-tab-button`) so the active tab connects
+ * to the panel below it like a folder tab.
  */
 export default function TutorBoardTargetPicker({
   targets,
-  selectedKeys,
-  onToggle,
+  activeKey,
+  onSelect,
 }: Props) {
   if (targets.length < 2) {
     return null;
   }
 
   return (
-    <div
-      className="eval-path-filter"
-      role="group"
-      aria-label="Filter tutor board runs"
-    >
+    <div className="eval-tabs eval-board-target-tabs" role="tablist" aria-label="Tutor board run">
       {targets.map((target) => {
         const key = tutorBoardTargetKey(target);
-        const selected = selectedKeys.has(key);
+        const selected = key === activeKey;
         return (
           <button
             type="button"
+            role="tab"
             key={key}
-            className={`eval-path-filter-button${selected ? " selected" : ""}`}
-            aria-pressed={selected}
-            onClick={() => onToggle(key)}
+            aria-selected={selected}
+            className="eval-tab-button"
+            onClick={() => onSelect(key)}
           >
             {tutorBoardTargetLabel(target)}
           </button>
