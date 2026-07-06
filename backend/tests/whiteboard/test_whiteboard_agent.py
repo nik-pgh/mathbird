@@ -99,11 +99,12 @@ def _make_agent(extractor=None) -> tuple[WhiteboardAgent, SessionData, _FakeSess
 # ── on_user_turn_completed — user-board reading injection ──────────────
 
 
-async def test_no_reading_means_no_injection() -> None:
+async def test_no_user_reading_still_injects_tutor_board() -> None:
     agent, _, _ = _make_agent()
     ctx = ChatContext.empty()
     await agent.on_user_turn_completed(ctx, _user_message("help"))
-    assert ctx.items == []
+    assert len(ctx.items) == 1
+    assert _body(ctx.items[0]).startswith("[tutor board]")
 
 
 async def test_reading_is_injected_as_system_message() -> None:
@@ -115,10 +116,11 @@ async def test_reading_is_injected_as_system_message() -> None:
 
     await agent.on_user_turn_completed(ctx, _user_message("what should I do?"))
 
-    assert len(ctx.items) == 1
+    assert len(ctx.items) == 2
     body = _body(ctx.items[0])
     assert "user whiteboard" in body.lower()
     assert "2x + 3 = 9" in body
+    assert _body(ctx.items[1]).startswith("[tutor board]")
 
 
 async def test_blank_board_emits_status_line() -> None:
@@ -128,9 +130,10 @@ async def test_blank_board_emits_status_line() -> None:
 
     await agent.on_user_turn_completed(ctx, _user_message("ok"))
 
-    assert len(ctx.items) == 1
+    assert len(ctx.items) == 2
     body = _body(ctx.items[0])
     assert "blank" in body.lower() or "empty" in body.lower()
+    assert _body(ctx.items[1]).startswith("[tutor board]")
 
 
 # ── transcription_node — text passes through; sentences feed worker ────

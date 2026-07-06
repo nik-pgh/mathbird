@@ -221,6 +221,7 @@ async def test_extractor_prompt_contains_mermaid_and_shape_rules() -> None:
     assert "flowchart TD" in system
     assert "number line" in system
     assert "shape" in system
+    assert "proactive" in system.lower()
 
 
 def test_extractor_response_schema_uses_AiBoardItem_discriminator() -> None:

@@ -17,6 +17,7 @@ from app.agent.turn_context import (
     ("content", "expected"),
     [
         ("[user whiteboard]\nno reading yet", "board"),
+        ("[tutor board]\n(currently empty)", "board"),
         ("[session progress]\nfocus: ch-1-p-1", "progress"),
         ("[textbook excerpt]\nSome math text", "textbook"),
         ("[next action]\nAsk a question", "other"),

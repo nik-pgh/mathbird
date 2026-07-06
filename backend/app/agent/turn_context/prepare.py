@@ -50,6 +50,7 @@ async def prepare_turn_context(
 
         builder = TurnContextBuilder(
             board_state=state,
+            board_cache=agent._board_cache,
             progress_engine=agent._progress_engine,
         )
         for block in builder.base_injections():

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from app.agent.turn_context.tutor_board import format_tutor_board_injection
 from app.agent.turn_context.types import InjectionBlock, classify_injection_kind
 
 if TYPE_CHECKING:
+    from app.agent.whiteboard.cache import BoardCache
     from app.agent.whiteboard.state import BoardState
     from app.progress.engine import ProgressEngine
 
@@ -14,9 +16,11 @@ class TurnContextBuilder:
         self,
         *,
         board_state: BoardState,
+        board_cache: BoardCache | None = None,
         progress_engine: ProgressEngine | None,
     ) -> None:
         self._board_state = board_state
+        self._board_cache = board_cache
         self._progress_engine = progress_engine
 
     def board_injection(self) -> InjectionBlock | None:
@@ -34,6 +38,13 @@ class TurnContextBuilder:
 
         return InjectionBlock(kind=classify_injection_kind(body), content=body)
 
+    def tutor_board_injection(self) -> InjectionBlock | None:
+        if self._board_cache is None:
+            return None
+
+        content = format_tutor_board_injection(self._board_cache)
+        return InjectionBlock(kind=classify_injection_kind(content), content=content)
+
     def progress_injection(self) -> InjectionBlock | None:
         if self._progress_engine is None:
             return None
@@ -46,6 +57,9 @@ class TurnContextBuilder:
         board = self.board_injection()
         if board is not None:
             blocks.append(board)
+        tutor_board = self.tutor_board_injection()
+        if tutor_board is not None:
+            blocks.append(tutor_board)
         progress = self.progress_injection()
         if progress is not None:
             blocks.append(progress)

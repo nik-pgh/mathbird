@@ -19,7 +19,7 @@ class TurnContextSnapshot:
 
 def classify_injection_kind(content: str) -> InjectionKind:
     """Infer kind from system message content prefix."""
-    if content.startswith("[user whiteboard"):
+    if content.startswith("[user whiteboard") or content.startswith("[tutor board]"):
         return "board"
     if content.startswith("[session progress]"):
         return "progress"
