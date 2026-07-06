@@ -74,13 +74,19 @@ worked examples, comparisons, and explicit draw/show requests.
   "f of x equals …", "the curve y = …"), emit a PLOT item with the Python
   expression for f(x). Plot is the DEFAULT for function definitions — even
   if the sentence sounds definitional rather than visual. Do NOT emit a
-  text item for a function definition; that's a misclassification.
+  text item for a function definition; that's a misclassification. Always
+  set a descriptive `label` (the spoken function name or form, LaTeX ok) so
+  the curve is not a bare unlabeled line, and set `x_min`/`x_max` when the
+  tutor mentions a window.
     Example sentence: "let me show you, y = x squared"
-    → {"kind": "plot", "id": "p1", "expression": "x**2"}
+    → {"kind": "plot", "id": "p1", "expression": "x**2",
+       "label": "Parabola: $y = x^2$"}
     Example sentence: "the parabola y = x squared opens upward"
-    → {"kind": "plot", "id": "p1", "expression": "x**2"}
+    → {"kind": "plot", "id": "p1", "expression": "x**2",
+       "label": "Parabola: $y = x^2$"}
     Example sentence: "let's plot y = sin(x) from -π to π"
-    → {"kind": "plot", "id": "p2", "expression": "sin(x)", "x_min": -3.14, "x_max": 3.14}
+    → {"kind": "plot", "id": "p2", "expression": "sin(x)",
+       "x_min": -3.14, "x_max": 3.14, "label": "Sine: $y = \\sin(x)$"}
 
   Use text (NOT plot) when:
   - The equation is being algebraically manipulated as a step in a
@@ -94,15 +100,27 @@ worked examples, comparisons, and explicit draw/show requests.
   factor trees, flowcharts, step diagrams, boxes/arrows, relationship diagrams,
   concept maps, comparison trees, and simple neural-network layer stacks.
   Use Mermaid source with syntax="mermaid". Prefer "flowchart TD" or
-  "flowchart LR". Use clear short labels; add enough nodes to be useful.
+  "flowchart LR". Be FAITHFUL and COMPLETE — the diagram must reflect the
+  full structure of what the tutor described, not a teaser of it. Every
+  item, step, branch, factor, or layer the tutor named must appear as its
+  own node; never collapse a multi-step process into two boxes or stop a
+  factor tree before it reaches primes. Include a descriptive `label`.
     Example sentence: "draw a factor tree for 42"
     → {"kind": "diagram", "id": "d1", "syntax": "mermaid",
-       "source": "flowchart TD\\n  n42[42] --> n2[2]\\n  n42 --> n21[21]",
-       "label": "Factor tree for 42"}
+       "source": "flowchart TD\\n  n42[42] --> n2[2]\\n  n42 --> n21[21]\\n  n21[21] --> n3[3]\\n  n21[21] --> n7[7]",
+       "label": "Factor tree for 42: $2 \\\\cdot 3 \\\\cdot 7$"}
     Example sentence: "picture a tiny network: input, hidden, output"
     → {"kind": "diagram", "id": "d2", "syntax": "mermaid",
        "source": "flowchart LR\\n  IN[input] --> H[hidden] --> OUT[output]",
-       "label": "Simple network"}
+       "label": "Simple network: input → hidden → output"}
+    Example sentence: "draw a flowchart: start, compute delta, check sign, stop"
+    → {"kind": "diagram", "id": "d3", "syntax": "mermaid",
+       "source": "flowchart TD\\n  S[start] --> D[compute delta]\\n  D --> C{check sign}\\n  C -- yes --> U[update]\\n  C -- no --> E[stop]\\n  U --> E",
+       "label": "Gradient descent steps"}
+  In the last example, note that EVERY spoken step (start, compute delta,
+  check sign, stop) becomes a node, and a decision branch the tutor
+  described becomes a branching edge. Do the same: turn each enumerated
+  step or branch into its own node.
 
 - shape: a freeform SVG sketch for geometry, number lines, fraction bars,
   area models, and visuals that need precise 2-D placement. Use simple SVG
