@@ -16,9 +16,12 @@ ChunkPolicyName = Literal[
     "block_neighbor_1",
     "page_section_window_512",
     "math_object_window",
+    "math_object_window_page_anchor",
 ]
 
 MATH_OBJECT_BLOCK_TYPES = frozenset({"equation", "image", "graph", "table", "example", "exercise"})
+PAGE_ANCHOR_BLOCK_TYPES = frozenset({"heading", "paragraph", "instruction", "unknown"})
+PAGE_ANCHOR_MAX_TOKENS = 128
 
 
 @dataclass(frozen=True)
@@ -61,6 +64,15 @@ DEFAULT_CHUNK_POLICIES: tuple[ChunkPolicy, ...] = (
         description=(
             "Equation, figure, table, example, and exercise blocks centered "
             "with nearby prose."
+        ),
+        neighbor_radius=1,
+    ),
+    ChunkPolicy(
+        name="math_object_window_page_anchor",
+        label="Math object window + page anchors",
+        description=(
+            "Same as math_object_window, plus one page-anchor node per "
+            "prose-only page for structured cite coverage."
         ),
         neighbor_radius=1,
     ),
@@ -245,6 +257,39 @@ def _page_section_window_nodes(document: ParsedDocument, policy: ChunkPolicy) ->
     return nodes
 
 
+def _select_page_anchor_blocks(page_blocks: tuple[ParsedBlock, ...]) -> list[ParsedBlock]:
+    """Collect opening prose on a page for structured page/chapter cite coverage."""
+    selected: list[ParsedBlock] = []
+    tokens = 0
+    for block in page_blocks:
+        if block.block_type not in PAGE_ANCHOR_BLOCK_TYPES:
+            continue
+        content = _block_content(block)
+        if not content:
+            continue
+        block_tokens = _rough_token_count(content)
+        if selected and tokens + block_tokens > PAGE_ANCHOR_MAX_TOKENS:
+            break
+        selected.append(block)
+        tokens += block_tokens
+    return selected
+
+
+def _page_anchor_primary_block(blocks: list[ParsedBlock]) -> ParsedBlock:
+    for block in blocks:
+        if block.block_type == "heading":
+            return block
+    return blocks[0]
+
+
+def _math_object_center_pages(blocks: list[ParsedBlock]) -> set[int]:
+    return {
+        block.page_number
+        for block in blocks
+        if block.block_type in MATH_OBJECT_BLOCK_TYPES
+    }
+
+
 def _math_object_window_nodes(document: ParsedDocument, policy: ChunkPolicy) -> list[TextNode]:
     blocks = _all_blocks(document)
     nodes: list[TextNode] = []
@@ -271,6 +316,45 @@ def _math_object_window_nodes(document: ParsedDocument, policy: ChunkPolicy) -> 
     return nodes
 
 
+def _page_anchor_nodes(
+    document: ParsedDocument,
+    policy: ChunkPolicy,
+    blocks: list[ParsedBlock],
+) -> list[TextNode]:
+    nodes: list[TextNode] = []
+    math_object_pages = _math_object_center_pages(blocks)
+    for page in document.pages:
+        if page.page_number in math_object_pages:
+            continue
+        anchor_blocks = _select_page_anchor_blocks(page.blocks)
+        if not anchor_blocks:
+            continue
+        primary = _page_anchor_primary_block(anchor_blocks)
+        node = _node_from_blocks(
+            document,
+            policy,
+            anchor_blocks,
+            chunk_kind="page_anchor",
+            suffix=f":page_anchor:p{page.page_number}",
+        )
+        if node is not None:
+            node.metadata["block_id"] = primary.block_id
+            node.metadata["block_type"] = primary.block_type
+            nodes.append(node)
+    return nodes
+
+
+def _math_object_window_page_anchor_nodes(
+    document: ParsedDocument,
+    policy: ChunkPolicy,
+) -> list[TextNode]:
+    blocks = _all_blocks(document)
+    return [
+        *_math_object_window_nodes(document, policy),
+        *_page_anchor_nodes(document, policy, blocks),
+    ]
+
+
 def parsed_document_to_nodes(document: ParsedDocument) -> list[TextNode]:
     return parsed_document_to_chunked_nodes(document, policy_name="block")
 
@@ -289,6 +373,8 @@ def parsed_document_to_chunked_nodes(
         return _page_section_window_nodes(document, policy)
     if policy.name == "math_object_window":
         return _math_object_window_nodes(document, policy)
+    if policy.name == "math_object_window_page_anchor":
+        return _math_object_window_page_anchor_nodes(document, policy)
     raise AssertionError(f"Unhandled chunk policy: {policy.name}")
 
 

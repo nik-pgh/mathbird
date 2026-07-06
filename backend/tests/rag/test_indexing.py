@@ -194,3 +194,114 @@ def test_math_object_window_policy_centers_equation_chunks_on_surrounding_prose(
         "doc-1:p4:b2",
         "doc-1:p4:b3",
     ]
+    assert all(node.metadata["chunk_kind"] != "page_anchor" for node in nodes)
+
+
+def test_math_object_window_skips_page_anchors_on_prose_only_pages() -> None:
+    doc = ParsedDocument(
+        doc_id="goodfellow-ch2",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=1,
+                printed_page_number=31,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="goodfellow-ch2:p1:b0",
+                        page_number=1,
+                        printed_page_number=31,
+                        block_type="heading",
+                        text="2.1 Scalars, Vectors, Matrices and Tensors",
+                        section_title="2.1 Scalars, Vectors, Matrices and Tensors",
+                        section_number="2.1",
+                        chapter_number=2,
+                    ),
+                    ParsedBlock(
+                        block_id="goodfellow-ch2:p1:b1",
+                        page_number=1,
+                        printed_page_number=31,
+                        block_type="paragraph",
+                        text="A scalar is a single number.",
+                        section_title="2.1 Scalars, Vectors, Matrices and Tensors",
+                        section_number="2.1",
+                        chapter_number=2,
+                        neighboring_block_ids=("goodfellow-ch2:p1:b0",),
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    nodes = parsed_document_to_chunked_nodes(doc, policy_name="math_object_window")
+
+    assert nodes == []
+
+
+def test_math_object_window_page_anchor_policy_adds_page_anchors_for_prose_only_pages() -> None:
+    doc = ParsedDocument(
+        doc_id="goodfellow-ch2",
+        filename="deep_learning_ch2.pdf",
+        pages=[
+            ParsedPage(
+                page_number=1,
+                printed_page_number=31,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="goodfellow-ch2:p1:b0",
+                        page_number=1,
+                        printed_page_number=31,
+                        block_type="heading",
+                        text="2.1 Scalars, Vectors, Matrices and Tensors",
+                        section_title="2.1 Scalars, Vectors, Matrices and Tensors",
+                        section_number="2.1",
+                        chapter_number=2,
+                    ),
+                    ParsedBlock(
+                        block_id="goodfellow-ch2:p1:b1",
+                        page_number=1,
+                        printed_page_number=31,
+                        block_type="paragraph",
+                        text="A scalar is a single number. A vector is an array of numbers.",
+                        section_title="2.1 Scalars, Vectors, Matrices and Tensors",
+                        section_number="2.1",
+                        chapter_number=2,
+                        neighboring_block_ids=("goodfellow-ch2:p1:b0",),
+                    ),
+                ],
+            ),
+            ParsedPage(
+                page_number=4,
+                printed_page_number=34,
+                text="",
+                blocks=[
+                    ParsedBlock(
+                        block_id="goodfellow-ch2:p4:b0",
+                        page_number=4,
+                        printed_page_number=34,
+                        block_type="equation",
+                        text="C has shape m x p.",
+                        markdown="$C = AB$",
+                        section_title="2.2 Multiplying Matrices and Vectors",
+                        section_number="2.2",
+                        chapter_number=2,
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    nodes = parsed_document_to_chunked_nodes(doc, policy_name="math_object_window_page_anchor")
+
+    page_anchor = next(node for node in nodes if node.metadata["chunk_kind"] == "page_anchor")
+
+    assert page_anchor.metadata["page_number"] == 1
+    assert page_anchor.metadata["printed_page_number"] == 31
+    assert page_anchor.metadata["chapter_number"] == 2
+    assert page_anchor.metadata["section_number"] == "2.1"
+    assert page_anchor.metadata["block_type"] == "heading"
+    assert page_anchor.metadata["chunk_policy"] == "math_object_window_page_anchor"
+    assert "scalar" in page_anchor.text.lower()
+    assert len([node for node in nodes if node.metadata["chunk_kind"] == "page_anchor"]) == 1
+    assert len([node for node in nodes if node.metadata["chunk_kind"] == "equation_window"]) == 1
