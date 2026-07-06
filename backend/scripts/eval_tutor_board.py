@@ -74,6 +74,13 @@ async def _amain(args: argparse.Namespace) -> int:
         golden_path=str(golden_path),
         created_at=stamp,
         descriptions={case.id: case.description for case in cases},
+        target_id=args.target_id,
+        label=args.label or "",
+        metadata={
+            "board_extractor": settings.board_extractor,
+            "board_extractor_model": settings.board_extractor_model,
+            "board_extractor_timeout_seconds": settings.board_extractor_timeout_seconds,
+        },
     )
     json_path.write_text(json.dumps(payload, indent=2) + "\n")
     md_path.write_text(render_markdown_report(report, golden_path=str(golden_path)))
@@ -107,13 +114,41 @@ def main() -> None:
         help="Score only reference-axis cases (no board extractor API calls).",
     )
     parser.add_argument(
+        "--target-id",
+        default="baseline",
+        help="Experiment id for dashboard comparison (used in frontend JSON filename).",
+    )
+    parser.add_argument(
+        "--label",
+        default="",
+        help="Human-readable experiment label for the dashboard.",
+    )
+    parser.add_argument(
         "--frontend-output",
-        default="../frontend/src/data/tutorBoardEval.generated.json",
-        help="Optional dashboard JSON path. Pass empty string to skip.",
+        default=None,
+        help=(
+            "Dashboard JSON path. Defaults to "
+            "../frontend/src/data/tutorBoardEval.{target_id}.generated.json."
+        ),
+    )
+    parser.add_argument(
+        "--skip-frontend-output",
+        action="store_true",
+        help="Do not write dashboard JSON.",
     )
     args = parser.parse_args()
-    if not args.frontend_output:
+    if args.skip_frontend_output:
         args.frontend_output = None
+    elif not args.frontend_output:
+        args.frontend_output = (
+            f"../frontend/src/data/tutorBoardEval.{args.target_id}.generated.json"
+        )
+    if not args.label:
+        settings = get_settings()
+        args.label = (
+            f"{settings.board_extractor_model} · "
+            f"{settings.board_extractor_timeout_seconds:g}s timeout"
+        )
     raise SystemExit(asyncio.run(_amain(args)))
 
 

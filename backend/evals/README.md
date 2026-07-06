@@ -287,7 +287,20 @@ CLI:
 ```bash
 cd backend
 uv run python -m scripts.eval_tutor_board \
-  --golden evals/golden/tutor_board.jsonl
+  --golden evals/golden/tutor_board.jsonl \
+  --target-id baseline \
+  --label "Baseline (gpt-4o-mini · 4s timeout)"
+```
+
+Each experiment writes `frontend/src/data/tutorBoardEval.{target_id}.generated.json`.
+The dashboard loads every `tutorBoardEval*.json` file and compares them side by side
+(like structured chunk-policy reports). Re-run with a new `--target-id` to add another
+experiment without overwriting the baseline.
+
+```bash
+uv run python -m scripts.eval_tutor_board \
+  --target-id prompt_v2 \
+  --label "Prompt v2 (gpt-4o-mini · 4s)"
 ```
 
 Extractor-axis cases call the configured board extractor
@@ -366,7 +379,8 @@ Reference-axis golden row:
 Report output:
 
 - JSON/Markdown under `backend/evals/results/tutor_board_eval_*.json|md`
-- Dashboard JSON at `frontend/src/data/tutorBoardEval.generated.json`
+- Dashboard JSON at `frontend/src/data/tutorBoardEval.{target_id}.generated.json`
+  (e.g. `tutorBoardEval.baseline.generated.json` for the baseline experiment)
 - `/evals` tab **Tutor Board** — axis pass-rate bars, case matrix, and failure list
 
 Regenerate the dashboard artifact after eval changes:

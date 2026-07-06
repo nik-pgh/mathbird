@@ -410,11 +410,18 @@ def report_to_dict(
     golden_path: str,
     created_at: str = "",
     descriptions: dict[str, str] | None = None,
+    target_id: str = "baseline",
+    label: str = "",
+    metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     desc = descriptions or {}
+    resolved_label = label or target_id
     return {
         "schema_version": 1,
         "comparison_axis": "tutor_board",
+        "target_id": target_id,
+        "label": resolved_label,
+        "metadata": metadata or {},
         "created_at": created_at,
         "golden_path": golden_path,
         "extractor_model": report.extractor_model,
