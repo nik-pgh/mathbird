@@ -20,9 +20,14 @@ GOLDEN_PATH = Path(__file__).resolve().parents[2] / "evals" / "golden" / "tutor_
 
 def test_load_golden_cases() -> None:
     cases = load_tutor_board_cases(GOLDEN_PATH)
-    assert len(cases) >= 22
+    assert len(cases) >= 45
     axes = {case.axis for case in cases}
     assert axes == {"usage", "content", "reference", "card_kind", "grouping"}
+    by_axis: dict[str, int] = {}
+    for case in cases:
+        by_axis[case.axis] = by_axis.get(case.axis, 0) + 1
+    for axis in axes:
+        assert by_axis[axis] >= 8, f"expected at least 8 {axis} cases, got {by_axis[axis]}"
 
 
 def test_score_extractor_emit_pass() -> None:
