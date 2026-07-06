@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app.config import get_settings
-from app.rag.evaluation import (
+from app.evals.rag.evaluation import (
     evaluate_structured_paths,
     load_structured_golden_cases,
     render_markdown_report,
@@ -27,7 +27,7 @@ from app.rag.evaluation import (
     structured_case_to_golden,
     structured_report_to_dict,
 )
-from app.rag.structured_eval_output import (
+from app.evals.dashboard.structured_output import (
     extract_chunk_policy_from_collection,
     structured_eval_frontend_path,
 )

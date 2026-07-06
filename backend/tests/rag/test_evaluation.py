@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.config import Settings
-from app.rag.evaluation import (
+from app.evals.rag.evaluation import (
     GoldenCase,
     TargetFailure,
     TargetReport,
@@ -513,9 +513,9 @@ async def test_evaluate_target_uses_target_settings_and_doc_filter() -> None:
     base_settings = Settings(_env_file=None, openai_api_key="sk-test")
 
     with (
-        patch("app.rag.evaluation.build_qdrant_index_stack", return_value=fake_stack) as build,
-        patch("app.rag.evaluation.LlamaIndexQdrantRetriever", return_value=fake_retriever),
-        patch("app.rag.evaluation.close_qdrant_client", new=AsyncMock()) as close_client,
+        patch("app.evals.rag.evaluation.build_qdrant_index_stack", return_value=fake_stack) as build,
+        patch("app.evals.rag.evaluation.LlamaIndexQdrantRetriever", return_value=fake_retriever),
+        patch("app.evals.rag.evaluation.close_qdrant_client", new=AsyncMock()) as close_client,
     ):
         report = await evaluate_target(
             cases,
@@ -645,7 +645,7 @@ def test_score_case_matches_printed_page_in_source() -> None:
 
 
 def test_load_structured_golden_cases_parses_jsonl(tmp_path: Path) -> None:
-    from app.rag.evaluation import StructuredGoldenCase, load_structured_golden_cases
+    from app.evals.rag.evaluation import StructuredGoldenCase, load_structured_golden_cases
 
     golden_path = tmp_path / "structured.jsonl"
     _write_jsonl(

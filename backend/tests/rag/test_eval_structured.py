@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.rag.evaluation import (
+from app.evals.rag.evaluation import (
     StructuredCaseScore,
     TargetReport,
     load_structured_golden_cases,
@@ -12,7 +12,7 @@ from app.rag.evaluation import (
     structured_case_to_golden,
 )
 from app.rag.retriever import RetrievedChunk
-from app.rag.structured_eval_output import (
+from app.evals.dashboard.structured_output import (
     extract_chunk_policy_from_collection,
     extract_collection_variant_slug,
     structured_eval_frontend_filename,

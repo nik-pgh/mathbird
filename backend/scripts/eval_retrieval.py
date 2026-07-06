@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app.config import EmbeddingProvider, get_settings
-from app.rag.evaluation import (
+from app.evals.rag.evaluation import (
     TargetFailure,
     evaluate_target,
     failure_to_dict,

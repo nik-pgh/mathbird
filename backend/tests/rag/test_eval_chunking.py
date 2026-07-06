@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.rag.evaluation import TargetReport
+from app.evals.rag.evaluation import TargetReport
 from app.rag.indexing import ChunkPolicy, get_chunk_policy
 from scripts import eval_chunking
 
