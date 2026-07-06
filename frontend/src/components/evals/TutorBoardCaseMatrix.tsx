@@ -1,12 +1,12 @@
 import type { TutorBoardEvalTarget } from "../../data/tutorBoardEval";
 import {
   casePassed,
-  summarizeActualItems,
   tutorBoardAxisLabel,
   tutorBoardCaseLabel,
   tutorBoardTargetKey,
   tutorBoardTargetLabel,
 } from "../../lib/tutorBoardEvalMetrics";
+import ActualCardsHoverCard from "./ActualCardsHoverCard";
 
 interface Props {
   targets: readonly TutorBoardEvalTarget[];
@@ -82,7 +82,7 @@ export default function TutorBoardCaseMatrix({ targets }: Props) {
                   })}
                   {!multiTarget ? (
                     <td>
-                      <code>{summarizeActualItems(item.actualItems)}</code>
+                      <ActualCardsHoverCard items={item.actualItems} />
                     </td>
                   ) : null}
                 </tr>

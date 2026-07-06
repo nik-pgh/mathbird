@@ -1151,6 +1151,103 @@ main {
   background: rgba(255, 86, 48, 0.04);
 }
 
+/* Actual cards hover preview (portal-rendered to body, so it floats above the table). */
+.eval-cards-trigger {
+  cursor: help;
+  border-bottom: 1px dotted #8c959f;
+}
+
+.eval-cards-trigger code {
+  cursor: inherit;
+}
+
+.eval-cards-popover {
+  position: fixed;
+  z-index: 50;
+  max-width: min(440px, calc(100vw - 24px));
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #d8dee4;
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(36, 41, 47, 0.18);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.eval-cards-popover-heading {
+  margin-bottom: 10px;
+  color: #57606a;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.eval-cards-popover-list {
+  display: grid;
+  gap: 10px;
+}
+
+.eval-cards-popover-item {
+  padding: 10px 12px;
+  background: var(--bg-pad);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* Scope the board-item renderers for the popover context (the eval page does
+   not load session.css, where `.ai-card` otherwise lives). */
+.eval-cards-popover-item .ai-card {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  max-width: none;
+  animation: none;
+}
+
+.eval-cards-popover-item .ai-card.board-item-plot,
+.eval-cards-popover-item .ai-card.board-item-shape {
+  display: flex;
+  justify-content: center;
+}
+
+.eval-cards-popover-item .ai-card svg {
+  color: var(--text);
+  max-width: 100%;
+  height: auto;
+}
+
+.eval-cards-popover-item .ai-card.board-item-diagram {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.eval-cards-popover-item .board-item-diagram-label {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.eval-cards-popover-item .board-item-diagram-loading,
+.eval-cards-popover-item .ai-card.board-item-diagram.invalid {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.eval-cards-popover-item .board-item-diagram-invalid-message {
+  color: var(--mb-coral);
+  font-weight: 700;
+}
+
 .eval-tone-good {
   color: #1a7f37;
 }
