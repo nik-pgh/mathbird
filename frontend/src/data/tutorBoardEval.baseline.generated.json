@@ -1,39 +1,46 @@
 {
   "schema_version": 1,
   "comparison_axis": "tutor_board",
-  "created_at": "20260706T180613Z",
+  "target_id": "baseline",
+  "label": "gpt-4o-mini \u00b7 4s timeout",
+  "metadata": {
+    "board_extractor": "openai",
+    "board_extractor_model": "gpt-4o-mini",
+    "board_extractor_timeout_seconds": 4.0
+  },
+  "created_at": "20260706T192014Z",
   "golden_path": "evals/golden/tutor_board.jsonl",
   "extractor_model": "gpt-4o-mini",
-  "pass_rate": 0.9166666666666666,
+  "pass_rate": 0.9387755102040817,
   "axis_summaries": [
     {
       "axis": "card_kind",
-      "total": 4,
-      "passed": 4,
-      "pass_rate": 1.0
+      "total": 8,
+      "passed": 7,
+      "pass_rate": 0.875
     },
     {
       "axis": "content",
-      "total": 4,
-      "passed": 4,
+      "total": 9,
+      "passed": 9,
       "pass_rate": 1.0
     },
     {
       "axis": "grouping",
-      "total": 6,
-      "passed": 4,
-      "pass_rate": 0.6666666666666666
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 0.8
     },
     {
       "axis": "reference",
-      "total": 5,
-      "passed": 5,
+      "total": 10,
+      "passed": 10,
       "pass_rate": 1.0
     },
     {
       "axis": "usage",
-      "total": 5,
-      "passed": 5,
+      "total": 12,
+      "passed": 12,
       "pass_rate": 1.0
     }
   ],
@@ -84,7 +91,7 @@
           "expression": "x**2",
           "x_min": -10.0,
           "x_max": 10.0,
-          "label": "The parabola y = x^2"
+          "label": "Parabola: $y = x^2$"
         }
       ],
       "tutor_utterance": null
@@ -102,6 +109,90 @@
           "syntax": "mermaid",
           "source": "flowchart TD\n  n42[42] --> n2[2]\n  n42 --> n21[21]",
           "label": "Factor tree for 42"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-use-006",
+      "axis": "usage",
+      "description": "Exact restatement of an existing equation should not re-emit",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-use-007",
+      "axis": "usage",
+      "description": "Meta commentary without new math should not create a card",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-use-008",
+      "axis": "usage",
+      "description": "Casual case count mention should not create a card",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-use-009",
+      "axis": "usage",
+      "description": "Explicit geometry sketch request should create a shape card",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "shape",
+          "id": "s1",
+          "svg": "<line x1='0' y1='0' x2='0' y2='400' stroke='currentColor'/>\n<line x1='0' y1='0' x2='300' y2='0' stroke='currentColor'/>\n<line x1='0' y1='400' x2='300' y2='0' stroke='currentColor'/>"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-use-010",
+      "axis": "usage",
+      "description": "Bounded function plot request should create a plot card",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "plot",
+          "id": "p1",
+          "expression": "sin(x)",
+          "x_min": -3.14,
+          "x_max": 3.14,
+          "label": "Plot of y = sin(x) from -\u03c0 to \u03c0"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-use-011",
+      "axis": "usage",
+      "description": "Function name mentioned in passing should not create a plot",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-use-012",
+      "axis": "usage",
+      "description": "Named theorem statement should create a text card",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "text",
+          "id": "def1",
+          "markdown": "**Pythagorean Theorem** \u2014 $a^2 + b^2 = c^2$."
         }
       ],
       "tutor_utterance": null
@@ -169,6 +260,86 @@
       "tutor_utterance": null
     },
     {
+      "case_id": "tb-content-005",
+      "axis": "content",
+      "description": "Sine plot should use a sin expression",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "plot",
+          "id": "p1",
+          "expression": "sin(x)",
+          "x_min": -3.14,
+          "x_max": 3.14,
+          "label": "Plot of y = sin(x) from -\u03c0 to \u03c0"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-content-006",
+      "axis": "content",
+      "description": "Final solve step should show x equals the result",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "text",
+          "id": "eq1",
+          "markdown": "$2x = 10$ \\ $x = 5$"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-content-007",
+      "axis": "content",
+      "description": "Neural network diagram should name the hidden layer",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "diagram",
+          "id": "d1",
+          "syntax": "mermaid",
+          "source": "flowchart LR\n  IN[input] --> H[hidden] --> OUT[output]",
+          "label": "Simple network"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-content-008",
+      "axis": "content",
+      "description": "Triangle sketch should include leg lengths in the SVG",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "shape",
+          "id": "s1",
+          "svg": "<line x1='0' y1='0' x2='0' y2='4' stroke='currentColor'/><line x1='0' y1='4' x2='3' y2='4' stroke='currentColor'/><line x1='0' y1='0' x2='3' y2='4' stroke='currentColor'/>"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-content-009",
+      "axis": "content",
+      "description": "Inequality setup should preserve the comparison symbol",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "text",
+          "id": "eq1",
+          "markdown": "$3x - 7 > 2$"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
       "case_id": "tb-kind-001",
       "axis": "card_kind",
       "description": "Function mention should be a plot, not text",
@@ -228,7 +399,80 @@
         {
           "kind": "shape",
           "id": "s1",
-          "svg": "<line x1='0' y1='50' x2='100' y2='50' stroke='currentColor'/><text x='0' y='40' fill='currentColor'>0</text><text x='100' y='40' fill='currentColor'>6</text><line x1='0' y1='50' x2='0' y2='60' stroke='currentColor'/><line x1='100' y1='50' x2='100' y2='60' stroke='currentColor'/>"
+          "svg": "<line x1='0' y1='50' x2='120' y2='50' stroke='currentColor'/>\n<text x='0' y='65' font-size='12'>0</text>\n<text x='60' y='65' font-size='12'>3</text>\n<text x='120' y='65' font-size='12'>6</text>\n<line x1='0' y1='50' x2='0' y2='55' stroke='currentColor'/>\n<line x1='60' y1='50' x2='60' y2='55' stroke='currentColor'/>\n<line x1='120' y1='50' x2='120' y2='55' stroke='currentColor'/>"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-kind-005",
+      "axis": "card_kind",
+      "description": "Fraction bar model should use shape, not text",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "shape",
+          "id": "s1",
+          "svg": "<rect width='300' height='50' fill='lightgray'/><rect width='225' height='50' fill='blue'/>"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-kind-006",
+      "axis": "card_kind",
+      "description": "Algebraic derivation should stay text, not diagram",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "text",
+          "id": "eq1",
+          "markdown": "$2x + 5 = 10$ \\ $2x = 5$"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-kind-007",
+      "axis": "card_kind",
+      "description": "Multi-variable expression should stay text, not plot",
+      "passed": false,
+      "failures": [
+        "unexpected kinds ['text', 'plot']; allowed=['text']",
+        "forbidden kind emitted: plot"
+      ],
+      "actual_items": [
+        {
+          "kind": "text",
+          "id": "def1",
+          "markdown": "**Surface** \u2014 defined by the equation $z = x \\cdot y$."
+        },
+        {
+          "kind": "plot",
+          "id": "p1",
+          "expression": "x * y",
+          "x_min": -10.0,
+          "x_max": 10.0,
+          "label": "Surface plot of z = xy"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-kind-008",
+      "axis": "card_kind",
+      "description": "Algorithm steps should use a diagram, not plain text",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "diagram",
+          "id": "d1",
+          "syntax": "mermaid",
+          "source": "flowchart TD\n  A[Start] --> B[Compute Delta]\n  B --> C[Check Sign]\n  C --> D[Stop]",
+          "label": "Flowchart of process steps"
         }
       ],
       "tutor_utterance": null
@@ -279,7 +523,7 @@
           "kind": "diagram",
           "id": "d1",
           "syntax": "mermaid",
-          "source": "flowchart TD\n  A(0,0) --> B(3,0) --> C(3,4) --> A\n  B -->|3| A\n  C -->|4| A\n  C -->|5| B",
+          "source": "flowchart TD\n  A[Right Triangle] --> B[Leg 3]\n  A --> C[Leg 4]\n  B --> D[3]\n  C --> E[4]",
           "label": "Right triangle with legs 3 and 4"
         }
       ],
@@ -295,7 +539,7 @@
         {
           "kind": "text",
           "id": "eq2",
-          "markdown": "**New Equation:** \\ $3x - 7 = 8$"
+          "markdown": "Let's set up a new equation: \\ $3x - 7 = 8$"
         }
       ],
       "tutor_utterance": null
@@ -313,7 +557,7 @@
           "expression": "sin(x)",
           "x_min": -3.14,
           "x_max": 3.14,
-          "label": "Plot of $y = sin(x)$ from $-\\pi$ to $\\pi$"
+          "label": null
         }
       ],
       "tutor_utterance": null
@@ -331,6 +575,73 @@
         "no actual item matched expected.items[0]"
       ],
       "actual_items": [],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-group-007",
+      "axis": "grouping",
+      "description": "Extending a factor tree should append to the existing diagram card",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "diagram",
+          "id": "d1",
+          "syntax": "mermaid",
+          "source": "flowchart TD\n  n42[42] --> n2[2]\n  n42 --> n21[21]\n  n21 --> n3[3]\n  n21 --> n7[7]",
+          "label": "Factor tree for 42"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-group-008",
+      "axis": "grouping",
+      "description": "Final answer step should append to the active equation card",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "text",
+          "id": "eq1",
+          "markdown": "$2x = 10$ \\ $x = 5$"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-group-009",
+      "axis": "grouping",
+      "description": "Switching from one diagram topic to another should mint a fresh diagram id",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "diagram",
+          "id": "d2",
+          "syntax": "mermaid",
+          "source": "flowchart TD\n  START[Start] --> UPDATE[Update]\n  UPDATE --> STOP[Stop]",
+          "label": "Flowchart for Gradient Descent"
+        }
+      ],
+      "tutor_utterance": null
+    },
+    {
+      "case_id": "tb-group-010",
+      "axis": "grouping",
+      "description": "Adding a label to an existing plot should reuse the same plot id",
+      "passed": true,
+      "failures": [],
+      "actual_items": [
+        {
+          "kind": "plot",
+          "id": "p1",
+          "expression": "x**2",
+          "x_min": -10.0,
+          "x_max": 10.0,
+          "label": "$y = x^2$"
+        }
+      ],
       "tutor_utterance": null
     },
     {
@@ -377,9 +688,63 @@
       "failures": [],
       "actual_items": [],
       "tutor_utterance": "Let me put this on the board: y equals x squared opens upward."
+    },
+    {
+      "case_id": "tb-ref-006",
+      "axis": "reference",
+      "description": "Tutor should reference a shape sketch on the board",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": "See the triangle I drew on the board \u2014 which side is the hypotenuse?"
+    },
+    {
+      "case_id": "tb-ref-007",
+      "axis": "reference",
+      "description": "Tutor should use an I-put phrasing when pointing at a plot",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": "I've put the sine graph up \u2014 where is it zero between 0 and pi?"
+    },
+    {
+      "case_id": "tb-ref-008",
+      "axis": "reference",
+      "description": "Meta recap should not count as a board reference",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": "As we saw above, isolating x is the key move in linear equations."
+    },
+    {
+      "case_id": "tb-ref-009",
+      "axis": "reference",
+      "description": "Tutor may refer to a tutor card explicitly",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": "Check the tutor card for the scalar definition \u2014 does an array count?"
+    },
+    {
+      "case_id": "tb-ref-010",
+      "axis": "reference",
+      "description": "Tutor should direct attention to the diagram without refusing visuals",
+      "passed": true,
+      "failures": [],
+      "actual_items": [],
+      "tutor_utterance": "Look at the diagram on our board \u2014 which layer comes right after input?"
     }
   ],
   "failures": [
+    {
+      "case_id": "tb-kind-007",
+      "axis": "card_kind",
+      "description": "Multi-variable expression should stay text, not plot",
+      "failures": [
+        "unexpected kinds ['text', 'plot']; allowed=['text']",
+        "forbidden kind emitted: plot"
+      ]
+    },
     {
       "case_id": "tb-group-003",
       "axis": "grouping",
@@ -400,12 +765,5 @@
         "no actual item matched expected.items[0]"
       ]
     }
-  ],
-  "target_id": "baseline",
-  "label": "Baseline (gpt-4o-mini \u00b7 4s timeout)",
-  "metadata": {
-    "board_extractor": "openai",
-    "board_extractor_model": "gpt-4o-mini",
-    "board_extractor_timeout_seconds": 4.0
-  }
+  ]
 }
