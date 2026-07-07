@@ -563,6 +563,15 @@ main {
 
 /* ─── Evaluation dashboard ───────────────────────────────────────────── */
 
+/* When ?embed=true bypasses AuthGate, the page renders inside an iframe with no
+   app shell or topbar. Fill the iframe viewport so the dashboard's background
+   reaches the edges and content drives its own height. */
+.eval-embed {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .eval-main {
   display: block;
   background: #f6f8fa;

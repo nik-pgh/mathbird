@@ -111,7 +111,12 @@ function reportTabLabel(tab: RetrievalEvalReportTab): string {
   return `${tab.label} (${tab.report.targets.length})`;
 }
 
-export default function EvalDashboardPage() {
+interface EvalDashboardPageProps {
+  /** When true, the page is rendered inside an iframe (via ?embed=true): no topbar, fills the frame. */
+  isEmbedded?: boolean;
+}
+
+export default function EvalDashboardPage({ isEmbedded = false }: EvalDashboardPageProps) {
   const [catalog, setCatalog] = useState<EvalCatalog | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTabId, setActiveTabId] = useState("structured");
@@ -158,33 +163,33 @@ export default function EvalDashboardPage() {
 
   if (!catalog) {
     return (
-      <>
-        <SessionTopbar />
+      <div className={isEmbedded ? "eval-embed" : undefined}>
+        {!isEmbedded && <SessionTopbar />}
         <main className="eval-main">
           <p className="route-fallback" aria-busy="true">
             Loading evaluation reports…
           </p>
         </main>
-      </>
+      </div>
     );
   }
 
   if (loadError) {
     return (
-      <>
-        <SessionTopbar />
+      <div className={isEmbedded ? "eval-embed" : undefined}>
+        {!isEmbedded && <SessionTopbar />}
         <main className="eval-main">
           <p className="session-error" role="alert">
             Couldn&apos;t load evaluation reports: {loadError}
           </p>
         </main>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <SessionTopbar />
+    <div className={isEmbedded ? "eval-embed" : undefined}>
+      {!isEmbedded && <SessionTopbar />}
       <main className="eval-main">
         <section className="eval-dashboard">
           <div className="eval-tabs" role="tablist" aria-label="Evaluation reports">
@@ -237,6 +242,6 @@ export default function EvalDashboardPage() {
           </div>
         </section>
       </main>
-    </>
+    </div>
   );
 }

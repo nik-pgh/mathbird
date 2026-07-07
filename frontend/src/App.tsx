@@ -30,6 +30,19 @@ function SessionRoute() {
   return <AuthGate>{page}</AuthGate>;
 }
 
+/** Wrap /evals with AuthGate unless the embed query param is present. */
+function EvalRoute() {
+  const [params] = useSearchParams();
+  const isEmbedded = params.get("embed") === "true";
+  const page = (
+    <Suspense fallback={<RouteFallback />}>
+      <EvalDashboardPage isEmbedded={isEmbedded} />
+    </Suspense>
+  );
+  if (isEmbedded) return page;
+  return <AuthGate>{page}</AuthGate>;
+}
+
 export default function App() {
   return (
     <div className="app-shell">
@@ -44,16 +57,7 @@ export default function App() {
           }
         />
         {evalsEnabled ? (
-          <Route
-            path="/evals"
-            element={
-              <AuthGate>
-                <Suspense fallback={<RouteFallback />}>
-                  <EvalDashboardPage />
-                </Suspense>
-              </AuthGate>
-            }
-          />
+          <Route path="/evals" element={<EvalRoute />} />
         ) : null}
         <Route path="/session" element={<SessionRoute />} />
       </Routes>
