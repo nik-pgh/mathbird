@@ -65,7 +65,13 @@ async def google_callback(
         profile.get("email") or "",
         profile.get("name") or profile.get("email") or "User",
     )
-    token = issue_token(user.id, settings=settings)
+    token = issue_token(
+        user.id,
+        email=user.email,
+        name=user.name,
+        google_sub=user.google_sub,
+        settings=settings,
+    )
 
     response = RedirectResponse(url=f"{settings.frontend_url}/", status_code=302)
     response.delete_cookie("mathbird_oauth_state", path="/")
@@ -73,8 +79,8 @@ async def google_callback(
         settings.auth_cookie_name,
         token,
         httponly=True,
-        samesite="lax",
-        secure=settings.auth_cookie_secure,
+        samesite=settings.session_cookie_samesite,
+        secure=settings.auth_cookie_secure or settings.session_cookie_samesite == "none",
         path="/",
         max_age=settings.auth_jwt_expiry_hours * 3600,
     )
@@ -90,5 +96,10 @@ async def me(user: Annotated[User, Depends(get_current_user)]) -> MeResponse:
 async def logout() -> Response:
     settings = get_settings()
     response = Response(status_code=204)
-    response.delete_cookie(settings.auth_cookie_name, path="/")
+    response.delete_cookie(
+        settings.auth_cookie_name,
+        path="/",
+        samesite=settings.session_cookie_samesite,
+        secure=settings.auth_cookie_secure or settings.session_cookie_samesite == "none",
+    )
     return response

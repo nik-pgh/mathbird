@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse
 
 import yaml
 from pydantic import Field
@@ -81,6 +82,9 @@ class Settings(BaseSettings):
     auth_db_path: str = "./auth.db"
     auth_cookie_name: str = "mathbird_session"
     auth_cookie_secure: bool = False
+    # Empty = auto: "none" when frontend and API hosts differ (cross-origin SPA),
+    # otherwise "lax" (localhost dev). Requires AUTH_COOKIE_SECURE=true for "none".
+    auth_cookie_samesite: Literal["", "lax", "none", "strict"] = ""
     frontend_url: str = "http://localhost:5173"
 
     # Guest sessions — pre-indexed doc_id for "try without signup" flow.
@@ -201,6 +205,17 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.api_cors_origins.split(",") if o.strip()]
+
+    @property
+    def session_cookie_samesite(self) -> Literal["lax", "none", "strict"]:
+        """SameSite for the session cookie sent on credentialed API fetches."""
+        if self.auth_cookie_samesite:
+            return self.auth_cookie_samesite
+        frontend_host = urlparse(self.frontend_url).netloc
+        api_host = urlparse(self.oauth_redirect_url).netloc
+        if frontend_host and api_host and frontend_host != api_host:
+            return "none"
+        return "lax"
 
 
 @lru_cache

@@ -28,6 +28,11 @@ class User:
     created_at: str
 
 
+def stable_user_id(google_sub: str) -> str:
+    """Deterministic user id so the same Google account maps to one id everywhere."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"mathbird:{google_sub}"))
+
+
 class UserStore:
     def __init__(self) -> None:
         settings = get_settings()
@@ -38,7 +43,7 @@ class UserStore:
 
     def upsert_google_user(self, google_sub: str, email: str, name: str) -> User:
         now = datetime.now(UTC).isoformat()
-        user_id = str(uuid.uuid4())
+        user_id = stable_user_id(google_sub)
         row = self._conn.execute(
             """
             INSERT INTO users (id, google_sub, email, name, created_at)

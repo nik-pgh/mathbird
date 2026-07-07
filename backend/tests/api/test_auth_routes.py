@@ -20,7 +20,7 @@ def auth_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setenv("GOOGLE_CLIENT_ID", "test-client-id")
     monkeypatch.setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
     monkeypatch.setenv("OAUTH_REDIRECT_URL", "http://testserver/api/auth/google/callback")
-    monkeypatch.setenv("FRONTEND_URL", "http://localhost:5173")
+    monkeypatch.setenv("FRONTEND_URL", "http://testserver")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
@@ -68,6 +68,37 @@ def test_google_callback_sets_session_cookie(mock_exchange: AsyncMock) -> None:
     assert body["name"] == "Alice"
 
 
+@patch("app.api.routes.auth.exchange_code_for_profile", new_callable=AsyncMock)
+def test_google_callback_cross_origin_session_cookie(
+    mock_exchange: AsyncMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mock_exchange.return_value = {
+        "sub": "google-sub-1",
+        "email": "alice@example.com",
+        "name": "Alice",
+    }
+    monkeypatch.setenv("FRONTEND_URL", "https://mathbird.vercel.app")
+    monkeypatch.setenv(
+        "OAUTH_REDIRECT_URL",
+        "https://mathbird.fly.dev/api/auth/google/callback",
+    )
+    monkeypatch.setenv("AUTH_COOKIE_SECURE", "true")
+    get_settings.cache_clear()
+
+    client = TestClient(app)
+    login = client.get("/api/auth/google", follow_redirects=False)
+    state = login.cookies.get("mathbird_oauth_state")
+    res = client.get(
+        f"/api/auth/google/callback?code=fake-code&state={state}",
+        follow_redirects=False,
+    )
+    assert res.status_code == 302
+    set_cookie = res.headers.get("set-cookie", "")
+    assert "SameSite=none" in set_cookie
+    assert "Secure" in set_cookie
+
+
 def test_logout_clears_cookie() -> None:
     client = TestClient(app)
     with patch(
@@ -88,3 +119,34 @@ def test_logout_clears_cookie() -> None:
 
     me = client.get("/api/auth/me")
     assert me.status_code == 401
+
+
+@patch("app.api.routes.auth.exchange_code_for_profile", new_callable=AsyncMock)
+def test_logout_clears_cross_origin_session_cookie(
+    mock_exchange: AsyncMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mock_exchange.return_value = {
+        "sub": "google-sub-3",
+        "email": "carol@example.com",
+        "name": "Carol",
+    }
+    monkeypatch.setenv("FRONTEND_URL", "https://mathbird.vercel.app")
+    monkeypatch.setenv(
+        "OAUTH_REDIRECT_URL",
+        "https://mathbird.fly.dev/api/auth/google/callback",
+    )
+    monkeypatch.setenv("AUTH_COOKIE_SECURE", "true")
+    get_settings.cache_clear()
+
+    client = TestClient(app)
+    login = client.get("/api/auth/google", follow_redirects=False)
+    state = login.cookies.get("mathbird_oauth_state")
+    client.get(f"/api/auth/google/callback?code=code&state={state}")
+
+    res = client.post("/api/auth/logout")
+    assert res.status_code == 204
+    set_cookie = res.headers.get("set-cookie", "")
+    assert "SameSite=none" in set_cookie
+    assert "Max-Age=0" in set_cookie or '=""' in set_cookie
+    assert client.get("/api/auth/me").status_code == 401

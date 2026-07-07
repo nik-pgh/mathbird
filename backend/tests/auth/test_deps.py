@@ -40,7 +40,12 @@ def test_get_current_user_without_cookie_returns_401() -> None:
 def test_get_current_user_with_valid_cookie_returns_user() -> None:
     store = UserStore()
     user = store.upsert_google_user("sub-1", "a@example.com", "Alice")
-    token = issue_token(user.id)
+    token = issue_token(
+        user.id,
+        email=user.email,
+        name=user.name,
+        google_sub=user.google_sub,
+    )
 
     client = TestClient(app)
     settings = get_settings()
@@ -48,3 +53,19 @@ def test_get_current_user_with_valid_cookie_returns_user() -> None:
     res = client.get("/protected")
     assert res.status_code == 200
     assert res.json() == {"id": user.id}
+
+
+def test_get_current_user_without_db_row_uses_jwt_claims() -> None:
+    token = issue_token(
+        "user-offline",
+        email="offline@example.com",
+        name="Offline",
+        google_sub="sub-offline",
+    )
+
+    client = TestClient(app)
+    settings = get_settings()
+    client.cookies.set(settings.auth_cookie_name, token)
+    res = client.get("/protected")
+    assert res.status_code == 200
+    assert res.json() == {"id": "user-offline"}

@@ -4,9 +4,27 @@ from __future__ import annotations
 
 from fastapi import HTTPException, Request
 
-from app.auth.jwt import decode_token
+from app.auth.jwt import decode_session
 from app.auth.store import User, get_user_store
 from app.config import get_settings
+
+
+def _user_from_session(token: str) -> User:
+    claims = decode_session(token)
+    user = get_user_store().get_by_id(claims.user_id)
+    if user is not None:
+        return user
+    if not claims.email:
+        raise HTTPException(status_code=401, detail="User not found")
+    # Stateless fallback: JWT carries profile claims when the local SQLite row
+    # is missing (e.g. another Fly machine handled OAuth, or the DB was wiped).
+    return User(
+        id=claims.user_id,
+        google_sub=claims.google_sub,
+        email=claims.email,
+        name=claims.name or claims.email,
+        created_at="",
+    )
 
 
 def get_current_user(request: Request) -> User:
@@ -16,14 +34,11 @@ def get_current_user(request: Request) -> User:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     try:
-        user_id = decode_token(token)
+        return _user_from_session(token)
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=401, detail="Invalid session") from exc
-
-    user = get_user_store().get_by_id(user_id)
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
 
 
 def get_optional_user(request: Request) -> User | None:
@@ -40,8 +55,6 @@ def get_optional_user(request: Request) -> User | None:
         return None
 
     try:
-        user_id = decode_token(token)
+        return _user_from_session(token)
     except Exception:
         return None
-
-    return get_user_store().get_by_id(user_id)
