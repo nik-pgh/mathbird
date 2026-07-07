@@ -16,6 +16,7 @@ import {
   setActiveDocId,
   subscribeActiveDocId,
 } from "../lib/activeDoc";
+import { isGuestMode } from "../lib/guestMode";
 
 interface UploadJob {
   tmpId: string;
@@ -27,6 +28,7 @@ interface UploadJob {
 }
 
 export default function UploadPage() {
+  const guest = isGuestMode();
   const [docs, setDocs] = useState<UploadedDocument[]>([]);
   const [jobs, setJobs] = useState<UploadJob[]>([]);
   const [activeDocId, setActiveDocIdState] = useState<string | null>(() =>
@@ -43,6 +45,9 @@ export default function UploadPage() {
         if (stored && !list.some((d) => d.doc_id === stored)) {
           clearActiveDocId();
           setActiveDocIdState(null);
+        } else if (guest && list.length === 1) {
+          setActiveDocId(list[0].doc_id);
+          setActiveDocIdState(list[0].doc_id);
         }
       })
       .catch((e) => setError(String(e)));
@@ -54,7 +59,7 @@ export default function UploadPage() {
     }, 3000);
 
     return () => window.clearInterval(poll);
-  }, []);
+  }, [guest]);
 
   useEffect(() => subscribeActiveDocId(setActiveDocIdState), []);
 
@@ -145,10 +150,14 @@ export default function UploadPage() {
         <section className="library-page">
           <header className="page-header">
             <h1>Library</h1>
-            <p>Drop PDFs to give the tutor context. Pick one to use this session.</p>
+            <p>
+              {guest
+                ? "Sample textbook for guest sessions. Sign in to upload your own PDFs."
+                : "Drop PDFs to give the tutor context. Pick one to use this session."}
+            </p>
           </header>
 
-          <PdfDropZone onFiles={handleFiles} disabled={uploading} />
+          {!guest && <PdfDropZone onFiles={handleFiles} disabled={uploading} />}
 
           {error && <div className="error">{error}</div>}
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import {
   UploadedDocument,
@@ -22,8 +22,6 @@ type Status = "connecting" | "connected" | "disconnected";
 
 export default function SessionPage() {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const isGuest = params.get("guest") === "true";
 
   const [conn, setConn] = useState<Connection | null>(null);
   const [status, setStatus] = useState<Status>("connecting");
@@ -35,9 +33,8 @@ export default function SessionPage() {
   useEffect(() => subscribeActiveDocId(setActiveDocId), []);
 
   // Resolve filename for the textbook overlay title.
-  // Skip in guest mode — listDocuments requires auth.
   useEffect(() => {
-    if (!activeDocId || isGuest) return;
+    if (!activeDocId) return;
     listDocuments()
       .then((list) => {
         const found = list.find((d) => d.doc_id === activeDocId) ?? null;
@@ -48,7 +45,7 @@ export default function SessionPage() {
           err instanceof Error ? err.message : "Couldn't load document library.",
         );
       });
-  }, [activeDocId, isGuest]);
+  }, [activeDocId]);
 
   const connect = useCallback(async () => {
     setError(null);
@@ -70,8 +67,8 @@ export default function SessionPage() {
 
   const handleEnd = useCallback(() => {
     setConn(null);
-    navigate(isGuest ? "/login" : "/");
-  }, [navigate, isGuest]);
+    navigate("/");
+  }, [navigate]);
 
   const handleUnexpectedDisconnect = useCallback(() => {
     setStatus("disconnected");

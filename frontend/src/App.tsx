@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import UploadPage from "./pages/UploadPage";
 
 import { evalsEnabled } from "./lib/features";
+import { syncGuestModeFromSearchParams } from "./lib/guestMode";
 
 const SessionPage = lazy(() => import("./pages/SessionPage"));
 const EvalDashboardPage = lazy(() => import("./pages/EvalDashboardPage"));
@@ -17,20 +18,24 @@ function RouteFallback() {
   );
 }
 
-/** Wrap /session with AuthGate unless the guest query param is present. */
-function SessionRoute() {
+/** Sync `?guest=true` once at the app shell; AuthGate reads sessionStorage. */
+function GuestModeSync() {
   const [params] = useSearchParams();
-  const isGuest = params.get("guest") === "true";
-  const page = (
-    <Suspense fallback={<RouteFallback />}>
-      <SessionPage />
-    </Suspense>
-  );
-  if (isGuest) return page;
-  return <AuthGate>{page}</AuthGate>;
+  syncGuestModeFromSearchParams(params);
+  return null;
 }
 
-/** Wrap /evals with AuthGate unless the embed query param is present. */
+function SessionRoute() {
+  return (
+    <AuthGate>
+      <Suspense fallback={<RouteFallback />}>
+        <SessionPage />
+      </Suspense>
+    </AuthGate>
+  );
+}
+
+/** Wrap /evals with AuthGate unless `?embed=true` (guest bypass is inside AuthGate). */
 function EvalRoute() {
   const [params] = useSearchParams();
   const isEmbedded = params.get("embed") === "true";
@@ -46,6 +51,7 @@ function EvalRoute() {
 export default function App() {
   return (
     <div className="app-shell">
+      <GuestModeSync />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route

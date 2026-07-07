@@ -1,12 +1,14 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { getMe, type User } from "../../lib/api";
+import { GUEST_ENABLED, getMe, type User } from "../../lib/api";
+import { isGuestMode } from "../../lib/guestMode";
 
 interface Props {
   children: ReactNode;
 }
 
 export default function AuthGate({ children }: Props) {
+  const guest = GUEST_ENABLED && isGuestMode();
   const [user, setUser] = useState<User | null | undefined>(undefined);
 
   useEffect(() => {
@@ -24,6 +26,9 @@ export default function AuthGate({ children }: Props) {
   }
 
   if (user === null) {
+    if (guest) {
+      return <>{children}</>;
+    }
     return <Navigate to="/login" replace />;
   }
 

@@ -1,8 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { GUEST_ENABLED, googleLoginUrl } from "../lib/api";
+import { enterGuestMode } from "../lib/guestMode";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+
+  const handleGuest = () => {
+    enterGuestMode();
+    navigate("/");
+  };
 
   return (
     <main className="login-page">
@@ -17,15 +23,12 @@ export default function LoginPage() {
             <div className="login-divider">
               <span>or</span>
             </div>
-            <button
-              className="login-guest-btn"
-              onClick={() => navigate("/session?guest=true")}
-            >
+            <button className="login-guest-btn" onClick={handleGuest}>
               Try as guest
             </button>
             <p className="login-guest-hint">
-              Jump straight into a voice session with a sample textbook.
-              No account needed — progress won't be saved.
+              Browse the sample library, explore eval dashboards, and start a
+              voice session — no account needed. Progress won&apos;t be saved.
             </p>
           </>
         )}

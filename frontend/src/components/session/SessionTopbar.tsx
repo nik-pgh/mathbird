@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../lib/api";
 import { evalsEnabled } from "../../lib/features";
+import { exitGuestMode, isGuestMode } from "../../lib/guestMode";
 import { useSessionToolbarContent } from "./SessionToolbarContext";
 
 /** Top bar shared by both routes. Pass `session` to render session-mode controls. */
@@ -19,10 +20,16 @@ export default function SessionTopbar({ session }: Props) {
   const onLibrary = location.pathname === "/";
   const toolbarContent = useSessionToolbarContent();
   const [signingOut, setSigningOut] = useState(false);
+  const guest = isGuestMode();
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
     try {
+      if (guest) {
+        exitGuestMode();
+        navigate("/login");
+        return;
+      }
       await logout();
       navigate("/login");
     } catch {
@@ -30,7 +37,7 @@ export default function SessionTopbar({ session }: Props) {
     } finally {
       setSigningOut(false);
     }
-  }, [navigate]);
+  }, [guest, navigate]);
 
   if (session) {
     return (
@@ -83,7 +90,7 @@ export default function SessionTopbar({ session }: Props) {
         onClick={() => void handleSignOut()}
         disabled={signingOut}
       >
-        {signingOut ? "Signing out…" : "Sign out"}
+        {signingOut ? "Signing out…" : guest ? "Exit guest" : "Sign out"}
       </button>
       <button
         className="btn primary"
