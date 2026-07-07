@@ -22,9 +22,14 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Up
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
-from app.auth import User, get_current_user
+from app.auth import User, get_current_user, get_optional_user
 from app.config import get_settings
-from app.documents.access import assert_doc_access, filter_summaries_for_user
+from app.documents.access import (
+    assert_doc_access,
+    assert_doc_access_optional,
+    filter_summaries_for_guest,
+    filter_summaries_for_user,
+)
 from app.documents.catalog import (
     SIDECAR_NAME,
     SYLLABUS_NAME,
@@ -212,9 +217,17 @@ async def ingest_document(
 
 @router.get("/documents", response_model=DocumentListResponse)
 async def list_documents(
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User | None, Depends(get_optional_user)],
 ) -> DocumentListResponse:
-    summaries = filter_summaries_for_user(await list_document_summaries(), user)
+    settings = get_settings()
+    summaries = await list_document_summaries()
+    if user is not None:
+        visible = filter_summaries_for_user(summaries, user, settings=settings)
+    elif settings.guest_sample_doc_id:
+        visible = filter_summaries_for_guest(summaries, settings=settings)
+    else:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+
     return DocumentListResponse(
         documents=[
             DocumentResponse(
@@ -226,7 +239,7 @@ async def list_documents(
                 status=summary.status,
                 syllabus_ready=summary.syllabus_ready,
             )
-            for summary in summaries
+            for summary in visible
         ]
     )
 
@@ -234,10 +247,10 @@ async def list_documents(
 @router.get("/documents/{doc_id}/syllabus", response_model=Syllabus)
 async def get_document_syllabus(
     doc_id: str,
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User | None, Depends(get_optional_user)],
 ) -> Syllabus:
     storage = get_storage()
-    await assert_doc_access(storage, doc_id, user)
+    await assert_doc_access_optional(storage, doc_id, user)
     syllabus = await load_syllabus(storage, doc_id)
     if syllabus is None:
         raise HTTPException(status_code=404, detail="Syllabus not found.")
@@ -247,10 +260,10 @@ async def get_document_syllabus(
 @router.get("/documents/{doc_id}/file")
 async def get_document_file(
     doc_id: str,
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User | None, Depends(get_optional_user)],
 ):
     storage = get_storage()
-    await assert_doc_access(storage, doc_id, user)
+    await assert_doc_access_optional(storage, doc_id, user)
     objects = await storage.list()
     stored = _find_stored_pdf(objects, doc_id)
     if stored is None:

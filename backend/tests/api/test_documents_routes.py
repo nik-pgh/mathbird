@@ -41,6 +41,7 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("STORAGE_LOCAL_DIR", str(tmp_path))
     monkeypatch.setenv("RAG_PROVIDER", "null")
     monkeypatch.setenv("LEGACY_DOC_ACCESS", "deny")
+    monkeypatch.setenv("GUEST_SAMPLE_DOC_ID", "")
     get_settings.cache_clear()
     from app.storage import base as storage_mod
 

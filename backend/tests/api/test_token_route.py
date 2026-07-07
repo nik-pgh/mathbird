@@ -20,6 +20,7 @@ def livekit_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setenv("LIVEKIT_URL", "wss://example.livekit.cloud")
     monkeypatch.setenv("LIVEKIT_API_KEY", "test-key")
     monkeypatch.setenv("LIVEKIT_API_SECRET", "x" * 32)
+    monkeypatch.setenv("GUEST_SAMPLE_DOC_ID", "")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

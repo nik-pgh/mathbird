@@ -61,6 +61,53 @@ def filter_summaries_for_user(
     return visible
 
 
+def filter_summaries_for_guest(
+    summaries: list[DocumentSummary],
+    *,
+    settings: Settings | None = None,
+) -> list[DocumentSummary]:
+    settings = settings or get_settings()
+    return [
+        summary
+        for summary in summaries
+        if guest_can_access_doc(summary.doc_id, settings) and not summary.uploaded_by_user_id
+    ]
+
+
+async def _guest_sample_meta(
+    storage: Any,
+    doc_id: str,
+    *,
+    settings: Settings | None = None,
+) -> dict[str, Any]:
+    """Load guest sample metadata and reject misconfigured private documents."""
+    settings = settings or get_settings()
+    meta = await read_document_meta(storage, doc_id)
+    owner = meta.get("uploaded_by_user_id")
+    if isinstance(owner, str) and owner:
+        raise HTTPException(
+            status_code=503,
+            detail="Guest sample document is misconfigured.",
+        )
+    return meta
+
+
+async def assert_doc_access_optional(
+    storage: Any,
+    doc_id: str,
+    user: User | None,
+    *,
+    settings: Settings | None = None,
+) -> dict[str, Any]:
+    """Allow authenticated users or guests reading the configured sample doc."""
+    settings = settings or get_settings()
+    if user is not None:
+        return await assert_doc_access(storage, doc_id, user)
+    if not guest_can_access_doc(doc_id, settings):
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    return await _guest_sample_meta(storage, doc_id, settings=settings)
+
+
 async def resolve_token_doc_id(
     doc_id: str | None,
     *,

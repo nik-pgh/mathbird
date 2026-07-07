@@ -37,6 +37,7 @@ def isolated_storage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterato
     monkeypatch.setenv("STORAGE_LOCAL_DIR", str(tmp_path))
     monkeypatch.setenv("RAG_PROVIDER", "null")
     monkeypatch.setenv("LEGACY_DOC_ACCESS", "deny")
+    monkeypatch.setenv("GUEST_SAMPLE_DOC_ID", "")
     monkeypatch.setenv("LIVEKIT_URL", "wss://example.livekit.cloud")
     monkeypatch.setenv("LIVEKIT_API_KEY", "test-key")
     monkeypatch.setenv("LIVEKIT_API_SECRET", "x" * 32)
